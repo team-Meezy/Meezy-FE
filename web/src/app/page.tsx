@@ -1,9 +1,9 @@
-import { Header, Sidebar } from '@meezy/ui';
+import { Header, Sidebar, CalendarMockup } from '@meezy/ui';
 
 export default function LayoutPage() {
   return (
     // 전체 배경은 사이드바와 동일한 #0c0c0c
-    <div className="flex h-screen w-full bg-[#0c0c0c] text-white overflow-hidden">
+    <div className="flex h-screen w-full bg-[#0c0c0c] text-white overflow-hidden bg-white">
       {/* [좌측] 사이드바 - 위아래로 쭉 뻗은 구조 */}
       <Sidebar />
 
@@ -13,9 +13,9 @@ export default function LayoutPage() {
         <Header />
 
         {/* [메인] 실제 내용이 들어가는 둥근 박스 */}
-        <div className="flex-1 flex gap-4 px-4 pb-4 overflow-hidden">
+        <div className="flex-1 flex overflow-hidden">
           {/* 중앙 빈 화면 박스 */}
-          <main className="flex-[3] bg-[#111111] rounded-2xl border border-white/5 flex flex-col items-center justify-center">
+          <main className="flex-[3] bg-[#111111] border border-white/5 flex flex-col items-center justify-center">
             {/* 여기에 '아직 참가한 팀이 없습니다' 
                 섹션이 들어갑니다. 
              */}
@@ -31,9 +31,9 @@ export default function LayoutPage() {
           </main>
 
           {/* 우측 캘린더 영역 */}
-          <aside className="flex-1 max-w-[300px] bg-[#111111] rounded-2xl border border-white/5 p-6">
+          <aside className="flex-1 max-w-[300px] bg-[#111111] border border-white/5 p-6">
             {/* 캘린더 내용 */}
-            <div className="text-lg font-bold">10월</div>
+            <CalendarMockup />
           </aside>
         </div>
       </div>

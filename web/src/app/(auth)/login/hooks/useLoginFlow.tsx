@@ -1,4 +1,5 @@
 import { useRouter } from 'next/navigation';
+import { ApiError } from '../../../api/types/error';
 
 interface LoginFlowParams {
   email: string;
@@ -46,8 +47,14 @@ export function useLoginFlow({
   };
 
   const handleLogin = async () => {
+    setGeneralError('');
     if (validateEmailStep() && validatePasswordStep()) {
-      validateSuccessStep();
+      try {
+        validateSuccessStep();
+      } catch (error) {
+        const apiError = error as ApiError;
+        setGeneralError(apiError.message || '로그인에 실패했습니다.');
+      }
     }
   };
 

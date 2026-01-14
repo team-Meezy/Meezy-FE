@@ -5,8 +5,8 @@ export function CalendarMockup() {
     <div>
       <div className="text-lg font-bold mb-4">10월</div>
       <div className="grid grid-cols-7 gap-y-3 text-center text-sm">
-        {days.map((d) => (
-          <div key={d} className="text-gray-500 font-medium">
+        {days.map((d, item) => (
+          <div key={item} className="text-gray-500 font-medium">
             {d}
           </div>
         ))}

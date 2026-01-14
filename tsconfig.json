@@ -32,6 +32,15 @@
     },
     {
       "path": "./libs/shared/test-utils"
+    },
+    {
+      "path": "./web-e2e"
+    },
+    {
+      "path": "./web"
+    },
+    {
+      "path": "./libs/ui"
     }
   ]
 }

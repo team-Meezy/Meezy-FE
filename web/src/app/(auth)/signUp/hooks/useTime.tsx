@@ -15,21 +15,19 @@ export function useTime() {
   };
 
   useEffect(() => {
-    setRemainingTime(180);
-
     const timer = setInterval(() => {
-      setRemainingTime((prev) => prev - 1);
+      setRemainingTime((prev) => {
+        if (prev <= 1) {
+          clearInterval(timer);
+          return 0;
+        }
+        return prev - 1;
+      });
     }, 1000);
 
     return () => clearInterval(timer);
   }, []);
-
-  useEffect(() => {
-    if (remainingTime <= 0) {
-      setRemainingTime(0);
-    }
-  }, [remainingTime]);
-
+  
   return {
     remainingTime,
     formattedTime: formatTime(remainingTime),

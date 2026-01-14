@@ -208,6 +208,7 @@ export default function SignUpEmailPage() {
                 </button>
               )}
               <button
+                disabled={isLoading}
                 type="button"
                 onClick={handleNext}
                 className="flex-1 rounded-lg py-4 transition-colors hover:opacity-90 active:scale-[0.98]"
@@ -215,9 +216,10 @@ export default function SignUpEmailPage() {
                   backgroundColor: colors.primary[500],
                   color: colors.white[100],
                   ...typography.body.LBodyB,
+                  opacity: isLoading ? 0.6 : 1,
                 }}
               >
-                {step === 6 ? '완료' : '다음'}
+                {isLoading ? '처리중...' : step === 6 ? '완료' : '다음'}
               </button>
             </div>
           </div>

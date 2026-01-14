@@ -15,9 +15,9 @@ export function AuthCodeInput({
   const handleChange = (index: number, char: string) => {
     if (!/^\d?$/.test(char)) return;
 
-    const nextValue = authCode.split('');
+    const nextValue = authCode.padEnd(LENGTH, ' ').split('');
     nextValue[index] = char;
-    setAuthCode(nextValue.join(''));
+    setAuthCode(nextValue.join('').trimEnd());
     setAuthCodeError('');
 
     if (char && index < LENGTH - 1) {

@@ -3,6 +3,7 @@
 import { useEffect, useState } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { ApiError } from '../../../api/types/error';
+import { colors } from '@meezy/ui';
 
 export function OAuthCallbackPage() {
   const router = useRouter();
@@ -11,6 +12,7 @@ export function OAuthCallbackPage() {
   const [isProcessing, setIsProcessing] = useState(true);
 
   useEffect(() => {
+    let timeoutId: NodeJS.Timeout | null = null;
     const processOAuthCallback = async () => {
       try {
         // URL에서 인증 코드 추출
@@ -20,14 +22,14 @@ export function OAuthCallbackPage() {
         if (errorParam) {
           setError('OAuth 인증이 취소되었습니다.');
           setIsProcessing(false);
-          setTimeout(() => router.push('/login'), 3000);
+          timeoutId = setTimeout(() => router.push('/login'), 3000);
           return;
         }
 
         if (!code) {
           setError('인증 코드가 없습니다.');
           setIsProcessing(false);
-          setTimeout(() => router.push('/login'), 3000);
+          timeoutId = setTimeout(() => router.push('/login'), 3000);
           return;
         }
 
@@ -44,11 +46,17 @@ export function OAuthCallbackPage() {
         const apiError = err as ApiError;
         setError(apiError.message || 'OAuth 인증에 실패했습니다.');
         setIsProcessing(false);
-        setTimeout(() => router.push('/login'), 3000);
+        timeoutId = setTimeout(() => router.push('/login'), 3000);
       }
     };
 
     processOAuthCallback();
+
+    return () => {
+      if (timeoutId) {
+        clearTimeout(timeoutId);
+      }
+    };
   }, [searchParams, router]);
 
   return (
@@ -63,7 +71,7 @@ export function OAuthCallbackPage() {
                 style={{
                   width: '48px',
                   height: '48px',
-                  borderTopColor: 'transparent',
+                  borderTopColor: colors.gray[300],
                 }}
               />
             </div>

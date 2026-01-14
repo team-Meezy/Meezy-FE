@@ -8,13 +8,19 @@ import naver from '../../../assets/naver.svg';
 import { SocialButton } from './SocialButton';
 import { useRouter } from 'next/navigation';
 import { colors, typography } from '@meezy/ui';
+import { useState } from 'react';
+import { useLoginFlow } from './hooks/useLoginFlow';
 
 export default function page() {
   const router = useRouter();
-  
-  const handleMainClick = () => {
-    router.push('/');
-  };
+  const [email, setEmail] = useState('');
+  const [password, setPassword] = useState('');
+  const [generalError, setGeneralError] = useState('');
+  const { handleLogin } = useLoginFlow({
+    email,
+    password,
+    setGeneralError,
+  });
 
   const handleSignUpClick = () => {
     router.push('/signUp');
@@ -57,6 +63,28 @@ export default function page() {
               </p>
             </div>
 
+            {/* General Error Message */}
+            {generalError && (
+              <div
+                className="w-full p-4 rounded-lg mb-8"
+                style={{
+                  backgroundColor: colors.system.error[300] || '#FEE2E2',
+                  border: `1px solid ${
+                    colors.system.error[500] || '#ffa0a0ff'
+                  }`,
+                }}
+              >
+                <p
+                  style={{
+                    ...typography.body.BodyM,
+                    color: colors.system.error[700] || '#DC2626',
+                  }}
+                >
+                  {generalError}
+                </p>
+              </div>
+            )}
+
             <form className="space-y-5">
               {/* 이메일 입력 */}
               <div className="flex flex-col gap-1">
@@ -72,6 +100,8 @@ export default function page() {
                   id="email"
                   name="email"
                   type="email"
+                  value={email}
+                  onChange={(e) => setEmail(e.target.value)}
                   placeholder="이메일을 입력해주세요."
                   style={{
                     color: colors.gray[500],
@@ -96,6 +126,8 @@ export default function page() {
                   id="password"
                   name="password"
                   type="password"
+                  value={password}
+                  onChange={(e) => setPassword(e.target.value)}
                   placeholder="비밀번호를 입력해주세요."
                   style={{
                     color: colors.gray[500],
@@ -195,12 +227,14 @@ export default function page() {
                   </span>
                 </p>
                 <button
+                  type="button"
                   className="w-full rounded-lg py-4 transition-colors hover:bg-orange-600"
                   style={{
                     backgroundColor: colors.primary[500],
                     color: colors.white[100],
                     ...typography.body.LBodyB,
                   }}
+                  onClick={handleLogin}
                 >
                   로그인
                 </button>

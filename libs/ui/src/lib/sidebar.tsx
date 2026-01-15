@@ -1,18 +1,35 @@
-// import { Plus } from 'lucide-react';
-import { colors } from "../design";
+'use client';
 
-export function Sidebar() {
+// import { Plus } from 'lucide-react';
+import { colors } from '../design';
+import Image from 'next/image';
+import plus from '../assets/plus.svg';
+import { useServerCreate } from '../context/ServerCreateProvider';
+
+interface SidebarProps {
+  onOpenModal: () => void;
+  onCloseModal: () => void;
+}
+
+export function Sidebar({ onOpenModal, onCloseModal }: SidebarProps) {
+  const { imageFile } = useServerCreate();
   return (
-    <nav className="w-[72px] h-screen flex flex-col items-center p-6"
-    style={{
-      backgroundColor: colors.gray[900],
-    }}>
+    <nav
+      className="w-[72px] h-screen flex flex-col items-center"
+      style={{
+        backgroundColor: colors.gray[900],
+      }}
+    >
       <button
-        className="w-12 h-12 mt-12 flex items-center justify-center rounded-lg border border-gray-800 bg-gray-800 hover:bg-[#252525] transition-colors group"
+        className="w-12 h-12 mt-12 flex items-center justify-center rounded-lg border border-gray-800 bg-[#262626] hover:bg-[#252525] transition-colors group"
         aria-label="팀 추가"
+        onClick={onOpenModal}
       >
-        {/* <Plus className="text-gray-400 group-hover:text-white" size={24} /> */}
+        <Image src={plus} alt="plus" className="w-5" />
       </button>
+      {Array.from({ length: 10 }).map((_, index) => (
+        <div key={index}>{imageFile ? '' : <div>da</div>}</div>
+      ))}
     </nav>
   );
 }

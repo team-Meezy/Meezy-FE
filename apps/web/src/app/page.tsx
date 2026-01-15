@@ -1,9 +1,15 @@
-import { LayoutPage, ServerCreateProvider } from '@meezy/ui';
+import {
+  LayoutPage,
+  ServerCreateProvider,
+  ServerJoinedTeamProvider,
+} from '@meezy/ui';
 
 export default function Page() {
   return (
     <ServerCreateProvider>
-      <LayoutPage />
+      <ServerJoinedTeamProvider>
+        <LayoutPage />
+      </ServerJoinedTeamProvider>
     </ServerCreateProvider>
   );
 }

@@ -26,14 +26,16 @@ export function ServerModal({ isOpen, onClose }: ServerModalProps) {
 
   useEffect(() => {
     if (generalError) {
-      setTimeout(() => {
+      const timer = setTimeout(() => {
         setGeneralError('');
       }, 3000);
+      return () => clearTimeout(timer);
     }
   }, [generalError]);
 
   const createServer = () => {
-    if (!serverName) {
+    const valueToValidate = createModal ? serverName : serverLink;
+    if (!valueToValidate) {
       setGeneralError(
         `${createModal ? '서버 이름을 입력해주세요.' : '링크를 입력해주세요.'}`
       );

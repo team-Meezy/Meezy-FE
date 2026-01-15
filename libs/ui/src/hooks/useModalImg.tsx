@@ -1,12 +1,20 @@
 'use client';
 
-import { useState, useRef } from 'react';
+import { useState, useRef, useEffect } from 'react';
 import { useServerCreate } from '../context/ServerCreateProvider';
 
 export const useModalImg = () => {
   const { setImageFile } = useServerCreate();
   const [previewUrl, setPreviewUrl] = useState<string | null>(null);
   const fileInputRef = useRef<HTMLInputElement | null>(null);
+
+  useEffect(() => {
+    return () => {
+      if (previewUrl) {
+        URL.revokeObjectURL(previewUrl);
+      }
+    };
+  }, [previewUrl]);
 
   const handleClickUpload = () => {
     fileInputRef.current?.click();
@@ -27,6 +35,9 @@ export const useModalImg = () => {
     }
 
     setImageFile(file);
+    if (previewUrl) {
+      URL.revokeObjectURL(previewUrl);
+    }
     setPreviewUrl(URL.createObjectURL(file));
   };
 

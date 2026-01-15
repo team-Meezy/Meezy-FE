@@ -17,8 +17,7 @@ export function LayoutPage() {
   };
 
   return (
-    // 전체 배경은 사이드바와 동일한 #0c0c0c
-    <div className="flex h-screen w-full bg-[#0c0c0c] text-white overflow-hidden bg-white">
+    <div className="flex h-screen w-full bg-[#0c0c0c] text-white overflow-hidden">
       {/* [좌측] 사이드바 - 위아래로 쭉 뻗은 구조 */}
       <Sidebar onOpenModal={onOpenModal} onCloseModal={onCloseModal} />
 
@@ -31,9 +30,7 @@ export function LayoutPage() {
         <div className="flex-1 flex overflow-hidden">
           {/* 중앙 빈 화면 박스 */}
           <main className="flex-[3] bg-[#111111] border border-white/5 flex flex-col items-center justify-center">
-            {/* 여기에 '아직 참가한 팀이 없습니다' 
-                섹션이 들어갑니다. 
-             */}
+            {/* '아직 참가한 팀이 없습니다' 섹션 */}
             <div className="text-center flex flex-col gap-2">
               <div className="w-32 h-32 bg-[#2a2a2a] rounded-full mx-auto mb-6">
                 <Image src={noTeamReceive} alt="no team receive" />

@@ -79,7 +79,10 @@ export function CalendarMockup() {
               ...typography.body.BodyM,
             }}
           >
-            {date.day === today.getDate() && date.type === 'current' ? (
+            {date.day === today.getDate() &&
+            date.type === 'current' &&
+            today.getFullYear() === year &&
+            today.getMonth() === month ? (
               <span
                 className="flex flex-col justify-center items-center rounded-full py-1 w-6 h-6"
                 style={{ backgroundColor: colors.primary[500] }}

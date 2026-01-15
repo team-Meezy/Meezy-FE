@@ -22,7 +22,12 @@ export const useWebSocket = () => {
   }, []);
 
   const sendMessage = () => {
-    if (!input || !socketRef.current) return;
+    if (
+      !input ||
+      !socketRef.current ||
+      socketRef.current.readyState !== WebSocket.OPEN
+    )
+      return;
     socketRef.current.send(input);
     setInput('');
   };

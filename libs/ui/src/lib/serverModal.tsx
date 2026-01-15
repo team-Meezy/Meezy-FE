@@ -1,8 +1,8 @@
 'use client';
 
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useState, useRef } from 'react';
 import { createPortal } from 'react-dom';
-// import { X } from 'lucide-react';
+import { colors, typography } from '../design';
 
 export function ServerModal({
   isOpen,
@@ -12,11 +12,40 @@ export function ServerModal({
   onClose: () => void;
 }) {
   const [mounted, setMounted] = useState(false);
+  const [createModal, setCreateModal] = useState(false);
+  const [imageFile, setImageFile] = useState<File | null>(null);
+  const [previewUrl, setPreviewUrl] = useState<string | null>(null);
+  const fileInputRef = useRef<HTMLInputElement | null>(null);
 
   useEffect(() => {
     setMounted(true);
     return () => setMounted(false);
   }, []);
+
+  const handleClickUpload = () => {
+    fileInputRef.current?.click();
+  };
+
+  const handleImageChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    // 1️⃣ 파일 타입 검증
+    if (!file.type.startsWith('image/')) {
+      alert('이미지 파일만 업로드할 수 있습니다.');
+      return;
+    }
+
+    // 2️⃣ 파일 크기 검증 (예: 5MB)
+    if (file.size > 5 * 1024 * 1024) {
+      alert('이미지 크기는 5MB 이하만 가능합니다.');
+      return;
+    }
+
+    // 3️⃣ 상태 저장
+    setImageFile(file);
+    setPreviewUrl(URL.createObjectURL(file));
+  };
 
   if (!isOpen || !mounted) return null;
 
@@ -28,22 +57,34 @@ export function ServerModal({
       <div className="w-[480px] bg-[#2b2d31] rounded-xl shadow-2xl border border-white/5 overflow-hidden">
         {/* 상단 탭 및 닫기 버튼 */}
         <div className="flex justify-between items-center px-4 pt-4">
-          <div className="flex gap-4">
-            <button className="text-sm font-bold pb-2 border-b-2 border-white text-white">
+          <div className="flex gap-2">
+            <button
+              onClick={() => setCreateModal(true)}
+              style={{ ...typography.body.BodyM }}
+              className={`${
+                createModal ? 'bg-[#404040] text-[#fff] rounded-xl' : ''
+              } p-3 text-[#A1A1AA]`}
+            >
               서버 만들기
             </button>
-            <button className="text-sm font-medium pb-2 text-gray-400 hover:text-gray-200 transition-colors">
+            <button
+              onClick={() => setCreateModal(false)}
+              style={{ ...typography.body.BodyM }}
+              className={`${
+                createModal ? '' : 'bg-[#404040] text-[#fff]'
+              } rounded-xl p-3 text-[#A1A1AA]`}
+            >
               서버 가입하기
             </button>
           </div>
-          <button
-            onClick={onClose}
-            className="text-gray-400 hover:text-white mb-2"
-          >
-            {/* <X size={20} /> */}
-          </button>
         </div>
 
+        <div className="flex justify-center items-center w-full h-[1px] mt-3">
+          <div
+            className="w-[94%] h-[1px] bg-white rounded-full"
+            style={{ backgroundColor: colors.gray[700] }}
+          />
+        </div>
         {/* 폼 콘텐츠 */}
         <div className="p-6 pt-4 flex flex-col gap-6">
           {/* 서버 이름 입력 */}
@@ -63,8 +104,19 @@ export function ServerModal({
             />
           </section>
 
+          {previewUrl && (
+            <div className="flex flex-col items-center gap-1">
+              <img
+                src={previewUrl}
+                alt="서버 대표 이미지 미리보기"
+                className="w-42 h-32 rounded-lg object-cover border border-white/10"
+              />
+              <span className="text-xs text-gray-400">선택된 이미지</span>
+            </div>
+          )}
+
           {/* 서버 이미지 지정 */}
-          <section className="border-t border-white/5 pt-6">
+          <section className="border-t border-white/5 pt-3">
             <h2 className="text-xl font-bold text-white mb-1">
               서버 대표 이미지 지정
             </h2>
@@ -74,7 +126,17 @@ export function ServerModal({
               최소 512 x 512 크기로 지정해주세요.
             </p>
 
-            <button className="bg-[#ff5c00] hover:bg-[#e65300] text-white text-sm font-bold py-2 px-4 rounded-md transition-colors">
+            <input
+              ref={fileInputRef}
+              type="file"
+              accept="image/*"
+              className="hidden"
+              onChange={handleImageChange}
+            />
+            <button
+              className="bg-[#ff5c00] hover:bg-[#e65300] text-white text-sm font-bold py-2 px-4 rounded-md transition-colors"
+              onClick={handleClickUpload}
+            >
               대표 이미지 업로드
             </button>
           </section>

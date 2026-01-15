@@ -1,8 +1,9 @@
 'use client';
 
-import React, { useEffect, useState, useRef } from 'react';
+import { useEffect, useState } from 'react';
 import { createPortal } from 'react-dom';
 import { colors, typography } from '../design';
+import { useModalImg } from '../hooks/useModalImg';
 
 export function ServerModal({
   isOpen,
@@ -13,38 +14,31 @@ export function ServerModal({
 }) {
   const [mounted, setMounted] = useState(false);
   const [createModal, setCreateModal] = useState(false);
-  const [imageFile, setImageFile] = useState<File | null>(null);
-  const [previewUrl, setPreviewUrl] = useState<string | null>(null);
-  const fileInputRef = useRef<HTMLInputElement | null>(null);
+  const [serverName, setServerName] = useState('');
+  const [generalError, setGeneralError] = useState('');
+  const { previewUrl, fileInputRef, handleClickUpload, handleImageChange } =
+    useModalImg();
 
   useEffect(() => {
     setMounted(true);
     return () => setMounted(false);
   }, []);
 
-  const handleClickUpload = () => {
-    fileInputRef.current?.click();
-  };
-
-  const handleImageChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0];
-    if (!file) return;
-
-    // 1️⃣ 파일 타입 검증
-    if (!file.type.startsWith('image/')) {
-      alert('이미지 파일만 업로드할 수 있습니다.');
-      return;
+  useEffect(() => {
+    if (generalError) {
+      setTimeout(() => {
+        setGeneralError('');
+      }, 3000);
     }
+  }, [generalError]);
 
-    // 2️⃣ 파일 크기 검증 (예: 5MB)
-    if (file.size > 5 * 1024 * 1024) {
-      alert('이미지 크기는 5MB 이하만 가능합니다.');
-      return;
+  const createServer = () => {
+    if (!serverName) {
+      setGeneralError('서버 이름을 입력해주세요.');
+      return false;
     }
-
-    // 3️⃣ 상태 저장
-    setImageFile(file);
-    setPreviewUrl(URL.createObjectURL(file));
+    console.log('createServer');
+    onClose();
   };
 
   if (!isOpen || !mounted) return null;
@@ -85,6 +79,7 @@ export function ServerModal({
             style={{ backgroundColor: colors.gray[700] }}
           />
         </div>
+
         {/* 폼 콘텐츠 */}
         <div className="p-6 pt-4 flex flex-col gap-6">
           {/* 서버 이름 입력 */}
@@ -93,27 +88,36 @@ export function ServerModal({
             <p className="text-xs text-gray-400 mb-4">
               회의를 위한 서버를 만들어 보세요!
             </p>
+            {generalError && (
+              <div
+                className="flex flex-col items-center justify-center w-[100%] p-4 rounded-lg mb-4"
+                style={{
+                  backgroundColor: '#fab1b1ff',
+                  border: `1px solid ${'#ffa0a0ff'}`,
+                }}
+              >
+                <p
+                  style={{
+                    ...typography.body.BodyM,
+                    color: colors.system.error[500],
+                  }}
+                >
+                  {generalError}
+                </p>
+              </div>
+            )}
 
             <label className="block text-xs font-bold text-gray-300 uppercase mb-2">
               이름
             </label>
             <input
               type="text"
+              value={serverName}
+              onChange={(e) => setServerName(e.target.value)}
               placeholder="서버 이름"
               className="w-full bg-[#1e1f22] border-none rounded-md p-3 text-white placeholder:text-gray-500 focus:ring-1 focus:ring-orange-500 outline-none transition-all"
             />
           </section>
-
-          {previewUrl && (
-            <div className="flex flex-col items-center gap-1">
-              <img
-                src={previewUrl}
-                alt="서버 대표 이미지 미리보기"
-                className="w-42 h-32 rounded-lg object-cover border border-white/10"
-              />
-              <span className="text-xs text-gray-400">선택된 이미지</span>
-            </div>
-          )}
 
           {/* 서버 이미지 지정 */}
           <section className="border-t border-white/5 pt-3">
@@ -133,11 +137,22 @@ export function ServerModal({
               className="hidden"
               onChange={handleImageChange}
             />
+
+            {previewUrl && (
+              <div className="flex flex-col items-start mb-4">
+                <img
+                  src={previewUrl}
+                  alt="서버 대표 이미지 미리보기"
+                  className="w-42 h-32 rounded-lg object-cover border border-white/10"
+                />
+              </div>
+            )}
+
             <button
               className="bg-[#ff5c00] hover:bg-[#e65300] text-white text-sm font-bold py-2 px-4 rounded-md transition-colors"
               onClick={handleClickUpload}
             >
-              대표 이미지 업로드
+              {previewUrl ? '이미지 변경' : '대표 이미지 업로드'}
             </button>
           </section>
         </div>
@@ -150,7 +165,10 @@ export function ServerModal({
           >
             닫기
           </button>
-          <button className="flex-1 py-3 px-4 bg-[#ff5c00] text-white rounded-md font-bold hover:bg-[#e65300] transition-colors">
+          <button
+            onClick={createServer}
+            className="flex-1 py-3 px-4 bg-[#ff5c00] text-white rounded-md font-bold hover:bg-[#e65300] transition-colors"
+          >
             다음
           </button>
         </div>

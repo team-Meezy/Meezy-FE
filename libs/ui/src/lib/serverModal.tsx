@@ -4,6 +4,7 @@ import { useEffect, useState } from 'react';
 import { createPortal } from 'react-dom';
 import { colors, typography } from '../design';
 import { useModalImg } from '../hooks/useModalImg';
+import { useServerJoinedTeam } from '../context/ServerJoinedTeamProvider';
 
 interface ServerModalProps {
   isOpen: boolean;
@@ -18,6 +19,7 @@ export function ServerModal({ isOpen, onClose }: ServerModalProps) {
   const [generalError, setGeneralError] = useState('');
   const { previewUrl, fileInputRef, handleClickUpload, handleImageChange } =
     useModalImg();
+  const { setJoined } = useServerJoinedTeam();
 
   useEffect(() => {
     setMounted(true);
@@ -42,6 +44,10 @@ export function ServerModal({ isOpen, onClose }: ServerModalProps) {
       return false;
     }
     console.log('createServer');
+    if (createModal) {
+      setJoined(true);
+      console.log('setJoined');
+    }
     onClose();
   };
 

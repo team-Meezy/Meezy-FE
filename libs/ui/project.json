@@ -1,0 +1,14 @@
+{
+  "name": "ui",
+  "projectType": "library",
+  "sourceRoot": "libs/ui/src",
+  "targets": {
+    "build": {
+      "executor": "@nrwl/next:build",
+      "outputs": ["{projectRoot}/dist/*"],
+      "options": {
+        "buildTarget": "ui:build"
+      }
+    }
+  }
+}

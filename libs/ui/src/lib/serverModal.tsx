@@ -43,11 +43,9 @@ export function ServerModal({ isOpen, onClose }: ServerModalProps) {
       );
       return false;
     }
-    console.log('createServer');
-    if (createModal) {
-      setJoined(true);
-      console.log('setJoined');
-    }
+
+    setJoined(true);
+
     onClose();
   };
 

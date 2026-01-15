@@ -95,7 +95,10 @@ export function Sidebar({ onOpenModal, onCloseModal }: SidebarProps) {
           <Image src={plus} alt="plus" className="w-5" />
         </button>
         {sidebarList.map((team) => (
-          <div className="flex justify-center items-center mr-4">
+          <div
+            key={team.team_id}
+            className="flex justify-center items-center mr-4"
+          >
             <div
               className="w-2 h-2 rounded-full mr-2"
               style={{

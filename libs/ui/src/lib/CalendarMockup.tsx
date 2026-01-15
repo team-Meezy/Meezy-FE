@@ -1,4 +1,4 @@
-import { colors } from '../design';
+import { colors, typography } from '../design';
 
 export function CalendarMockup() {
   const days = [
@@ -40,14 +40,16 @@ export function CalendarMockup() {
 
   return (
     <div
-      className="p-4 rounded-lg"
+      className="p-5 rounded-lg"
       style={{ backgroundColor: colors.gray[900] }}
     >
-      <div className="text-lg font-bold mb-4">10월</div>
+      <div className="mb-4" style={{ ...typography.body.BodyB }}>
+        10월
+      </div>
 
       <div className="grid grid-cols-7 gap-y-3 text-center text-sm">
         {days.map((day) => (
-          <div key={day.value} className="text-gray-500 font-medium">
+          <div key={day.value} className="text-gray-500 font-medium mb-2">
             {day.label}
           </div>
         ))}
@@ -55,7 +57,7 @@ export function CalendarMockup() {
         {calendarDays.map((date, i) => (
           <div
             key={i}
-            className={`py-1 rounded-md cursor-pointer transition-colors
+            className={`py-1 rounded-md cursor-pointer transition-colors mb-2
               ${date.type === 'current' ? 'hover:bg-gray-700' : 'text-gray-500'}
             `}
           >

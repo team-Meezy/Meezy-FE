@@ -5,13 +5,12 @@ import { createPortal } from 'react-dom';
 import { colors, typography } from '../design';
 import { useModalImg } from '../hooks/useModalImg';
 
-export function ServerModal({
-  isOpen,
-  onClose,
-}: {
+interface ServerModalProps {
   isOpen: boolean;
   onClose: () => void;
-}) {
+}
+
+export function ServerModal({ isOpen, onClose }: ServerModalProps) {
   const [mounted, setMounted] = useState(false);
   const [createModal, setCreateModal] = useState(true);
   const [serverName, setServerName] = useState('');
@@ -35,7 +34,9 @@ export function ServerModal({
 
   const createServer = () => {
     if (!serverName) {
-      setGeneralError('서버 이름을 입력해주세요.');
+      setGeneralError(
+        `${createModal ? '서버 이름을 입력해주세요.' : '링크를 입력해주세요.'}`
+      );
       return false;
     }
     console.log('createServer');

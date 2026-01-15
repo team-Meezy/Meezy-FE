@@ -1,7 +1,10 @@
+'use client';
+
 // import { Plus } from 'lucide-react';
 import { colors } from '../design';
 import Image from 'next/image';
 import plus from '../assets/plus.svg';
+import { useServerCreate } from '../context/ServerCreateProvider';
 
 interface SidebarProps {
   onOpenModal: () => void;
@@ -9,6 +12,7 @@ interface SidebarProps {
 }
 
 export function Sidebar({ onOpenModal, onCloseModal }: SidebarProps) {
+  const { imageFile } = useServerCreate();
   return (
     <nav
       className="w-[72px] h-screen flex flex-col items-center"
@@ -23,6 +27,9 @@ export function Sidebar({ onOpenModal, onCloseModal }: SidebarProps) {
       >
         <Image src={plus} alt="plus" className="w-5" />
       </button>
+      {Array.from({ length: 10 }).map((_, index) => (
+        <div key={index}>{imageFile ? '' : <div>da</div>}</div>
+      ))}
     </nav>
   );
 }

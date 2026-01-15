@@ -44,7 +44,7 @@ export function CalendarMockup() {
       style={{ backgroundColor: colors.gray[900] }}
     >
       <div className="mb-4" style={{ ...typography.body.BodyB }}>
-        10월
+        {`${year}년 ${month + 1}월`}
       </div>
 
       <div className="grid grid-cols-7 gap-y-3 text-center text-sm">

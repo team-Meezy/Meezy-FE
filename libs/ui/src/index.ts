@@ -4,4 +4,4 @@ export * from './lib/CalendarMockup';
 export * from './lib/header';
 export * from './lib/sidebar';
 export * from './lib/serverModal';
-export * from './lib/mainClinet';
+export * from './lib/LayoutPage';

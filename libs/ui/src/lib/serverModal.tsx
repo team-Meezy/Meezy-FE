@@ -1,4 +1,7 @@
-import React from 'react';
+'use client';
+
+import React, { useEffect, useState } from 'react';
+import { createPortal } from 'react-dom';
 // import { X } from 'lucide-react';
 
 export function ServerModal({
@@ -8,11 +11,19 @@ export function ServerModal({
   isOpen: boolean;
   onClose: () => void;
 }) {
-  if (!isOpen) return null;
+  const [mounted, setMounted] = useState(false);
 
-  return (
+  useEffect(() => {
+    setMounted(true);
+    return () => setMounted(false);
+  }, []);
+
+  if (!isOpen || !mounted) return null;
+
+  // Portal을 사용하여 document.body에 직접 렌더링
+  return createPortal(
     // 1. 배경 Overlay
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/90 backdrop-blur-[2px]">
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/30 backdrop-blur-[2px]">
       {/* 2. 모달 컨테이너 */}
       <div className="w-[480px] bg-[#2b2d31] rounded-xl shadow-2xl border border-white/5 overflow-hidden">
         {/* 상단 탭 및 닫기 버튼 */}
@@ -82,6 +93,7 @@ export function ServerModal({
           </button>
         </div>
       </div>
-    </div>
+    </div>,
+    document.body
   );
 }

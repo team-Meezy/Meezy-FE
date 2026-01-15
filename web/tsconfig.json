@@ -16,26 +16,26 @@
         "name": "next"
       }
     ],
-    "outDir": "dist",
-    "tsBuildInfoFile": "dist/tsconfig.tsbuildinfo"
+    "outDir": "../apps/web/dist",
+    "tsBuildInfoFile": "../apps/web/dist/tsconfig.tsbuildinfo"
   },
   "include": [
-    "src/**/*.ts",
-    "src/**/*.tsx",
-    "src/**/*.js",
-    "src/**/*.jsx",
-    "../web/.next/types/**/*.ts",
+    "../apps/web/src/**/*.ts",
+    "../apps/web/src/**/*.tsx",
+    "../apps/web/src/**/*.js",
+    "../apps/web/src/**/*.jsx",
+    "../apps/web/.next/types/**/*.ts",
     "../dist/web/.next/types/**/*.ts",
-    "next-env.d.ts"
+    "../apps/web/next-env.d.ts"
   ],
   "exclude": [
-    "out-tsc",
-    "dist",
-    "node_modules",
-    "jest.config.ts",
-    "jest.config.cts",
-    "src/**/*.spec.ts",
-    "src/**/*.test.ts",
-    ".next"
+    "../apps/web/out-tsc",
+    "../apps/web/dist",
+    "../apps/web/node_modules",
+    "../apps/web/jest.config.ts",
+    "../apps/web/jest.config.cts",
+    "../apps/web/src/**/*.spec.ts",
+    "../apps/web/src/**/*.test.ts",
+    "../apps/web/.next"
   ]
 }

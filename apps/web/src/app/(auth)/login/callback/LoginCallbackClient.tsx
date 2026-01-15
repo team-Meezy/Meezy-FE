@@ -5,7 +5,7 @@ import { useRouter, useSearchParams } from 'next/navigation';
 import { ApiError } from '../../../api/types/error';
 import { colors } from '@meezy/ui';
 
-export function OAuthCallbackPage() {
+export function LoginCallbackClient() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const [error, setError] = useState('');
@@ -123,4 +123,4 @@ export function OAuthCallbackPage() {
   );
 }
 
-export default OAuthCallbackPage;
+export default LoginCallbackClient;

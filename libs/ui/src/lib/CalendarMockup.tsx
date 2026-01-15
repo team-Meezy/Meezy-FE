@@ -13,6 +13,7 @@ export function CalendarMockup() {
 
   const year = 2024;
   const month = 9; // 10월
+  const today = new Date();
 
   const firstDayOfMonth = new Date(year, month, 1).getDay();
   const daysInMonth = new Date(year, month + 1, 0).getDate();
@@ -47,21 +48,49 @@ export function CalendarMockup() {
         {`${year}년 ${month + 1}월`}
       </div>
 
-      <div className="grid grid-cols-7 gap-y-3 text-center text-sm">
+      <div className="grid grid-cols-7 gap-1 text-center">
         {days.map((day) => (
-          <div key={day.value} className="text-gray-500 font-medium mb-2">
-            {day.label}
+          <div
+            key={day.value}
+            className="text-gray-500 mb-1 flex items-center justify-center w-6 h-6"
+            style={{
+              ...typography.body.BodyM,
+            }}
+          >
+            <span
+              className={day.label === 'S' ? 'text-gray-500' : 'text-white'}
+            >
+              {day.label}
+            </span>
           </div>
         ))}
 
         {calendarDays.map((date, i) => (
           <div
             key={i}
-            className={`py-1 rounded-md cursor-pointer transition-colors mb-2
-              ${date.type === 'current' ? 'hover:bg-gray-700' : 'text-gray-500'}
+            className={`py-1 rounded-full mb-1 flex justify-center items-center cursor-pointer transition-colors flex-col w-6 h-6
+              ${
+                date.type === 'current'
+                  ? 'hover:bg-[#0760EE66]'
+                  : 'text-gray-500'
+              }
             `}
+            style={{
+              ...typography.body.BodyM,
+            }}
           >
-            {date.day}
+            {date.day === today.getDate() && date.type === 'current' ? (
+              <span
+                className="flex flex-col justify-center items-center rounded-full py-1 w-6 h-6"
+                style={{ backgroundColor: colors.primary[500] }}
+              >
+                {date.day}
+              </span>
+            ) : (
+              <span className="flex flex-col justify-center items-center w-6 h-6">
+                {date.day}
+              </span>
+            )}
           </div>
         ))}
       </div>

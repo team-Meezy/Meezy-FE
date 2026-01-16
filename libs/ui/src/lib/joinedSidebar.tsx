@@ -1,9 +1,10 @@
 'use client';
 
-// import { Plus } from 'lucide-react';
-import { colors } from '../design';
+import { colors, typography } from '../design';
 import Image from 'next/image';
-import plus from '../assets/plus.svg';
+import ChevronRight from '../assets/ChevronRight.svg';
+import joinedPlus from '../assets/joinedPlus.svg';
+import shrap from '../assets/shrap.svg';
 import { useServerCreate } from '../context/ServerCreateProvider';
 import { useState } from 'react';
 
@@ -19,99 +20,131 @@ export function JoinedSidebar({ onOpenModal, onCloseModal }: SidebarProps) {
   const sidebarList = [
     {
       team_id: 1,
-      team_name: 'BLIP',
+      room_name: '대화',
+      type: 'ROOM',
       create_at: null,
-      invite_link: 'kgrkmewfkmdmklssalkd',
     },
     {
       team_id: 2,
-      team_name: 'BLIP2',
+      room_name: '멤버',
+      type: 'MEMBER',
       create_at: null,
-      invite_link: 'kgrkmewfkmdmklssalkd',
-    },
-    {
-      team_id: 3,
-      team_name: 'BLIP3',
-      create_at: null,
-      invite_link: 'kgrkmewfkmdmklssalkd',
-    },
-    {
-      team_id: 4,
-      team_name: 'BLIP4',
-      create_at: null,
-      invite_link: 'kgrkmewfkmdmklssalkd',
-    },
-    {
-      team_id: 5,
-      team_name: 'BLIP5',
-      create_at: null,
-      invite_link: 'kgrkmewfkmdmklssalkd',
-    },
-    {
-      team_id: 6,
-      team_name: 'BLIP6',
-      create_at: null,
-      invite_link: 'kgrkmewfkmdmklssalkd',
-    },
-    {
-      team_id: 7,
-      team_name: 'BLIP7',
-      create_at: null,
-      invite_link: 'kgrkmewfkmdmklssalkd',
-    },
-    {
-      team_id: 8,
-      team_name: 'BLIP8',
-      create_at: null,
-      invite_link: 'kgrkmewfkmdmklssalkd',
-    },
-    {
-      team_id: 9,
-      team_name: 'BLIP9',
-      create_at: null,
-      invite_link: 'kgrkmewfkmdmklssalkd',
-    },
-    {
-      team_id: 10,
-      team_name: 'BLIP10',
-      create_at: null,
-      invite_link: 'kgrkmewfkmdmklssalkd',
     },
   ];
 
+  const roomsrcList = [
+    {
+      room_id: 1,
+      team_id: 1,
+      room_name: '환영',
+      create_at: null,
+    },
+    {
+      room_id: 2,
+      team_id: 1,
+      room_name: '잡담',
+      create_at: null,
+    },
+  ];
+
+  const userList = [
+    {
+      user_id: 1,
+      team_id: 2,
+      user_name: '정명우',
+      create_at: null,
+      img: null,
+    },
+    {
+      user_id: 2,
+      team_id: 2,
+      user_name: '김효현',
+      create_at: null,
+      img: null,
+    },
+  ];
+
+  const teamRoomMap = sidebarList.map((team) => ({
+    ...team,
+    rooms: roomsrcList.filter((room) => room.team_id === team.team_id),
+    users: userList.filter((user) => user.team_id === team.team_id),
+  }));
+
+  const onClickRooms = () => {
+    console.log('room');
+  };
+
+  const onClickMember = () => {
+    console.log('Member');
+  };
+
   return (
     <nav
-      className="w-[100px] h-screen flex flex-col items-center"
+      className="w-[120px] h-screen flex flex-col items-center"
       style={{
-        backgroundColor: colors.gray[900],
+        backgroundColor: colors.black[100],
       }}
     >
-      <div className="mt-12 flex flex-col items-center gap-4 flex-1 overflow-y-auto no-scrollbar w-full">
-        <button
-          className="min-w-14 min-h-14 flex items-center justify-center rounded-lg border border-gray-800 bg-[#262626] hover:bg-[#252525] transition-colors group"
-          aria-label="팀 추가"
-          onClick={onOpenModal}
-        >
-          <Image src={plus} alt="plus" className="w-5" />
-        </button>
-        {sidebarList.map((team) => (
-          <div
-            key={team.team_id}
-            className="flex justify-center items-center mr-4"
-          >
-            <div
-              className="w-2 h-2 rounded-full mr-2"
-              style={{
-                backgroundColor: alarm ? colors.primary[500] : 'transparent',
-              }}
-            />
-
-            <div
-              key={team.team_id}
-              className="min-w-14 min-h-14 flex items-center justify-center rounded-lg border border-gray-800 bg-[#262626] hover:bg-[#252525] transition-colors"
-            >
-              {!imageFile && <div>{team.team_name}</div>}
+      <div
+        className="mt-12 flex justify-center items-center gap-4"
+        style={{ ...typography.body.BodyB }}
+      >
+        <span style={{ color: colors.gray[300] }}>MEEZY</span>
+        <Image src={ChevronRight} alt="ChevronRight" className="w-5" />
+      </div>
+      <div className="w-full h-[1px] bg-white/5 mt-5" />
+      <div className="flex flex-col items-center flex-1 overflow-y-auto no-scrollbar w-full">
+        {teamRoomMap.map((team) => (
+          <div key={team.team_id} className="w-full">
+            {/* 팀 */}
+            <div className="flex justify-center items-center mr-4 gap-4 mt-5">
+              <div
+                className="min-w-14 min-h-6 flex items-center justify-center rounded-lg transition-colors"
+                style={{ color: colors.gray[300], ...typography.body.LBodyB }}
+              >
+                {team.room_name}
+              </div>
+              <button
+                onClick={team.type === 'ROOM' ? onClickRooms : onClickMember}
+              >
+                <Image src={joinedPlus} alt="addRoom" className="w-5" />
+              </button>
             </div>
+
+            {/* 팀의 룸 */}
+            {team.rooms.map((room) => (
+              <div
+                key={room.room_id}
+                className="flex justify-center items-center mr-3 gap-4"
+              >
+                <div
+                  className="min-w-14 min-h-8 mt-3 flex gap-5 items-center justify-center rounded-lg transition-colors"
+                  style={{ color: colors.gray[300], ...typography.body.BodyB }}
+                >
+                  <Image src={shrap} alt="shrap" className="w-4" />
+                  <span>{room.room_name}</span>
+                </div>
+              </div>
+            ))}
+
+            {/* 팀의 사용자 */}
+            {team.users.map((user) => (
+              <div
+                key={user.user_id}
+                className="flex justify-center items-center gap-4"
+              >
+                <div
+                  className="min-w-14 min-h-8 mt-3 flex gap-5 items-center justify-center rounded-lg transition-colors"
+                  style={{ color: colors.gray[300], ...typography.body.BodyB }}
+                >
+                  <div
+                    className="rounded-full w-5 h-5"
+                    style={{ backgroundColor: colors.white[100] }}
+                  />
+                  <span>{user.user_name}</span>
+                </div>
+              </div>
+            ))}
           </div>
         ))}
       </div>

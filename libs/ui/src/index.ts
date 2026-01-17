@@ -11,3 +11,4 @@ export * from './lib/TeamJoined';
 export * from './lib/joinedSidebar';
 export * from './lib/DashboardCard';
 export * from './lib/ParticipationChart';
+export * from './lib/joinedModel'

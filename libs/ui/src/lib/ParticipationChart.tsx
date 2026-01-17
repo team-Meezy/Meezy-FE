@@ -1,39 +1,60 @@
-export const ParticipationChart = ({ percentage = 87.5 }) => {
-  // SVG 원주 계산 (2 * PI * r)
-  const radius = 70;
+interface ParticipationChartProps {
+  percentage?: number;
+  size?: number; // 차트 전체 크기
+}
+
+export const ParticipationChart = ({
+  percentage = 87.5,
+  size = 192, // 기본값 (w-48 = 192px)
+}: ParticipationChartProps) => {
+  const strokeWidth = size * 0.12; // 두께 비율
+  const radius = (size - strokeWidth) / 2;
   const circumference = 2 * Math.PI * radius;
   const strokeDashoffset = circumference - (percentage / 100) * circumference;
 
   return (
-    <div className="relative flex items-center justify-center w-48 h-48">
-      {/* 배경 원 (어두운 회색 부분) */}
-      <svg className="w-full h-full transform -rotate-90">
+    <div
+      className="relative flex items-center justify-center"
+      style={{ width: size, height: size }}
+    >
+      <svg
+        width={size}
+        height={size}
+        viewBox={`0 0 ${size} ${size}`}
+        className="-rotate-90"
+      >
+        {/* 배경 원 */}
         <circle
-          cx="96"
-          cy="96"
+          cx={size / 2}
+          cy={size / 2}
           r={radius}
           stroke="#333"
-          strokeWidth="24"
+          strokeWidth={strokeWidth}
           fill="transparent"
         />
-        {/* 실제 진행률 원 (오렌지색 부분) */}
+
+        {/* 진행률 원 */}
         <circle
-          cx="96"
-          cy="96"
+          cx={size / 2}
+          cy={size / 2}
           r={radius}
           stroke="#ff5c00"
-          strokeWidth="24"
+          strokeWidth={strokeWidth}
           fill="transparent"
           strokeDasharray={circumference}
+          strokeDashoffset={strokeDashoffset}
+          strokeLinecap="round"
           style={{
-            strokeDashoffset,
             transition: 'stroke-dashoffset 0.5s ease',
           }}
-          strokeLinecap="round"
         />
       </svg>
+
       {/* 중앙 텍스트 */}
-      <span className="absolute text-3xl font-bold text-[#ff5c00]">
+      <span
+        className="absolute font-bold text-[#ff5c00]"
+        style={{ fontSize: size * 0.18 }}
+      >
         {percentage}%
       </span>
     </div>

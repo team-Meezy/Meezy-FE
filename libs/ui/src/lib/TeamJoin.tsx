@@ -4,6 +4,7 @@ import { useState } from 'react';
 import { Header, Sidebar, CalendarMockup, ServerModal } from '@meezy/ui';
 import Image from 'next/image';
 import noTeamReceive from '../assets/noTeam_Receive.png';
+import { colors } from '@meezy/ui';
 
 export function TeamJoin() {
   const [isModalOpen, setIsModalOpen] = useState(false);
@@ -28,7 +29,10 @@ export function TeamJoin() {
         {/* [메인] 실제 내용이 들어가는 둥근 박스 */}
         <div className="flex-1 flex overflow-hidden">
           {/* 중앙 빈 화면 박스 */}
-          <main className="flex-[3] bg-[#111111] border border-white/5 flex flex-col items-center justify-center">
+          <main
+            className="flex-[3] border border-white/5 flex flex-col items-center justify-center"
+            style={{ backgroundColor: colors.black[100] }}
+          >
             {/* '아직 참가한 팀이 없습니다' 섹션 */}
             <div className="text-center flex flex-col gap-2">
               <div className="w-32 h-32 bg-[#2a2a2a] rounded-full mx-auto mb-6">

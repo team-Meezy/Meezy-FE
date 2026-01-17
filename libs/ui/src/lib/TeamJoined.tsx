@@ -28,7 +28,7 @@ export function TeamJoined() {
     <div className="flex h-screen w-full bg-[#0c0c0c] text-white overflow-hidden">
       {/* [좌측] 사이드바 - 위아래로 쭉 뻗은 구조 */}
       <Sidebar onOpenModal={onOpenModal} onCloseModal={onCloseModal} />
-      <JoinedSidebar onOpenModal={onOpenModal} onCloseModal={onCloseModal} />
+      <JoinedSidebar />
 
       {/* [중앙+우측] 콘텐츠 영역 컨테이너 */}
       <div className="flex-1 flex flex-col relative overflow-hidden">
@@ -38,10 +38,16 @@ export function TeamJoined() {
         {/* [메인] 실제 내용이 들어가는 둥근 박스 */}
         <div className="flex-1 flex overflow-hidden">
           {/* 중앙 빈 화면 박스 */}
-          <main className="flex-[3] bg-[#111111] border border-white/5 flex flex-col items-center justify-center p-10 gap-3">
+          <main
+            className="flex-[3] border border-white/5 flex flex-col items-center justify-center p-10 gap-3"
+            style={{ backgroundColor: colors.black[100] }}
+          >
             {/* 회의 참여율 섹션 */}
             <section className="w-full bg-[#1e1e1e] rounded-3xl p-12 flex items-center justify-around">
-              <ParticipationChart percentage={87.5} />
+              <ParticipationChart
+                size={Math.min(window.innerWidth * 0.1, 240)}
+                percentage={87.5}
+              />
               <div className="flex flex-col gap-3 p-10">
                 <h1
                   className="text-white leading-snug"

@@ -5,19 +5,33 @@ import Image from 'next/image';
 import ChevronRight from '../assets/ChevronRight.svg';
 import joinedPlus from '../assets/joinedPlus.svg';
 import shrap from '../assets/shrap.svg';
-import { useServerCreate } from '../context/ServerCreateProvider';
 import { useState } from 'react';
+import { JoinedModal } from './joinedModel';
 
-interface SidebarProps {
-  onOpenModal: () => void;
-  onCloseModal: () => void;
-}
+type SidebarProps = {
+  types: 'ROOM' | 'MEMBER' | null;
+};
 
-export function JoinedSidebar({ onOpenModal, onCloseModal }: SidebarProps) {
-  const { imageFile } = useServerCreate();
-  const [alarm, setAlarm] = useState(false);
+export function JoinedSidebar({ types }: SidebarProps) {
+  const [isModalOpen, setIsModalOpen] = useState(false);
+  const [modalType, setModalType] = useState<'ROOM' | 'MEMBER' | null>(null);
 
-  const sidebarList = [
+  const onOpenModal = (type: 'ROOM' | 'MEMBER' | null) => {
+    setModalType(type);
+    setIsModalOpen(true);
+  };
+
+  const onCloseModal = () => {
+    setIsModalOpen(false);
+    setModalType(null);
+  };
+
+  const sidebarList: {
+    team_id: number;
+    room_name: string;
+    type: 'ROOM' | 'MEMBER' | null;
+    create_at: null;
+  }[] = [
     {
       team_id: 1,
       room_name: '대화',
@@ -70,14 +84,6 @@ export function JoinedSidebar({ onOpenModal, onCloseModal }: SidebarProps) {
     users: userList.filter((user) => user.team_id === team.team_id),
   }));
 
-  const onClickRooms = () => {
-    console.log('room');
-  };
-
-  const onClickMember = () => {
-    console.log('Member');
-  };
-
   return (
     <nav
       className="w-[120px] h-screen flex flex-col items-center"
@@ -89,7 +95,13 @@ export function JoinedSidebar({ onOpenModal, onCloseModal }: SidebarProps) {
         className="mt-12 flex justify-center items-center gap-4"
         style={{ ...typography.body.BodyB }}
       >
-        <span style={{ color: colors.gray[300] }}>MEEZY</span>
+        <span
+          style={{
+            color: colors.gray[300],
+          }}
+        >
+          MEEZY
+        </span>
         <Image src={ChevronRight} alt="ChevronRight" className="w-5" />
       </div>
       <div className="w-full h-[1px] bg-white/5 mt-5" />
@@ -105,7 +117,9 @@ export function JoinedSidebar({ onOpenModal, onCloseModal }: SidebarProps) {
                 {team.room_name}
               </div>
               <button
-                onClick={team.type === 'ROOM' ? onClickRooms : onClickMember}
+                onClick={() => {
+                  onOpenModal(team.type);
+                }}
               >
                 <Image src={joinedPlus} alt="addRoom" className="w-5" />
               </button>
@@ -148,6 +162,11 @@ export function JoinedSidebar({ onOpenModal, onCloseModal }: SidebarProps) {
           </div>
         ))}
       </div>
+      <JoinedModal
+        isOpen={isModalOpen}
+        type={modalType}
+        onClose={onCloseModal}
+      />
     </nav>
   );
 }

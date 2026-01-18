@@ -8,11 +8,7 @@ import shrap from '../assets/shrap.svg';
 import { useState } from 'react';
 import { JoinedModal } from './joinedModel';
 
-type SidebarProps = {
-  types: 'ROOM' | 'MEMBER' | null;
-};
-
-export function JoinedSidebar({ types }: SidebarProps) {
+export function JoinedSidebar() {
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [modalType, setModalType] = useState<'ROOM' | 'MEMBER' | null>(null);
 

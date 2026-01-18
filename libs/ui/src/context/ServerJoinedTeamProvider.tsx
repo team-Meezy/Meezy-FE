@@ -5,6 +5,8 @@ import { createContext, useContext, useState } from 'react';
 const ServerJoinedTeamContext = createContext<{
   joined: boolean;
   setJoined: (joined: boolean) => void;
+  meeting: boolean;
+  setMeeting: (meeting: boolean) => void;
 } | null>(null);
 
 export function ServerJoinedTeamProvider({
@@ -13,9 +15,12 @@ export function ServerJoinedTeamProvider({
   children: React.ReactNode;
 }) {
   const [joined, setJoined] = useState(false);
+  const [meeting, setMeeting] = useState(false);
 
   return (
-    <ServerJoinedTeamContext.Provider value={{ joined, setJoined }}>
+    <ServerJoinedTeamContext.Provider
+      value={{ joined, setJoined, meeting, setMeeting }}
+    >
       {children}
     </ServerJoinedTeamContext.Provider>
   );

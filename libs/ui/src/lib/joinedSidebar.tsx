@@ -1,0 +1,168 @@
+'use client';
+
+import { colors, typography } from '../design';
+import Image from 'next/image';
+import ChevronRight from '../assets/ChevronRight.svg';
+import joinedPlus from '../assets/joinedPlus.svg';
+import shrap from '../assets/shrap.svg';
+import { useState } from 'react';
+import { JoinedModal } from './joinedModel';
+
+export function JoinedSidebar() {
+  const [isModalOpen, setIsModalOpen] = useState(false);
+  const [modalType, setModalType] = useState<'ROOM' | 'MEMBER' | null>(null);
+
+  const onOpenModal = (type: 'ROOM' | 'MEMBER' | null) => {
+    setModalType(type);
+    setIsModalOpen(true);
+  };
+
+  const onCloseModal = () => {
+    setIsModalOpen(false);
+    setModalType(null);
+  };
+
+  const sidebarList: {
+    team_id: number;
+    room_name: string;
+    type: 'ROOM' | 'MEMBER' | null;
+    create_at: null;
+  }[] = [
+    {
+      team_id: 1,
+      room_name: '대화',
+      type: 'ROOM',
+      create_at: null,
+    },
+    {
+      team_id: 2,
+      room_name: '멤버',
+      type: 'MEMBER',
+      create_at: null,
+    },
+  ];
+
+  const roomsrcList = [
+    {
+      room_id: 1,
+      team_id: 1,
+      room_name: '환영',
+      create_at: null,
+    },
+    {
+      room_id: 2,
+      team_id: 1,
+      room_name: '잡담',
+      create_at: null,
+    },
+  ];
+
+  const userList = [
+    {
+      user_id: 1,
+      team_id: 2,
+      user_name: '정명우',
+      create_at: null,
+      img: null,
+    },
+    {
+      user_id: 2,
+      team_id: 2,
+      user_name: '김효현',
+      create_at: null,
+      img: null,
+    },
+  ];
+
+  const teamRoomMap = sidebarList.map((team) => ({
+    ...team,
+    rooms: roomsrcList.filter((room) => room.team_id === team.team_id),
+    users: userList.filter((user) => user.team_id === team.team_id),
+  }));
+
+  return (
+    <nav
+      className="w-[120px] h-screen flex flex-col items-center"
+      style={{
+        backgroundColor: colors.black[100],
+      }}
+    >
+      <div
+        className="mt-12 flex justify-center items-center gap-4"
+        style={{ ...typography.body.BodyB }}
+      >
+        <span
+          style={{
+            color: colors.gray[300],
+          }}
+        >
+          MEEZY
+        </span>
+        <Image src={ChevronRight} alt="ChevronRight" className="w-5" />
+      </div>
+      <div className="w-full h-[1px] bg-white/5 mt-5" />
+      <div className="flex flex-col items-center flex-1 overflow-y-auto no-scrollbar w-full">
+        {teamRoomMap.map((team) => (
+          <div key={team.team_id} className="w-full">
+            {/* 팀 */}
+            <div className="flex justify-center items-center mr-4 gap-4 mt-5">
+              <div
+                className="min-w-14 min-h-6 flex items-center justify-center rounded-lg transition-colors"
+                style={{ color: colors.gray[300], ...typography.body.LBodyB }}
+              >
+                {team.room_name}
+              </div>
+              <button
+                onClick={() => {
+                  onOpenModal(team.type);
+                }}
+              >
+                <Image src={joinedPlus} alt="addRoom" className="w-5" />
+              </button>
+            </div>
+
+            {/* 팀의 룸 */}
+            {team.rooms.map((room) => (
+              <div
+                key={room.room_id}
+                className="flex justify-center items-center mr-3 gap-4"
+              >
+                <div
+                  className="min-w-14 min-h-8 mt-3 flex gap-5 items-center justify-center rounded-lg transition-colors"
+                  style={{ color: colors.gray[300], ...typography.body.BodyB }}
+                >
+                  <Image src={shrap} alt="shrap" className="w-4" />
+                  <span>{room.room_name}</span>
+                </div>
+              </div>
+            ))}
+
+            {/* 팀의 사용자 */}
+            {team.users.map((user) => (
+              <div
+                key={user.user_id}
+                className="flex justify-center items-center gap-4"
+              >
+                <div
+                  className="min-w-14 min-h-8 mt-3 flex gap-5 items-center justify-center rounded-lg transition-colors"
+                  style={{ color: colors.gray[300], ...typography.body.BodyB }}
+                >
+                  <div
+                    className="rounded-full w-5 h-5"
+                    style={{ backgroundColor: colors.white[100] }}
+                  />
+                  <span>{user.user_name}</span>
+                </div>
+              </div>
+            ))}
+          </div>
+        ))}
+      </div>
+      <JoinedModal
+        isOpen={isModalOpen}
+        type={modalType}
+        onClose={onCloseModal}
+      />
+    </nav>
+  );
+}

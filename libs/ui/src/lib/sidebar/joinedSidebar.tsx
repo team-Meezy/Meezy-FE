@@ -43,6 +43,7 @@ export function JoinedSidebar({
 }: JoinedSidebarProps) {
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [modalType, setModalType] = useState<'ROOM' | 'MEMBER' | null>(null);
+  const [isContextMenuOpen, setIsContextMenuOpen] = useState(false);
 
   const onOpenModal = (type: 'ROOM' | 'MEMBER' | null) => {
     setModalType(type);
@@ -64,6 +65,11 @@ export function JoinedSidebar({
     rooms: roomsrcList.filter((room) => room.team_id === team.team_id),
     users: userList.filter((user) => user.team_id === team.team_id),
   }));
+
+  const onContextMenu = (e: React.MouseEvent) => {
+    e.preventDefault();
+    setIsContextMenuOpen(true);
+  };
 
   return (
     <nav
@@ -125,7 +131,7 @@ export function JoinedSidebar({
             {team.users.map((user) => (
               <div
                 key={user.user_id}
-                className="flex justify-center items-center gap-4"
+                className="flex flex-col justify-center items-center"
               >
                 <div
                   className="min-w-24 min-h-8 mt-3 flex gap-5 items-center justify-center rounded-lg transition-colors"
@@ -135,8 +141,14 @@ export function JoinedSidebar({
                     className="rounded-full w-5 h-5"
                     style={{ backgroundColor: colors.white[100] }}
                   />
-                  <span>{user.user_name}</span>
+
+                  <span onContextMenu={onContextMenu}>{user.user_name}</span>
                 </div>
+                {isContextMenuOpen && (
+                  <div className="relative">
+                    <button onClick={onContextMenu}>dsa</button>
+                  </div>
+                )}
               </div>
             ))}
           </div>

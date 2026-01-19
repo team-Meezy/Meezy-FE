@@ -1,9 +1,5 @@
 import './global.css';
-import {
-  LayoutPage,
-  ServerCreateProvider,
-  ServerJoinedTeamProvider,
-} from '@meezy/ui';
+import { ServerCreateProvider, ServerJoinedTeamProvider } from '@meezy/ui';
 
 export const metadata = {
   title: 'Welcome to web',

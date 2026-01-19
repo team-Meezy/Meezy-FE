@@ -3,7 +3,7 @@
 import { useEffect, useState } from 'react';
 import { createPortal } from 'react-dom';
 import { colors, typography } from '../../design';
-import { useModalImg } from '../../hooks/useModalImg';
+import { useImg } from '../../hooks/useImg';
 import { useServerJoinedTeam } from '../../context/ServerJoinedTeamProvider';
 
 interface UserKickModalProps {

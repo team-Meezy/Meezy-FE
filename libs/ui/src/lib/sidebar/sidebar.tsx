@@ -8,75 +8,17 @@ import { useState } from 'react';
 
 interface SidebarProps {
   onOpenModal: () => void;
-  onCloseModal: () => void;
+  projectSidebarList: {
+    team_id: number;
+    team_name: string;
+    create_at: null;
+    invite_link: string;
+  }[];
 }
 
-export function Sidebar({ onOpenModal, onCloseModal }: SidebarProps) {
+export function Sidebar({ onOpenModal, projectSidebarList }: SidebarProps) {
   const { imageFile } = useServerCreate();
   const [alarm, setAlarm] = useState(false);
-
-  const sidebarList = [
-    {
-      team_id: 1,
-      team_name: 'BLIP',
-      create_at: null,
-      invite_link: 'kgrkmewfkmdmklssalkd',
-    },
-    {
-      team_id: 2,
-      team_name: 'BLIP2',
-      create_at: null,
-      invite_link: 'kgrkmewfkmdmklssalkd',
-    },
-    {
-      team_id: 3,
-      team_name: 'BLIP3',
-      create_at: null,
-      invite_link: 'kgrkmewfkmdmklssalkd',
-    },
-    {
-      team_id: 4,
-      team_name: 'BLIP4',
-      create_at: null,
-      invite_link: 'kgrkmewfkmdmklssalkd',
-    },
-    {
-      team_id: 5,
-      team_name: 'BLIP5',
-      create_at: null,
-      invite_link: 'kgrkmewfkmdmklssalkd',
-    },
-    {
-      team_id: 6,
-      team_name: 'BLIP6',
-      create_at: null,
-      invite_link: 'kgrkmewfkmdmklssalkd',
-    },
-    {
-      team_id: 7,
-      team_name: 'BLIP7',
-      create_at: null,
-      invite_link: 'kgrkmewfkmdmklssalkd',
-    },
-    {
-      team_id: 8,
-      team_name: 'BLIP8',
-      create_at: null,
-      invite_link: 'kgrkmewfkmdmklssalkd',
-    },
-    {
-      team_id: 9,
-      team_name: 'BLIP9',
-      create_at: null,
-      invite_link: 'kgrkmewfkmdmklssalkd',
-    },
-    {
-      team_id: 10,
-      team_name: 'BLIP10',
-      create_at: null,
-      invite_link: 'kgrkmewfkmdmklssalkd',
-    },
-  ];
 
   return (
     <nav
@@ -93,7 +35,7 @@ export function Sidebar({ onOpenModal, onCloseModal }: SidebarProps) {
         >
           <Image src={plus} alt="plus" className="w-5" />
         </button>
-        {sidebarList.map((team) => (
+        {projectSidebarList.map((team) => (
           <div
             key={team.team_id}
             className="flex justify-center items-center mr-4"

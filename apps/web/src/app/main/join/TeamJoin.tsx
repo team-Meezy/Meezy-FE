@@ -3,8 +3,9 @@
 import { useState } from 'react';
 import { Header, Sidebar, CalendarMockup, ServerModal } from '@meezy/ui';
 import Image from 'next/image';
-import noTeamReceive from '../../../assets/noTeam_Receive.png'
-import { colors } from '@meezy/ui'
+import noTeamReceive from '../../../assets/noTeam_Receive.png';
+import { colors } from '@meezy/ui';
+import { projectSidebarList } from '../context/list';
 
 export function TeamJoin() {
   const [isModalOpen, setIsModalOpen] = useState(false);
@@ -12,14 +13,13 @@ export function TeamJoin() {
     setIsModalOpen(true);
   };
 
-  const onCloseModal = () => {
-    setIsModalOpen(false);
-  };
-
   return (
     <div className="flex h-screen w-full bg-[#0c0c0c] text-white overflow-hidden">
       {/* [좌측] 사이드바 - 위아래로 쭉 뻗은 구조 */}
-      <Sidebar onOpenModal={onOpenModal} onCloseModal={onCloseModal} />
+      <Sidebar
+        onOpenModal={onOpenModal}
+        projectSidebarList={projectSidebarList}
+      />
 
       {/* [중앙+우측] 콘텐츠 영역 컨테이너 */}
       <div className="flex-1 flex flex-col relative overflow-hidden">

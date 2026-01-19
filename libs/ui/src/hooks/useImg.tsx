@@ -3,7 +3,7 @@
 import { useState, useRef, useEffect } from 'react';
 import { useServerCreate } from '../context/ServerCreateProvider';
 
-export const useModalImg = () => {
+export const useImg = () => {
   const { setImageFile } = useServerCreate();
   const [previewUrl, setPreviewUrl] = useState<string | null>(null);
   const fileInputRef = useRef<HTMLInputElement | null>(null);
@@ -18,6 +18,11 @@ export const useModalImg = () => {
 
   const handleClickUpload = () => {
     fileInputRef.current?.click();
+  };
+
+  const handleDeleteImg = () => {
+    setPreviewUrl(null);
+    setImageFile(null);
   };
 
   const handleImageChange = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -46,5 +51,6 @@ export const useModalImg = () => {
     fileInputRef,
     handleClickUpload,
     handleImageChange,
+    handleDeleteImg,
   };
 };

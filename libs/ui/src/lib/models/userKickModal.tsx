@@ -17,8 +17,6 @@ export function UserKickModal({ isOpen, type, onClose }: UserKickModalProps) {
   const [serverName, setServerName] = useState('');
   const [serverLink, setServerLink] = useState('');
   const [generalError, setGeneralError] = useState('');
-  const { previewUrl, fileInputRef, handleClickUpload, handleImageChange } =
-    useModalImg();
   const { setJoined } = useServerJoinedTeam();
 
   useEffect(() => {
@@ -93,9 +91,9 @@ export function UserKickModal({ isOpen, type, onClose }: UserKickModalProps) {
 
             <input
               type="text"
-              value={serverLink}
+              value={serverName}
               onChange={(e) => {
-                setServerLink(e.target.value);
+                setServerName(e.target.value);
               }}
               placeholder={type === 'ROOM' ? '채널 이름' : 'http:sss....'}
               className="w-full border-none rounded-lg p-3 placeholder:text-gray-500 outline-none transition-all"

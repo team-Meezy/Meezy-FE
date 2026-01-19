@@ -1,5 +1,9 @@
 import './global.css';
-import { ServerCreateProvider, ServerJoinedTeamProvider } from '@meezy/ui';
+import {
+  ServerCreateProvider,
+  ServerJoinedTeamProvider,
+  ServerStateProvider,
+} from '@meezy/ui';
 
 export const metadata = {
   title: 'Welcome to web',
@@ -15,7 +19,9 @@ export default function RootLayout({
     <html lang="en">
       <body>
         <ServerCreateProvider>
-          <ServerJoinedTeamProvider>{children}</ServerJoinedTeamProvider>
+          <ServerJoinedTeamProvider>
+            <ServerStateProvider>{children}</ServerStateProvider>
+          </ServerJoinedTeamProvider>
         </ServerCreateProvider>
       </body>
     </html>

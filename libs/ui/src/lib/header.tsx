@@ -1,8 +1,18 @@
 import { colors, typography } from '@meezy/ui';
 import { useServerJoinedTeam } from '../context/ServerJoinedTeamProvider';
+import { useServerState } from '../context/ServerStateProvider';
 
 export function Header() {
   const { joined, meeting, setMeeting } = useServerJoinedTeam();
+  const { setChatRoom, setServerProfile, setFeedback, setSummary } =
+    useServerState();
+
+  const onClickMain = () => {
+    setChatRoom(false);
+    setServerProfile(false);
+    setFeedback(false);
+    setSummary(false);
+  };
 
   return (
     <header
@@ -13,7 +23,10 @@ export function Header() {
       }}
     >
       {/* 서비스 로고 */}
-      <h1 className="text-[#ff5c00] font-extrabold text-2xl tracking-tight">
+      <h1
+        className="text-[#ff5c00] font-extrabold text-2xl tracking-tight cursor-pointer"
+        onClick={onClickMain}
+      >
         Meezy.
       </h1>
 

@@ -20,7 +20,10 @@ export const DashboardCard = ({
         </p>
       </div>
 
-      <button className="mt-8 bg-[#ff5c00] hover:bg-[#e65300] text-white font-bold py-3 px-6 rounded-full w-fit transition-colors">
+      <button
+        className="mt-8 bg-[#ff5c00] hover:bg-[#e65300] text-white font-bold py-3 px-6 rounded-full w-fit transition-colors"
+        onClick={onClick}
+      >
         {buttonText}
       </button>
     </div>

@@ -1,6 +1,6 @@
 'use client';
 
-import { createContext, useContext, useState } from 'react';
+import { createContext, useContext, useState, type ReactNode } from 'react';
 
 const ServerStateContext = createContext<{
   feedback: boolean;
@@ -13,11 +13,7 @@ const ServerStateContext = createContext<{
   setServerProfile: (open: boolean) => void;
 } | null>(null);
 
-export function ServerStateProvider({
-  children,
-}: {
-  children: React.ReactNode;
-}) {
+export function ServerStateProvider({ children }: { children: ReactNode }) {
   const [chatRoom, setChatRoom] = useState(false);
   const [feedback, setFeedback] = useState(false);
   const [summary, setSummary] = useState(false);

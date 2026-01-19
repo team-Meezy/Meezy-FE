@@ -48,30 +48,29 @@ export function MainRoom({ setFeedback, setSummary }: MainRoomProps) {
       </section>
       {/* 회의 피드백 섹션 */}
       <div className="w-full grid grid-cols-2 gap-5">
-        <div onClick={() => setFeedback(true)}>
-          <DashboardCard
-            title="회의 피드백"
-            description={
-              <>
-                Meezy.의 AI 도우미인 “리시브"가 <br />
-                회의를 정리해 피드백 해서 회의의 질을 높여 드려요!
-              </>
-            }
-            buttonText="회의 피드백 보기"
-          />
-        </div>
-        <div onClick={() => setSummary(true)}>
-          <DashboardCard
-            title="회의 요약"
-            description={
-              <>
-                Meezy.의 AI 도우미인 “리시브"가 <br />
-                회의를 정리해 요약해서 회의를 보다 더 관리하기 쉽게 도와줘요!
-              </>
-            }
-            buttonText="회의 요약 보기"
-          />
-        </div>
+        <DashboardCard
+          title="회의 피드백"
+          description={
+            <>
+              Meezy.의 AI 도우미인 “리시브"가 <br />
+              회의를 정리해 피드백 해서 회의의 질을 높여 드려요!
+            </>
+          }
+          buttonText="회의 피드백 보기"
+          onClick={() => setFeedback(true)}
+        />
+
+        <DashboardCard
+          title="회의 요약"
+          description={
+            <>
+              Meezy.의 AI 도우미인 “리시브"가 <br />
+              회의를 정리해 요약해서 회의를 보다 더 관리하기 쉽게 도와줘요!
+            </>
+          }
+          buttonText="회의 요약 보기"
+          onClick={() => setSummary(true)}
+        />
       </div>
     </main>
   );

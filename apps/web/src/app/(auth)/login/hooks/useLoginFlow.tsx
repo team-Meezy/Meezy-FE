@@ -42,7 +42,7 @@ export function useLoginFlow({
   };
 
   const validateSuccessStep = () => {
-    router.push('/');
+    router.push('/main');
     return true;
   };
 

@@ -3,8 +3,8 @@
 import { useState } from 'react';
 import { Header, Sidebar, CalendarMockup, ServerModal } from '@meezy/ui';
 import Image from 'next/image';
-import noTeamReceive from '../assets/noTeam_Receive.png';
-import { colors } from '@meezy/ui';
+import noTeamReceive from '../../../assets/noTeam_Receive.png'
+import { colors } from '@meezy/ui'
 
 export function TeamJoin() {
   const [isModalOpen, setIsModalOpen] = useState(false);

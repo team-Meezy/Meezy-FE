@@ -1,10 +1,9 @@
 'use client';
 
-// import { Plus } from 'lucide-react';
-import { colors } from '../design';
+import { colors } from '../../design';
 import Image from 'next/image';
-import plus from '../assets/plus.svg';
-import { useServerCreate } from '../context/ServerCreateProvider';
+import plus from '../../assets/plus.svg';
+import { useServerCreate } from '../../context/ServerCreateProvider';
 import { useState } from 'react';
 
 interface SidebarProps {

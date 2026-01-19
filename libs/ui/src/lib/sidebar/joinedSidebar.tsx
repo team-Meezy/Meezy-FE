@@ -1,12 +1,12 @@
 'use client';
 
-import { colors, typography } from '../design';
+import { colors, typography } from '../../design';
 import Image from 'next/image';
-import ChevronRight from '../assets/ChevronRight.svg';
-import joinedPlus from '../assets/joinedPlus.svg';
-import shrap from '../assets/shrap.svg';
+import ChevronRight from '../../assets/ChevronRight.svg';
+import joinedPlus from '../../assets/joinedPlus.svg';
+import shrap from '../../assets/shrap.svg';
 import { useState } from 'react';
-import { JoinedModal } from './joinedModel';
+import { JoinedModal } from '../models/joinedModel';
 
 interface JoinedSidebarProps {
   chatRoom: boolean;

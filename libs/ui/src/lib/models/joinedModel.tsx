@@ -2,9 +2,9 @@
 
 import { useEffect, useState } from 'react';
 import { createPortal } from 'react-dom';
-import { colors, typography } from '../design';
-import { useModalImg } from '../hooks/useModalImg';
-import { useServerJoinedTeam } from '../context/ServerJoinedTeamProvider';
+import { colors, typography } from '../../design';
+import { useModalImg } from '../../hooks/useModalImg';
+import { useServerJoinedTeam } from '../../context/ServerJoinedTeamProvider';
 import Link from '../assets/link.svg';
 
 interface JoinedModalProps {

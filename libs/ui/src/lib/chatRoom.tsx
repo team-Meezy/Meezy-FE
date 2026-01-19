@@ -8,7 +8,7 @@ import { useChatScroll } from '../hooks/useChatScroll';
 
 interface Message {
   id: number;
-  chatingRoomId: number | null;
+  chatRoomId: number | null;
   userName: string;
   time: string;
   content: string[];
@@ -23,14 +23,14 @@ export function ChatRoom({ roomId, roomName }: ChatRoomProps) {
   const [messages, setMessages] = useState<Message[]>([
     {
       id: 1,
-      chatingRoomId: 1,
+      chatRoomId: 1,
       userName: '손희찬',
       time: '2025. 9. 30. 오후 2:30',
       content: ['hello, my name is hyohyun'],
     },
     {
       id: 2,
-      chatingRoomId: 1,
+      chatRoomId: 1,
       userName: '김효현',
       time: '2025. 9. 30. 오후 2:30',
       content: ['hello, my name is hyohyun'],
@@ -38,7 +38,7 @@ export function ChatRoom({ roomId, roomName }: ChatRoomProps) {
   ]);
   const [input, setInput] = useState('');
 
-  const roomMessages = messages.filter((msg) => msg.chatingRoomId === roomId);
+  const roomMessages = messages.filter((msg) => msg.chatRoomId === roomId);
 
   const { containerRef, handleScroll, scrollToBottom, showNewMessageNotice } =
     useChatScroll(roomMessages);
@@ -47,7 +47,7 @@ export function ChatRoom({ roomId, roomName }: ChatRoomProps) {
     if (input.trim() && roomId !== null) {
       const newMessage: Message = {
         id: Date.now(),
-        chatingRoomId: roomId,
+        chatRoomId: roomId,
         userName: '나',
         time: new Date().toLocaleString(),
         content: [input],
@@ -76,7 +76,7 @@ export function ChatRoom({ roomId, roomName }: ChatRoomProps) {
       </div>
 
       {/* 채팅 영역 */}
-      <div className="flex flex-col flex-1 overflow-hidden">
+      <div className="flex flex-col flex-1 overflow-hidden relative">
         <div
           ref={containerRef}
           className="flex-1 overflow-y-auto p-4 flex flex-col gap-6 no-scrollbar"
@@ -122,7 +122,7 @@ export function ChatRoom({ roomId, roomName }: ChatRoomProps) {
         {/* 새 메시지 알림 */}
         {showNewMessageNotice && (
           <div
-            className="absolute bottom-20 left-1/3 translate-x-1/3 px-4 py-2 rounded-full text-white cursor-pointer"
+            className="absolute bottom-20 left-1/2 -translate-x-2/3 px-4 py-2 rounded-full text-white cursor-pointer"
             style={{
               backgroundColor: colors.primary[500],
               ...typography.body.BodyB,

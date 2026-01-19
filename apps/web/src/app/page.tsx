@@ -1,15 +1,5 @@
-import {
-  LayoutPage,
-  ServerCreateProvider,
-  ServerJoinedTeamProvider,
-} from '@meezy/ui';
+import Login from './(auth)/login/page';
 
 export default function Page() {
-  return (
-    <ServerCreateProvider>
-      <ServerJoinedTeamProvider>
-        <LayoutPage />
-      </ServerJoinedTeamProvider>
-    </ServerCreateProvider>
-  );
+  return <Login />;
 }

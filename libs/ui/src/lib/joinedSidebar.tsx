@@ -8,7 +8,17 @@ import shrap from '../assets/shrap.svg';
 import { useState } from 'react';
 import { JoinedModal } from './joinedModel';
 
-export function JoinedSidebar() {
+interface JoinedSidebarProps {
+  chatRoom: boolean;
+  setChatRoom: (chatRoom: boolean) => void;
+  setSelectedRoomId: (roomId: string) => void;
+}
+
+export function JoinedSidebar({
+  chatRoom,
+  setChatRoom,
+  setSelectedRoomId,
+}: JoinedSidebarProps) {
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [modalType, setModalType] = useState<'ROOM' | 'MEMBER' | null>(null);
 
@@ -20,6 +30,11 @@ export function JoinedSidebar() {
   const onCloseModal = () => {
     setIsModalOpen(false);
     setModalType(null);
+  };
+
+  const onClickChatRoom = (room_id: number) => {
+    setSelectedRoomId(String(room_id));
+    setChatRoom(true);
   };
 
   const sidebarList: {
@@ -105,18 +120,14 @@ export function JoinedSidebar() {
         {teamRoomMap.map((team) => (
           <div key={team.team_id} className="w-full">
             {/* 팀 */}
-            <div className="flex justify-center items-center mr-4 gap-4 mt-5">
+            <div className="flex justify-center items-center gap-4 mt-5">
               <div
                 className="min-w-14 min-h-6 flex items-center justify-center rounded-lg transition-colors"
                 style={{ color: colors.gray[300], ...typography.body.LBodyB }}
               >
                 {team.room_name}
               </div>
-              <button
-                onClick={() => {
-                  onOpenModal(team.type);
-                }}
-              >
+              <button onClick={() => onOpenModal(team.type)}>
                 <Image src={joinedPlus} alt="addRoom" className="w-5" />
               </button>
             </div>
@@ -125,11 +136,14 @@ export function JoinedSidebar() {
             {team.rooms.map((room) => (
               <div
                 key={room.room_id}
-                className="flex justify-center items-center mr-3 gap-4"
+                className="flex justify-center items-center gap-4"
               >
                 <div
-                  className="min-w-14 min-h-8 mt-3 flex gap-5 items-center justify-center rounded-lg transition-colors"
+                  className="min-w-24 min-h-8 mt-3 flex gap-5 items-center justify-center rounded-lg transition-colors hover:bg-white/5 cursor-pointer"
                   style={{ color: colors.gray[300], ...typography.body.BodyB }}
+                  onClick={() => {
+                    onClickChatRoom(room.room_id);
+                  }}
                 >
                   <Image src={shrap} alt="shrap" className="w-4" />
                   <span>{room.room_name}</span>

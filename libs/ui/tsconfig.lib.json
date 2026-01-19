@@ -8,5 +8,5 @@
     "jsx": "react-jsx",
     "lib": ["dom", "esnext"]
   },
-  "include": ["src/**/*.ts", "src/**/*.tsx", "../../apps/web/src/app/main/LayoutPage.tsx", "../../apps/web/src/app/main/joined/TeamJoined.tsx", "../../apps/web/src/app/main/join/TeamJoin.tsx"]
+  "include": ["src/**/*.ts", "src/**/*.tsx"]
 }

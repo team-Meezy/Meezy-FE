@@ -104,14 +104,3 @@ export function TeamJoined() {
     </div>
   );
 }
-
-// <div>
-//         <div>
-//           {messages.map((msg, i) => (
-//             <div key={i}>{msg}</div>
-//           ))}
-//         </div>
-
-//         <input value={input} onChange={(e) => setInput(e.target.value)} />
-//         <button onClick={sendMessage}>전송</button>
-//       </div>

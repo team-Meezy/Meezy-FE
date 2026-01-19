@@ -6,7 +6,7 @@ export function Header() {
 
   return (
     <header
-      className="w-full flex justify-between items-center p-6"
+      className="w-full flex justify-between items-center p-6 border-l border-white/5"
       style={{
         ...typography.body.BodyM,
         backgroundColor: colors.black[100],

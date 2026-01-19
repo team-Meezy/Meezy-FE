@@ -11,8 +11,8 @@ export function CalendarMockup() {
     { label: 'S', value: 6 },
   ];
 
-  const year = 2024;
-  const month = 9; // 10월
+  const year = 2026;
+  const month = 0; // 1월
   const today = new Date();
 
   const firstDayOfMonth = new Date(year, month, 1).getDay();

@@ -3,7 +3,6 @@ export * from './CalendarMockup';
 export * from './header';
 export * from './sidebar/sidebar';
 export * from './models/serverModal';
-export * from '../../../../apps/web/src/app/main/LayoutPage';
 export * from './sidebar/joinedSidebar';
 export * from './DashboardCard';
 export * from './ParticipationChart';

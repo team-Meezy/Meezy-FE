@@ -3,7 +3,7 @@
 import { useEffect, useState } from 'react';
 import { createPortal } from 'react-dom';
 import { colors, typography } from '../../design';
-import { useModalImg } from '../../hooks/useModalImg';
+import { useImg } from '../../hooks/useImg';
 import { useServerJoinedTeam } from '../../context/ServerJoinedTeamProvider';
 import Link from '../assets/link.svg';
 
@@ -19,7 +19,7 @@ export function JoinedModal({ isOpen, type, onClose }: JoinedModalProps) {
   const [serverLink, setServerLink] = useState('');
   const [generalError, setGeneralError] = useState('');
   const { previewUrl, fileInputRef, handleClickUpload, handleImageChange } =
-    useModalImg();
+    useImg();
   const { setJoined } = useServerJoinedTeam();
 
   useEffect(() => {

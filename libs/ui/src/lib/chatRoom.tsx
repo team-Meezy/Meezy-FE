@@ -7,26 +7,30 @@ import shrap from '../assets/shrap.svg';
 
 interface Message {
   id: number;
+  chatingRoomId: number | null;
   userName: string;
   time: string;
   content: string[];
 }
 
 interface ChatRoomProps {
-  roomId: string | null;
+  roomId: number | null;
+  roomName: string | null;
 }
 
-export function ChatRoom({ roomId }: ChatRoomProps) {
+export function ChatRoom({ roomId, roomName }: ChatRoomProps) {
   // 실제 데이터 구조에 맞게 초기값 예시를 추가했습니다.
   const [messages, setMessages] = useState<Message[]>([
     {
       id: 1,
+      chatingRoomId: 1,
       userName: '손희찬',
       time: '2025. 9. 30. 오후 2:30',
       content: ['hello, my name is hyohyun'],
     },
     {
       id: 2,
+      chatingRoomId: 1,
       userName: '김효현',
       time: '2025. 9. 30. 오후 2:30',
       content: ['hello, my name is hyohyun'],
@@ -38,6 +42,7 @@ export function ChatRoom({ roomId }: ChatRoomProps) {
     if (input.trim()) {
       const newMessage: Message = {
         id: Date.now(),
+        chatingRoomId: roomId,
         userName: '나', // 실제 유저 이름으로 대체 가능
         time: new Date().toLocaleString(),
         content: [input],
@@ -52,7 +57,7 @@ export function ChatRoom({ roomId }: ChatRoomProps) {
       className="flex-[3] border border-white/5 flex flex-col h-full"
       style={{ backgroundColor: colors.black[100] }}
     >
-      {/* 방 이름 (고정) */}
+      {/* 방 이름 */}
       <div
         className="w-full flex items-center gap-3 px-4 py-5 shrink-0"
         style={{
@@ -62,51 +67,60 @@ export function ChatRoom({ roomId }: ChatRoomProps) {
         }}
       >
         <Image src={shrap} alt="shrap" className="w-4" />
-        <span>환영</span>
+        <span>{roomName}</span>
       </div>
 
       {/* 채팅 영역 */}
       <div className="flex flex-col flex-1 overflow-hidden">
         {/* 채팅 내용 */}
         <div
-          className="flex-1 overflow-y-auto p-4 flex flex-col gap-6" // 메시지 간 간격 24px(gap-6)
+          className="flex-1 overflow-y-auto p-4 flex flex-col gap-6 no-scrollbar"
           style={{ backgroundColor: colors.black[100] }}
         >
-          {messages.map((msg) => (
-            <div key={msg.id} className="flex gap-3">
-              {/* 프로필 이미지 (원형) */}
-              <div className="w-8 h-8 rounded-full bg-[#D9D9D9] shrink-0" />
+          {messages
+            .filter((msg) => msg.chatingRoomId === roomId)
+            .map((msg) => (
+              <div key={msg.id} className="flex gap-3">
+                {/* 프로필 이미지 (원형) */}
+                <div className="w-8 h-8 rounded-full bg-[#D9D9D9] shrink-0" />
 
-              <div className="flex flex-col gap-1.5">
-                <div className="flex items-center gap-2">
-                  {/* 사용자 이름 */}
-                  <span style={{ ...typography.body.BodyB, color: '#FFFFFF' }}>
-                    {msg.userName}
-                  </span>
-                  {/* 시간 정보 */}
-                  <span style={{ ...typography.label.labelB, color: colors.gray[400] }}>
-                    {msg.time}
-                  </span>
-                </div>
-
-                {/* 메시지 내용 (여러 줄 대응) */}
-                <div className="flex flex-col gap-1">
-                  {msg.content.map((line, idx) => (
-                    <p
-                      key={idx}
+                <div className="flex flex-col gap-1.5">
+                  <div className="flex items-center gap-2">
+                    {/* 사용자 이름 */}
+                    <span
+                      style={{ ...typography.body.BodyB, color: '#FFFFFF' }}
+                    >
+                      {msg.userName}
+                    </span>
+                    {/* 시간 정보 */}
+                    <span
                       style={{
-                        ...typography.body.BodyM,
-                        color: '#FFFFFF',
-                        opacity: 0.9,
+                        ...typography.label.labelB,
+                        color: colors.gray[400],
                       }}
                     >
-                      {line}
-                    </p>
-                  ))}
+                      {msg.time}
+                    </span>
+                  </div>
+
+                  {/* 메시지 내용 (여러 줄 대응) */}
+                  <div className="flex flex-col gap-1">
+                    {msg.content.map((line, idx) => (
+                      <p
+                        key={idx}
+                        style={{
+                          ...typography.body.BodyM,
+                          color: '#FFFFFF',
+                          opacity: 0.9,
+                        }}
+                      >
+                        {line}
+                      </p>
+                    ))}
+                  </div>
                 </div>
               </div>
-            </div>
-          ))}
+            ))}
         </div>
 
         {/* 입력창 (고정) */}

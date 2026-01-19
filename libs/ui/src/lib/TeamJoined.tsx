@@ -16,7 +16,7 @@ import { colors, typography } from '@meezy/ui';
 export function TeamJoined() {
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [chatRoom, setChatRoom] = useState(false);
-  const [selectedRoomId, setSelectedRoomId] = useState<string | null>(null);
+  const [selectedRoomId, setSelectedRoomId] = useState<number | null>(null);
 
   const onOpenModal = () => {
     setIsModalOpen(true);
@@ -26,6 +26,62 @@ export function TeamJoined() {
     setIsModalOpen(false);
   };
 
+  const sidebarList: {
+    team_id: number;
+    room_name: string;
+    type: 'ROOM' | 'MEMBER' | null;
+    create_at: null;
+  }[] = [
+    {
+      team_id: 1,
+      room_name: '대화',
+      type: 'ROOM',
+      create_at: null,
+    },
+    {
+      team_id: 2,
+      room_name: '멤버',
+      type: 'MEMBER',
+      create_at: null,
+    },
+  ];
+
+  const roomsrcList = [
+    {
+      room_id: 1,
+      team_id: 1,
+      room_name: '환영',
+      create_at: null,
+    },
+    {
+      room_id: 2,
+      team_id: 1,
+      room_name: '잡담',
+      create_at: null,
+    },
+  ];
+
+  const userList = [
+    {
+      user_id: 1,
+      team_id: 2,
+      user_name: '정명우',
+      create_at: null,
+      img: null,
+    },
+    {
+      user_id: 2,
+      team_id: 2,
+      user_name: '김효현',
+      create_at: null,
+      img: null,
+    },
+  ];
+
+  const roomNameFind =
+    roomsrcList.find((room) => room.room_id === selectedRoomId)?.room_name ??
+    null;
+
   return (
     <div className="flex h-screen w-full bg-[#0c0c0c] text-white overflow-hidden">
       {/* [좌측] 사이드바 - 위아래로 쭉 뻗은 구조 */}
@@ -34,6 +90,9 @@ export function TeamJoined() {
         chatRoom={chatRoom}
         setChatRoom={setChatRoom}
         setSelectedRoomId={setSelectedRoomId}
+        sidebarList={sidebarList}
+        roomsrcList={roomsrcList}
+        userList={userList}
       />
 
       {/* [중앙+우측] 콘텐츠 영역 컨테이너 */}
@@ -45,7 +104,7 @@ export function TeamJoined() {
         <div className="flex-1 flex overflow-hidden">
           {/* 중앙 빈 화면 박스 */}
           {chatRoom ? (
-            <ChatRoom roomId={selectedRoomId} />
+            <ChatRoom roomId={selectedRoomId} roomName={roomNameFind} />
           ) : (
             <main
               className="flex-[3] border border-white/5 flex flex-col items-center justify-center p-10 gap-3"

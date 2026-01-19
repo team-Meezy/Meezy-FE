@@ -11,13 +11,35 @@ import { JoinedModal } from './joinedModel';
 interface JoinedSidebarProps {
   chatRoom: boolean;
   setChatRoom: (chatRoom: boolean) => void;
-  setSelectedRoomId: (roomId: string) => void;
+  setSelectedRoomId: (roomId: number) => void;
+  sidebarList: {
+    team_id: number;
+    room_name: string;
+    type: 'ROOM' | 'MEMBER' | null;
+    create_at: null;
+  }[];
+  roomsrcList: {
+    room_id: number;
+    team_id: number;
+    room_name: string;
+    create_at: null;
+  }[];
+  userList: {
+    user_id: number;
+    team_id: number;
+    user_name: string;
+    create_at: null;
+    img: null;
+  }[];
 }
 
 export function JoinedSidebar({
   chatRoom,
   setChatRoom,
   setSelectedRoomId,
+  sidebarList,
+  roomsrcList,
+  userList,
 }: JoinedSidebarProps) {
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [modalType, setModalType] = useState<'ROOM' | 'MEMBER' | null>(null);
@@ -33,61 +55,9 @@ export function JoinedSidebar({
   };
 
   const onClickChatRoom = (room_id: number) => {
-    setSelectedRoomId(String(room_id));
+    setSelectedRoomId(room_id);
     setChatRoom(true);
   };
-
-  const sidebarList: {
-    team_id: number;
-    room_name: string;
-    type: 'ROOM' | 'MEMBER' | null;
-    create_at: null;
-  }[] = [
-    {
-      team_id: 1,
-      room_name: '대화',
-      type: 'ROOM',
-      create_at: null,
-    },
-    {
-      team_id: 2,
-      room_name: '멤버',
-      type: 'MEMBER',
-      create_at: null,
-    },
-  ];
-
-  const roomsrcList = [
-    {
-      room_id: 1,
-      team_id: 1,
-      room_name: '환영',
-      create_at: null,
-    },
-    {
-      room_id: 2,
-      team_id: 1,
-      room_name: '잡담',
-      create_at: null,
-    },
-  ];
-
-  const userList = [
-    {
-      user_id: 1,
-      team_id: 2,
-      user_name: '정명우',
-      create_at: null,
-      img: null,
-    },
-    {
-      user_id: 2,
-      team_id: 2,
-      user_name: '김효현',
-      create_at: null,
-      img: null,
-    },
-  ];
 
   const teamRoomMap = sidebarList.map((team) => ({
     ...team,
@@ -158,7 +128,7 @@ export function JoinedSidebar({
                 className="flex justify-center items-center gap-4"
               >
                 <div
-                  className="min-w-14 min-h-8 mt-3 flex gap-5 items-center justify-center rounded-lg transition-colors"
+                  className="min-w-24 min-h-8 mt-3 flex gap-5 items-center justify-center rounded-lg transition-colors"
                   style={{ color: colors.gray[300], ...typography.body.BodyB }}
                 >
                   <div

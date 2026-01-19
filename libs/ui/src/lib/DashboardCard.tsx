@@ -1,6 +1,6 @@
 interface DashboardCardProps {
   title: string;
-  description: string;
+  description: React.ReactNode;
   buttonText: string;
 }
 

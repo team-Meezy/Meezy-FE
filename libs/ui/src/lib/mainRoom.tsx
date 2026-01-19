@@ -5,7 +5,12 @@ import { colors, typography } from '../design';
 import { ParticipationChart } from './ParticipationChart';
 import { DashboardCard } from './DashboardCard';
 
-export function MainRoom() {
+interface MainRoomProps {
+  setFeedback: (open: boolean) => void;
+  setSummary: (open: boolean) => void;
+}
+
+export function MainRoom({ setFeedback, setSummary }: MainRoomProps) {
   const [chartSize, setChartSize] = useState(192);
 
   useEffect(() => {
@@ -22,10 +27,7 @@ export function MainRoom() {
     >
       {/* 회의 참여율 섹션 */}
       <section className="w-full bg-[#1e1e1e] rounded-3xl p-12 flex items-center justify-around">
-        <ParticipationChart
-          size={chartSize}
-          percentage={87.5}
-        />
+        <ParticipationChart size={chartSize} percentage={87.5} />
         <div className="flex flex-col gap-3 p-10">
           <h1
             className="text-white leading-snug"
@@ -46,16 +48,30 @@ export function MainRoom() {
       </section>
       {/* 회의 피드백 섹션 */}
       <div className="w-full grid grid-cols-2 gap-5">
-        <DashboardCard
-          title="회의 피드백"
-          description="Meezy의 AI 도우미인 '리시브'가 회의를 정리해 피드백 해서 회의의 질을 높여 드려요!"
-          buttonText="회의 피드백 보기"
-        />
-        <DashboardCard
-          title="회의 요약"
-          description="Meezy의 AI 도우미인 '리시브'가 회의를 정리해 요약해서 회의를 보다 더 관리하기 쉽게 도와줘요!"
-          buttonText="회의 요약 보기"
-        />
+        <div onClick={() => setFeedback(true)}>
+          <DashboardCard
+            title="회의 피드백"
+            description={
+              <>
+                Meezy.의 AI 도우미인 “리시브"가 <br />
+                회의를 정리해 피드백 해서 회의의 질을 높여 드려요!
+              </>
+            }
+            buttonText="회의 피드백 보기"
+          />
+        </div>
+        <div onClick={() => setSummary(true)}>
+          <DashboardCard
+            title="회의 요약"
+            description={
+              <>
+                Meezy.의 AI 도우미인 “리시브"가 <br />
+                회의를 정리해 요약해서 회의를 보다 더 관리하기 쉽게 도와줘요!
+              </>
+            }
+            buttonText="회의 요약 보기"
+          />
+        </div>
       </div>
     </main>
   );

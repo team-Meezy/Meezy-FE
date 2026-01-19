@@ -12,6 +12,9 @@ import {
   ChatRoom,
   MainRoom,
   ServerProfilePage,
+  Feedback,
+  Summary,
+  useServerState,
 } from '@meezy/ui';
 import { colors, typography } from '@meezy/ui';
 import {
@@ -23,9 +26,17 @@ import {
 
 export function TeamJoined() {
   const [isModalOpen, setIsModalOpen] = useState(false);
-  const [chatRoom, setChatRoom] = useState(false);
-  const [serverProfile, setServerProfile] = useState(false);
   const [selectedRoomId, setSelectedRoomId] = useState<number | null>(null);
+  const {
+    chatRoom,
+    serverProfile,
+    feedback,
+    summary,
+    setChatRoom,
+    setServerProfile,
+    setFeedback,
+    setSummary,
+  } = useServerState();
 
   const onOpenModal = () => {
     setIsModalOpen(true);
@@ -70,8 +81,12 @@ export function TeamJoined() {
               userList={userList}
               projectSidebarList={projectSidebarList}
             />
+          ) : feedback ? (
+            <Feedback />
+          ) : summary ? (
+            <Summary />
           ) : (
-            <MainRoom />
+            <MainRoom setFeedback={setFeedback} setSummary={setSummary} />
           )}
 
           {/* 우측 캘린더 영역 */}

@@ -5,11 +5,11 @@ import Image from 'next/image';
 import ChevronRight from '../../assets/ChevronRight.svg';
 import joinedPlus from '../../assets/joinedPlus.svg';
 import shrap from '../../assets/shrap.svg';
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { JoinedModal } from '../models/joinedModel';
+import { UserKickModal } from '../models/userKickModal';
 
 interface JoinedSidebarProps {
-  chatRoom: boolean;
   setChatRoom: (chatRoom: boolean) => void;
   setSelectedRoomId: (roomId: number) => void;
   sidebarList: {
@@ -34,7 +34,6 @@ interface JoinedSidebarProps {
 }
 
 export function JoinedSidebar({
-  chatRoom,
   setChatRoom,
   setSelectedRoomId,
   sidebarList,
@@ -43,7 +42,10 @@ export function JoinedSidebar({
 }: JoinedSidebarProps) {
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [modalType, setModalType] = useState<'ROOM' | 'MEMBER' | null>(null);
-  const [isContextMenuOpen, setIsContextMenuOpen] = useState(false);
+  const [contextMenuUserId, setContextMenuUserId] = useState<number | null>(
+    null
+  );
+  const [users, setUsers] = useState(userList);
 
   const onOpenModal = (type: 'ROOM' | 'MEMBER' | null) => {
     setModalType(type);
@@ -63,12 +65,26 @@ export function JoinedSidebar({
   const teamRoomMap = sidebarList.map((team) => ({
     ...team,
     rooms: roomsrcList.filter((room) => room.team_id === team.team_id),
-    users: userList.filter((user) => user.team_id === team.team_id),
+    users: users.filter((user) => user.team_id === team.team_id),
   }));
 
-  const onContextMenu = (e: React.MouseEvent) => {
+  const onContextMenu = (e: React.MouseEvent, userId: number) => {
     e.preventDefault();
-    setIsContextMenuOpen(true);
+    setContextMenuUserId(userId);
+  };
+
+  const handleClickOutside = () => setContextMenuUserId(null);
+
+  useEffect(() => {
+    document.addEventListener('click', handleClickOutside);
+    return () => document.removeEventListener('click', handleClickOutside);
+  }, []);
+
+  const onKickUser = () => {
+    setUsers((prev) =>
+      prev.filter((user) => user.user_id !== contextMenuUserId)
+    );
+    setContextMenuUserId(null);
   };
 
   return (
@@ -142,11 +158,19 @@ export function JoinedSidebar({
                     style={{ backgroundColor: colors.white[100] }}
                   />
 
-                  <span onContextMenu={onContextMenu}>{user.user_name}</span>
+                  <span onContextMenu={(e) => onContextMenu(e, user.user_id)}>
+                    {user.user_name}
+                  </span>
                 </div>
-                {isContextMenuOpen && (
-                  <div className="relative">
-                    <button onClick={onContextMenu}>dsa</button>
+                {contextMenuUserId === user.user_id && (
+                  <div
+                    className="mt-2 px-4 py-3 flex items-center justify-center rounded-lg transition-colors"
+                    style={{
+                      backgroundColor: colors.gray[800],
+                      ...typography.label.labelB,
+                    }}
+                  >
+                    <button onClick={onKickUser}>내보내기</button>
                   </div>
                 )}
               </div>
@@ -155,6 +179,11 @@ export function JoinedSidebar({
         ))}
       </div>
       <JoinedModal
+        isOpen={isModalOpen}
+        type={modalType}
+        onClose={onCloseModal}
+      />
+      <UserKickModal
         isOpen={isModalOpen}
         type={modalType}
         onClose={onCloseModal}

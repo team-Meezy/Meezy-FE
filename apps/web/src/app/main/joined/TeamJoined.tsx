@@ -36,7 +36,6 @@ export function TeamJoined() {
       {/* [좌측] 사이드바 - 위아래로 쭉 뻗은 구조 */}
       <Sidebar onOpenModal={onOpenModal} onCloseModal={onCloseModal} />
       <JoinedSidebar
-        chatRoom={chatRoom}
         setChatRoom={setChatRoom}
         setSelectedRoomId={setSelectedRoomId}
         sidebarList={sidebarList}

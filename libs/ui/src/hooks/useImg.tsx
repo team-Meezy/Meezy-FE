@@ -23,6 +23,9 @@ export const useImg = () => {
   const handleDeleteImg = () => {
     setPreviewUrl(null);
     setImageFile(null);
+    if (fileInputRef.current) {
+      fileInputRef.current.value = '';
+    }
   };
 
   const handleImageChange = (e: React.ChangeEvent<HTMLInputElement>) => {

@@ -1,8 +1,20 @@
+'use client';
+
+import { useState, useEffect } from 'react';
 import { colors, typography } from '../design';
 import { ParticipationChart } from './ParticipationChart';
 import { DashboardCard } from './DashboardCard';
 
 export function MainRoom() {
+  const [chartSize, setChartSize] = useState(192);
+
+  useEffect(() => {
+    const calc = () => setChartSize(Math.min(window.innerWidth * 0.1, 240));
+    calc();
+    window.addEventListener('resize', calc);
+    return () => window.removeEventListener('resize', calc);
+  }, []);
+
   return (
     <main
       className="flex-[3] border border-white/5 flex flex-col items-center justify-center p-10 gap-3"
@@ -11,7 +23,7 @@ export function MainRoom() {
       {/* 회의 참여율 섹션 */}
       <section className="w-full bg-[#1e1e1e] rounded-3xl p-12 flex items-center justify-around">
         <ParticipationChart
-          size={Math.min(window.innerWidth * 0.1, 240)}
+          size={chartSize}
           percentage={87.5}
         />
         <div className="flex flex-col gap-3 p-10">

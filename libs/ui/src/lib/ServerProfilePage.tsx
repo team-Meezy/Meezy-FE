@@ -57,9 +57,8 @@ export function ServerProfilePage({
     handleDeleteImg,
   } = useImg();
 
-  const onTab = () => {
-    setTab(!tab);
-  };
+  const onTabProfile = () => setTab(true);
+  const onTabSettings = () => setTab(false);
 
   const onKickUser = (userId: number) => {
     setUsers((prev) => prev.filter((user) => user.user_id !== userId));
@@ -91,14 +90,14 @@ export function ServerProfilePage({
         <button
           className="px-5 py-3 rounded-md"
           style={tapStyle(tab)}
-          onClick={onTab}
+          onClick={onTabProfile}
         >
           서버 프로필
         </button>
         <button
           className="px-5 py-3 rounded-md"
           style={tapStyle(!tab)}
-          onClick={onTab}
+          onClick={onTabSettings}
         >
           설정
         </button>

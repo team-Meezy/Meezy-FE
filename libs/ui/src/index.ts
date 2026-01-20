@@ -21,3 +21,4 @@ export * from './lib/mainRoom';
 export * from './lib/feedback';
 export * from './lib/summary';
 export * from './lib/ServerProfilePage';
+export * from './lib/MyPageComponent';

@@ -7,3 +7,4 @@ export * from './sidebar/joinedSidebar';
 export * from './DashboardCard';
 export * from './ParticipationChart';
 export * from './models/joinedModel';
+export * from './MyPageComponent';

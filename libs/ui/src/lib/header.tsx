@@ -3,14 +3,21 @@
 import { colors, typography } from '@meezy/ui';
 import { useServerJoinedTeam } from '../context/ServerJoinedTeamProvider';
 import { useRouter } from 'next/navigation';
+import { useServerState } from '../context/ServerStateProvider';
 
 export function Header() {
   const { joined, meeting, setMeeting } = useServerJoinedTeam();
+  const { setJoined } = useServerState();
 
   const router = useRouter();
 
   const onClickMain = (serverId: number) => {
     router.push(`/main/${serverId}`);
+  };
+
+  const onClickMypage = () => {
+    setJoined(true);
+    router.push('/main/mypage');
   };
 
   return (
@@ -53,7 +60,7 @@ export function Header() {
             backgroundColor: colors.white[100],
           }}
           onClick={() => {
-            router.push('/mypage');
+            onClickMypage();
           }}
         />
       </div>

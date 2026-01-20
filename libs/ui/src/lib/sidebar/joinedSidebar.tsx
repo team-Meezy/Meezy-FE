@@ -8,6 +8,7 @@ import shrap from '../../assets/shrap.svg';
 import { useState, useEffect } from 'react';
 import { JoinedModal } from '../models/joinedModel';
 import { UserKickModal } from '../models/userKickModal';
+import { useRouter } from 'next/navigation';
 
 interface JoinedSidebarProps {
   setChatRoom: (chatRoom: boolean) => void;
@@ -47,6 +48,7 @@ export function JoinedSidebar({
   const [contextMenuUserId, setContextMenuUserId] = useState<number | null>(
     null
   );
+  const router = useRouter();
   const [users, setUsers] = useState(userList);
 
   const onOpenModal = (type: 'ROOM' | 'MEMBER' | null) => {
@@ -57,11 +59,6 @@ export function JoinedSidebar({
   const onCloseModal = () => {
     setIsModalOpen(false);
     setModalType(null);
-  };
-
-  const onClickChatRoom = (room_id: number) => {
-    setSelectedRoomId(room_id);
-    setChatRoom(true);
   };
 
   const teamRoomMap = sidebarList.map((team) => ({
@@ -89,8 +86,14 @@ export function JoinedSidebar({
     setContextMenuUserId(null);
   };
 
-  const onClickServerProfile = () => {
-    setServerProfile(true);
+  const onClickServerProfile = (room_id: number) => {
+    router.push(`/main/${room_id}/ServerProfile`);
+  };
+
+  const onClickChatRoom = (room_id: number) => {
+    setSelectedRoomId(room_id);
+    setChatRoom(true);
+    router.push(`/main/${room_id}/chat`);
   };
 
   return (
@@ -104,7 +107,7 @@ export function JoinedSidebar({
         type="button"
         className="mt-12 flex justify-center items-center gap-4 bg-transparent border-0 p-0"
         style={{ ...typography.body.BodyB }}
-        onClick={onClickServerProfile}
+        onClick={() => onClickServerProfile(1)}
         aria-label="서버 프로필 열기"
       >
         <span

@@ -4,6 +4,7 @@ import { useState, useEffect } from 'react';
 import { colors, typography } from '../design';
 import { ParticipationChart } from './ParticipationChart';
 import { DashboardCard } from './DashboardCard';
+import { useRouter } from 'next/navigation';
 
 interface MainRoomProps {
   setFeedback: (open: boolean) => void;
@@ -12,6 +13,7 @@ interface MainRoomProps {
 
 export function MainRoom({ setFeedback, setSummary }: MainRoomProps) {
   const [chartSize, setChartSize] = useState(192);
+  const router = useRouter();
 
   useEffect(() => {
     const calc = () => setChartSize(Math.min(window.innerWidth * 0.1, 240));
@@ -19,6 +21,14 @@ export function MainRoom({ setFeedback, setSummary }: MainRoomProps) {
     window.addEventListener('resize', calc);
     return () => window.removeEventListener('resize', calc);
   }, []);
+
+  const onClickFeedback = (serverId: number) => {
+    router.push(`/main/${serverId}/feedback`);
+  };
+
+  const onClickSummary = (serverId: number) => {
+    router.push(`/main/${serverId}/summary`);
+  };
 
   return (
     <main
@@ -57,7 +67,7 @@ export function MainRoom({ setFeedback, setSummary }: MainRoomProps) {
             </>
           }
           buttonText="회의 피드백 보기"
-          onClick={() => setFeedback(true)}
+          onClick={() => onClickFeedback(1)}
         />
 
         <DashboardCard
@@ -69,7 +79,7 @@ export function MainRoom({ setFeedback, setSummary }: MainRoomProps) {
             </>
           }
           buttonText="회의 요약 보기"
-          onClick={() => setSummary(true)}
+          onClick={() => onClickSummary(1)}
         />
       </div>
     </main>

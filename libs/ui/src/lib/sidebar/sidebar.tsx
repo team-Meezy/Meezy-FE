@@ -5,10 +5,11 @@ import Image from 'next/image';
 import plus from '../../assets/plus.svg';
 import { useServerCreate } from '../../context/ServerCreateProvider';
 import { useState } from 'react';
+import { useRouter } from 'next/navigation';
 
 interface SidebarProps {
-  onOpenModal: () => void;
-  projectSidebarList: {
+  onOpenModal?: () => void;
+  projectSidebarList?: {
     team_id: number;
     team_name: string;
     create_at: null;
@@ -19,6 +20,12 @@ interface SidebarProps {
 export function Sidebar({ onOpenModal, projectSidebarList }: SidebarProps) {
   const { imageFile } = useServerCreate();
   const [alarm, setAlarm] = useState(false);
+  const router = useRouter();
+
+  const handleTeamClick = (teamId: number) => {
+    // router.push(`/main/${teamId}`);
+    router.push(`/main/1`);
+  };
 
   return (
     <nav
@@ -35,7 +42,7 @@ export function Sidebar({ onOpenModal, projectSidebarList }: SidebarProps) {
         >
           <Image src={plus} alt="plus" className="w-5" />
         </button>
-        {projectSidebarList.map((team) => (
+        {projectSidebarList?.map((team) => (
           <div
             key={team.team_id}
             className="flex justify-center items-center mr-4"
@@ -50,6 +57,7 @@ export function Sidebar({ onOpenModal, projectSidebarList }: SidebarProps) {
             <div
               key={team.team_id}
               className="min-w-14 min-h-14 flex items-center justify-center rounded-lg border border-gray-800 bg-[#262626] hover:bg-[#252525] transition-colors"
+              onClick={() => handleTeamClick(team.team_id)}
             >
               {!imageFile && <div>{team.team_name}</div>}
             </div>

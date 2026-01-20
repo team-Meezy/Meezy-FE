@@ -17,9 +17,12 @@ export function ProfileIdentity({
     <section className="flex flex-col gap-4">
       {/* 이름 필드 */}
       <div className="flex flex-col gap-3">
-        <label style={{ ...typography.body.BodyB }}>이름</label>
+        <label htmlFor="profile-name" style={{ ...typography.body.BodyB }}>
+          이름
+        </label>
         <input
           type="text"
+          id="profile-name"
           value={userName}
           onChange={(e) => setUserName(e.target.value)}
           className="w-full max-w-lg h-10 px-4 rounded-lg outline-none border border-transparent focus:border-[#FF5C00] transition-all"
@@ -35,9 +38,12 @@ export function ProfileIdentity({
 
       {/* 아이디 필드 */}
       <div className="flex flex-col gap-3">
-        <label style={{ ...typography.body.BodyB }}>아이디</label>
+        <label htmlFor="profile-id" style={{ ...typography.body.BodyB }}>
+          아이디
+        </label>
         <input
           type="text"
+          id="profile-id"
           value={userId}
           readOnly
           className="w-full max-w-lg h-10 px-4 rounded-lg outline-none opacity-80 cursor-default"
@@ -53,9 +59,12 @@ export function ProfileIdentity({
 
       {/* 이메일 필드 */}
       <div className="flex flex-col gap-3">
-        <label style={{ ...typography.body.BodyB }}>이메일</label>
+        <label htmlFor="profile-email" style={{ ...typography.body.BodyB }}>
+          이메일
+        </label>
         <input
           type="email"
+          id="profile-email"
           value={userEmail}
           readOnly
           className="w-full max-w-lg h-10 px-4 rounded-lg outline-none opacity-80 cursor-default"

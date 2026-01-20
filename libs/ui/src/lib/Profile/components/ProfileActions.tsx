@@ -13,7 +13,6 @@ export function ProfileActions({
   Title,
   Description,
 }: ProfileActionsProps) {
-  
   const handleLogoutClick = () => {
     Title('로그아웃');
     Description('로그아웃 하시겠습니까?');
@@ -26,14 +25,22 @@ export function ProfileActions({
     onConfirmModalOpen();
   };
 
+  const handlePasswordChangeClick = () => {
+    // Title('비밀번호 변경');
+    // Description('비밀번호를 변경하시겠습니까?');
+    // onConfirmModalOpen();
+  };
+
   return (
     <section className="flex flex-col gap-5">
       <div>
         <h2 style={{ ...typography.body.LBodyB }}>비밀번호 변경</h2>
 
         <button
+          type="button"
           className="px-3 py-3 rounded-md bg-[#FF5C00] hover:bg-[#E55200] transition-colors mt-4"
           style={{ ...typography.body.BodyB, color: '#FFFFFF' }}
+          onClick={handlePasswordChangeClick}
         >
           비밀번호 변경
         </button>
@@ -46,6 +53,7 @@ export function ProfileActions({
 
         <div className="mt-4 flex gap-3">
           <button
+            type="button"
             className="px-3 py-3 rounded-md bg-[#FF5C00] hover:bg-[#E55200] transition-colors"
             style={{ ...typography.body.BodyB, color: '#FFFFFF' }}
             onClick={handleLogoutClick}
@@ -54,6 +62,7 @@ export function ProfileActions({
           </button>
 
           <button
+            type="button"
             className="px-3 py-3 rounded-md hover:bg-[#E55200] transition-colors"
             style={{
               ...typography.body.BodyB,

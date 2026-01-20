@@ -47,15 +47,27 @@ export function MyPageModal({
   // Portal을 사용하여 document.body에 직접 렌더링
   return createPortal(
     // 1. 배경 Overlay
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/30 backdrop-blur-[2px]">
+    <div
+      className="fixed inset-0 z-50 flex items-center justify-center bg-black/30 backdrop-blur-[2px]"
+      role="dialog"
+      aria-modal="true"
+      aria-labelledby="mypage-modal-title"
+      aria-describedby="mypage-modal-desc"
+    >
       {/* 2. 모달 컨테이너 */}
       <div className="w-[480px] bg-[#2b2d31] rounded-xl shadow-2xl border border-white/5 overflow-hidden">
         {/* // 폼 콘텐츠 */}
         <div className="p-6 pt-4 flex flex-col gap-6">
           {/* 서버 이름 입력 */}
           <section className="flex flex-col gap-2">
-            <h2 className="text-xl font-bold text-white mb-1">{title}</h2>
+            <h2
+              id="mypage-modal-title"
+              className="text-xl font-bold text-white mb-1"
+            >
+              {title}
+            </h2>
             <p
+              id="mypage-modal-desc"
               className="text-gray-400 mb-4"
               style={{ ...typography.body.BodyM }}
             >

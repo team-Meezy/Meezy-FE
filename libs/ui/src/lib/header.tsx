@@ -1,17 +1,16 @@
+'use client';
+
 import { colors, typography } from '@meezy/ui';
 import { useServerJoinedTeam } from '../context/ServerJoinedTeamProvider';
-import { useServerState } from '../context/ServerStateProvider';
+import { useRouter } from 'next/navigation';
 
 export function Header() {
   const { joined, meeting, setMeeting } = useServerJoinedTeam();
-  const { setChatRoom, setServerProfile, setFeedback, setSummary } =
-    useServerState();
 
-  const onClickMain = () => {
-    setChatRoom(false);
-    setServerProfile(false);
-    setFeedback(false);
-    setSummary(false);
+  const router = useRouter();
+
+  const onClickMain = (serverId: number) => {
+    router.push(`/main/${serverId}`);
   };
 
   return (
@@ -25,7 +24,7 @@ export function Header() {
       {/* 서비스 로고 */}
       <h1
         className="text-[#ff5c00] font-extrabold text-2xl tracking-tight cursor-pointer"
-        onClick={onClickMain}
+        onClick={() => onClickMain(1)}
       >
         Meezy.
       </h1>
@@ -52,6 +51,9 @@ export function Header() {
           style={{
             ...typography.body.BodyM,
             backgroundColor: colors.white[100],
+          }}
+          onClick={() => {
+            router.push('/mypage');
           }}
         />
       </div>

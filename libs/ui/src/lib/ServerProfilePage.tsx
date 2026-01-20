@@ -7,18 +7,6 @@ import Image from 'next/image';
 import KickMember from '../assets/kickMember.svg';
 
 interface ServerProfilePageProps {
-  sidebarList: {
-    team_id: number;
-    room_name: string;
-    type: 'ROOM' | 'MEMBER' | null;
-    create_at: null;
-  }[];
-  roomsrcList: {
-    room_id: number;
-    team_id: number;
-    room_name: string;
-    create_at: null;
-  }[];
   userList: {
     user_id: number;
     team_id: number;

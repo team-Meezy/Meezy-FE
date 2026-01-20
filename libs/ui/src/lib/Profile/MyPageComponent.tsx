@@ -3,7 +3,7 @@
 import { useState } from 'react';
 import { colors, typography } from '../../design';
 import { ProfileImg, ProfileIdentity, ProfileActions } from './components';
-import { ConfirmModal } from '../models';
+import { MyPageModal } from '../models';
 
 const user = {
   name: 'John Doe',
@@ -100,7 +100,7 @@ export function MyPageComponent() {
         />
       )}
 
-      <ConfirmModal
+      <MyPageModal
         onClose={onConfirmModalClose}
         isOpen={confirmModalOpen}
         title={confirmModalTitle}

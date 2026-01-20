@@ -5,19 +5,19 @@ import { createPortal } from 'react-dom';
 import { colors, typography } from '../../design';
 import { useRouter } from 'next/navigation';
 
-interface ConfirmModalProps {
+interface MyPageModalProps {
   isOpen: boolean;
   onClose: () => void;
   title: string;
   description: string;
 }
 
-export function ConfirmModal({
+export function MyPageModal({
   isOpen,
   onClose,
   title,
   description,
-}: ConfirmModalProps) {
+}: MyPageModalProps) {
   const [mounted, setMounted] = useState(false);
   const [generalError, setGeneralError] = useState('');
 

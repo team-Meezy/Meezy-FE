@@ -23,8 +23,7 @@ export function Sidebar({ onOpenModal, projectSidebarList }: SidebarProps) {
   const router = useRouter();
 
   const handleTeamClick = (teamId: number) => {
-    // router.push(`/main/${teamId}`);
-    router.push(`/main/1`);
+    router.push(`/main/${teamId}`);
   };
 
   return (
@@ -54,13 +53,15 @@ export function Sidebar({ onOpenModal, projectSidebarList }: SidebarProps) {
               }}
             />
 
-            <div
+            <button
+              type="button"
               key={team.team_id}
-              className="min-w-14 min-h-14 flex items-center justify-center rounded-lg border border-gray-800 bg-[#262626] hover:bg-[#252525] transition-colors"
+              aria-label={team.team_name}
+              className="min-w-14 min-h-14 flex items-center justify-center rounded-lg border border-gray-800 bg-[`#262626`] hover:bg-[`#252525`] transition-colors"
               onClick={() => handleTeamClick(team.team_id)}
             >
               {!imageFile && <div>{team.team_name}</div>}
-            </div>
+            </button>
           </div>
         ))}
       </div>

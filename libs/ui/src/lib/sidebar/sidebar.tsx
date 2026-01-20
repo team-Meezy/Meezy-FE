@@ -4,6 +4,7 @@ import { colors } from '../../design';
 import Image from 'next/image';
 import plus from '../../assets/plus.svg';
 import { useServerCreate } from '../../context/ServerCreateProvider';
+import { useServerState } from '../../context/ServerStateProvider';
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
 
@@ -19,10 +20,12 @@ interface SidebarProps {
 
 export function Sidebar({ onOpenModal, projectSidebarList }: SidebarProps) {
   const { imageFile } = useServerCreate();
+  const { setJoined } = useServerState();
   const [alarm, setAlarm] = useState(false);
   const router = useRouter();
 
   const handleTeamClick = (teamId: number) => {
+    setJoined(false);
     router.push(`/main/${teamId}`);
   };
 

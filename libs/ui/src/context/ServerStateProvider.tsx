@@ -23,7 +23,7 @@ export function ServerStateProvider({ children }: { children: ReactNode }) {
   const [summary, setSummary] = useState(false);
   const [serverProfile, setServerProfile] = useState(false);
   const [mypage, setMypage] = useState(false);
-  const [joined, setJoined] = useState(false);
+  const [joined, setJoined] = useState(true);
 
   return (
     <ServerStateContext.Provider

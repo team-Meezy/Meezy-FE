@@ -1,7 +1,7 @@
 'use client';
 
 import { useState } from 'react';
-import { Input } from '@meezy/ui';
+import { Input } from '../../components';
 
 export function PasswordInput({
   password,

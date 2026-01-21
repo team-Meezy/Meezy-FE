@@ -1,5 +1,5 @@
 import { colors, typography } from '../../../design';
-import { useImg } from '../../../hooks/useImg';
+import { useImg } from '../../../hooks';
 
 export function ProfileImg() {
   const {

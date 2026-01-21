@@ -1,5 +1,5 @@
 import Image from 'next/image';
-import noTeamReceive from '../../assets/noTeam_Receive.png';
+import { NoTeamReceive } from '@meezy/ui';
 import { colors } from '@meezy/ui';
 
 export default function mainPage() {
@@ -15,7 +15,7 @@ export default function mainPage() {
           {/* '아직 참가한 팀이 없습니다' 섹션 */}
           <div className="text-center flex flex-col gap-2">
             <div className="w-32 h-32 bg-[#2a2a2a] rounded-full mx-auto mb-6">
-              <Image src={noTeamReceive} alt="no team receive" />
+              <Image src={NoTeamReceive} alt="no team receive" />
             </div>
             <h2 className="text-xl font-bold mb-2">
               아직 참가한 팀이 없습니다.

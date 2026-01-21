@@ -1,5 +1,5 @@
-import { Summary } from '@meezy/ui';
+import { SummaryPage } from '@meezy/ui';
 
-export default function SummaryPage() {
-  return <Summary />;
+export default function Summary() {
+  return <SummaryPage />;
 }

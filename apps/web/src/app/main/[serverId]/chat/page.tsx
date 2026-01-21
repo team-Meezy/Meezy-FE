@@ -1,5 +1,5 @@
-import { ChatRoom } from '@meezy/ui';
+import { ChatRoomPage } from '@meezy/ui';
 
 export default function ChatPage() {
-  return <ChatRoom roomId={1} roomName="roomName" />;
+  return <ChatRoomPage roomId={1} roomName="roomName" />;
 }

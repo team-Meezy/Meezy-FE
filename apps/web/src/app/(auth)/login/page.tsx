@@ -1,15 +1,11 @@
 'use client';
 
 import Image from 'next/image';
-import loginLogo from '../../../assets/loginLogo.png';
-import google from '../../../assets/google.svg';
-import kakao from '../../../assets/kakao.svg';
-import naver from '../../../assets/naver.svg';
-import { SocialButton } from './SocialButton';
-import { useRouter } from 'next/navigation';
+import { Google, Kakao, Naver, LoginLogo } from '@meezy/ui';
+import { SocialButton, useLoginFlow } from '@meezy/ui';
 import { colors, typography } from '@meezy/ui';
+import { useRouter } from 'next/navigation';
 import { useState } from 'react';
-import { useLoginFlow } from './hooks/useLoginFlow';
 
 export default function page() {
   const router = useRouter();
@@ -36,7 +32,7 @@ export default function page() {
         {/* 왼쪽: 브랜드 섹션 */}
         <div className="hidden lg:block max-w-xl">
           <Image
-            src={loginLogo}
+            src={LoginLogo}
             alt="Meezy Logo"
             priority
             className="object-contain"
@@ -200,9 +196,9 @@ export default function page() {
                 </div>
               </div>
               <div className="flex justify-center gap-4">
-                <SocialButton icon={google} color="bg-white text-black" />
-                <SocialButton icon={kakao} color="bg-yellow-400 text-black" />
-                <SocialButton icon={naver} color="bg-green-500 text-white" />
+                <SocialButton icon={Google} color="bg-white text-black" />
+                <SocialButton icon={Kakao} color="bg-yellow-400 text-black" />
+                <SocialButton icon={Naver} color="bg-green-500 text-white" />
               </div>
               {/* 하단 버튼 및 가입 링크 */}
               <div className="pt-2 text-center">

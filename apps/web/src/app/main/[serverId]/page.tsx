@@ -1,6 +1,6 @@
 'use client';
 
-import { MainRoom, useServerState } from '@meezy/ui';
+import { MainRoomPage, useServerState } from '@meezy/ui';
 import { projectSidebarList } from '../context/list';
 import { useParams } from 'next/navigation';
 
@@ -17,9 +17,7 @@ export default function TeamPage() {
   return (
     <>
       <div className="flex-1 flex overflow-hidden">
-        {roomNameFind && (
-          <MainRoom setFeedback={setFeedback} setSummary={setSummary} />
-        )}
+        {roomNameFind && <MainRoomPage />}
       </div>
     </>
   );

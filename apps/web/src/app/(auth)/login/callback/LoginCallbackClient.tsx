@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
-import { ApiError } from '../../../api/types/error';
+import { ApiError } from '@meezy/ui';
 import { colors } from '@meezy/ui';
 
 export function LoginCallbackClient() {

@@ -1,6 +1,8 @@
+'use client';
+
 import Image from 'next/image';
 import { colors, typography } from '@meezy/ui';
-import Receive from '../../../../assets/reseive.png';
+import { Receive } from '../../../assets';
 
 export function Success() {
   return (

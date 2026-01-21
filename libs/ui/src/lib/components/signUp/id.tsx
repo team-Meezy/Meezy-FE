@@ -1,3 +1,5 @@
+'use client';
+
 import { useState } from 'react';
 import { Input } from '@meezy/ui';
 
@@ -10,7 +12,7 @@ export function IdInput({
 }) {
   const [idError, setIdError] = useState('');
 
-  return (
+  return (  
     <div className="flex flex-col gap-3">
       <Input
         type="text"

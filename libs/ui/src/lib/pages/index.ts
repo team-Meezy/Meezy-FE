@@ -3,3 +3,4 @@ export * from './FeedbackPage';
 export * from './SummaryPage';
 export * from './ChatRoomPage';
 export * from './ServerProfilePage';
+export * from './LoginPage';

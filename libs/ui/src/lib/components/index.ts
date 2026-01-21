@@ -1,3 +1,5 @@
+'use client';
+
 export * from './Header';
 export * from './CalendarMockup';
 export * from './DashboardCard';

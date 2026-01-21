@@ -2,8 +2,8 @@
 
 import { useEffect, useState } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
-import { ApiError } from '@meezy/ui';
-import { colors } from '@meezy/ui';
+import { ApiError } from '../../api';
+import { colors } from '../../design';
 
 export function LoginCallbackClient() {
   const router = useRouter();

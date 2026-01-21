@@ -1,11 +1,6 @@
-import {
-  JoinedSidebar,
-  CalendarMockup,
-  useServerState,
-  Header,
-} from '@meezy/ui';
+import { JoinedSidebar, CalendarMockup, Header } from '@meezy/ui/client';
 import { roomsrcList, userList, sidebarList } from '@meezy/ui';
-import { useServerJoinedTeam } from '@meezy/ui';
+import { useServerJoinedTeam, useServerState } from '@meezy/ui';
 
 export default function ServerLayout({
   children,

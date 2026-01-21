@@ -1,4 +1,4 @@
-import { ServerProfilePage } from '@meezy/ui';
+import { ServerProfilePage } from '@meezy/ui/client';
 import { projectSidebarList, userList } from '@meezy/ui';
 
 export default function ServerProfile() {

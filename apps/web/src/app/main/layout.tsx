@@ -1,4 +1,4 @@
-import { Sidebar, Header, ServerModal, CalendarMockup } from '@meezy/ui';
+import { Sidebar, Header, ServerModal, CalendarMockup } from '@meezy/ui/client';
 import { projectSidebarList } from '@meezy/ui';
 import { useServerJoinedTeam, useServerModal } from '@meezy/ui';
 

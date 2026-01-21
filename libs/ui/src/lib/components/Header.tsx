@@ -1,13 +1,11 @@
 'use client';
 
-import { colors, typography } from '@meezy/ui';
-import { useServerJoinedTeam } from '../context/ServerJoinedTeamProvider';
+import { colors, typography } from '../../design';
+import { useServerJoinedTeam } from '../../context';
 import { useRouter } from 'next/navigation';
-import { useServerState } from '../context/ServerStateProvider';
 
 export function Header() {
-  const { joined, meeting, setMeeting } = useServerJoinedTeam();
-  const { setJoined } = useServerState();
+  const { joined, setJoined, meeting, setMeeting } = useServerJoinedTeam();
 
   const router = useRouter();
 
@@ -16,7 +14,7 @@ export function Header() {
   };
 
   const onClickMypage = () => {
-    setJoined(true);
+    setJoined(false);
     router.push('/main/mypage');
   };
 

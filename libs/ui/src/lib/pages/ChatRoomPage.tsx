@@ -1,10 +1,10 @@
 'use client';
 
 import { useState } from 'react';
-import { colors, typography } from '../design';
+import { colors, typography } from '../../design';
 import Image from 'next/image';
-import shrap from '../assets/shrap.svg';
-import { useChatScroll } from '../hooks/useChatScroll';
+import { Shrap } from '../../assets';
+import { useChatScroll } from '../../hooks';
 
 interface Message {
   id: number;
@@ -14,12 +14,12 @@ interface Message {
   content: string[];
 }
 
-interface ChatRoomProps {
+interface ChatRoomPageProps {
   roomId: number | null;
   roomName: string | null;
 }
 
-export function ChatRoom({ roomId, roomName }: ChatRoomProps) {
+export function ChatRoomPage({ roomId, roomName }: ChatRoomPageProps) {
   const [messages, setMessages] = useState<Message[]>([
     {
       id: 1,
@@ -71,7 +71,7 @@ export function ChatRoom({ roomId, roomName }: ChatRoomProps) {
           color: colors.gray[400],
         }}
       >
-        <Image src={shrap} alt="shrap" className="w-4" />
+        <Image src={Shrap} alt="shrap" className="w-4" />
         <span>{roomName}</span>
       </div>
 

@@ -1,17 +1,12 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import { colors, typography } from '../design';
-import { ParticipationChart } from './ParticipationChart';
-import { DashboardCard } from './DashboardCard';
+import { colors, typography } from '../../design';
+import { ParticipationChart } from '../components/ParticipationChart';
+import { DashboardCard } from '../components/DashboardCard';
 import { useRouter } from 'next/navigation';
 
-interface MainRoomProps {
-  setFeedback: (open: boolean) => void;
-  setSummary: (open: boolean) => void;
-}
-
-export function MainRoom({ setFeedback, setSummary }: MainRoomProps) {
+export function MainRoomPage() {
   const [chartSize, setChartSize] = useState(192);
   const router = useRouter();
 

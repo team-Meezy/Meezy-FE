@@ -1,4 +1,4 @@
-import { colors, typography } from '../design';
+import { colors, typography } from '../../design';
 
 export function CalendarMockup() {
   const days = [

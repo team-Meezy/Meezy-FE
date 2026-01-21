@@ -1,7 +1,7 @@
-'use client'
+'use client';
 
 import { useState, InputHTMLAttributes, forwardRef } from 'react';
-import { colors, typography } from '../design';
+import { colors, typography } from '../../design';
 
 /**
  * Input 컴포넌트의 타입

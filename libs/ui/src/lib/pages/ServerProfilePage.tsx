@@ -1,10 +1,10 @@
 'use client';
 
 import { useState } from 'react';
-import { colors, typography } from '../design';
-import { useImg } from '../hooks/useImg';
+import { colors, typography } from '../../design';
+import { useImg } from '../../hooks';
 import Image from 'next/image';
-import KickMember from '../assets/kickMember.svg';
+import { KickMember } from '../../assets';
 
 interface ServerProfilePageProps {
   userList: {

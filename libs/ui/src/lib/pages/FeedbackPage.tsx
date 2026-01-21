@@ -1,4 +1,4 @@
-import { typography, colors } from '../design';
+import { typography, colors } from '../../design';
 
 const FeedbackList = [
   {
@@ -15,7 +15,7 @@ const FeedbackList = [
   },
 ];
 
-export function Feedback() {
+export function FeedbackPage() {
   return (
     <div className="flex-[3] border border-white/5 flex flex-col items-center justify-center p-8 gap-3">
       <div className="w-full h-full bg-[#1e1e1e] rounded-2xl flex flex-col overflow-y-scroll no-scrollbar">

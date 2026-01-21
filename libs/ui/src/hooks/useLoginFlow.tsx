@@ -1,5 +1,7 @@
+'use client';
+
 import { useRouter } from 'next/navigation';
-import { ApiError } from '../../../api/types/error';
+import { ApiError } from '../api/types/Error';
 
 interface LoginFlowParams {
   email: string;

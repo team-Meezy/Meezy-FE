@@ -1,7 +1,7 @@
 'use client';
 
 import Image from 'next/image';
-import { Google, Kakao, Naver, LoginLogo } from '@meezy/ui';
+import { Google, Kakao, Naver, LoginLogo } from '@meezy/ui/assets';
 import { SocialButton, useLoginFlow } from '@meezy/ui';
 import { colors, typography } from '@meezy/ui';
 import { useRouter } from 'next/navigation';

@@ -1,5 +1,5 @@
 import Image from 'next/image';
-import { NoTeamReceive } from '@meezy/ui';
+import { NoTeamReceive } from '@meezy/ui/assets';
 import { colors } from '@meezy/ui';
 
 export default function mainPage() {

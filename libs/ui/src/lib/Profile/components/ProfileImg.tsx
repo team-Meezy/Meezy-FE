@@ -1,3 +1,5 @@
+'use client';
+
 import { colors, typography } from '../../../design';
 import { useImg } from '../../../hooks';
 

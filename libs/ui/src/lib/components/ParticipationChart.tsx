@@ -1,3 +1,5 @@
+
+
 interface ParticipationChartProps {
   percentage?: number;
   size?: number; // 차트 전체 크기

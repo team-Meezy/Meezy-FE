@@ -1,3 +1,5 @@
+'use client';
+
 interface DashboardCardProps {
   title: string;
   description: React.ReactNode;

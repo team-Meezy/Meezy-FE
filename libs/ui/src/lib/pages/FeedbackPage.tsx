@@ -1,3 +1,5 @@
+'use client';
+
 import { typography, colors } from '../../design';
 
 const FeedbackList = [

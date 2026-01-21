@@ -1,7 +1,7 @@
 'use client';
 
 import { Header, CalendarMockup } from '../../../components';
-import { Sidebar } from '../../../sidebar';
+import { TeamSidebar } from '../../../sidebar';
 import { ServerModal } from '../../../modals';
 import {
   projectSidebarList,
@@ -15,7 +15,7 @@ export function MainLayoutWrapper({ children }: { children: React.ReactNode }) {
 
   return (
     <div className="flex h-screen w-full bg-[#0c0c0c] text-white overflow-hidden">
-      <Sidebar
+      <TeamSidebar
         onOpenModal={() => setIsModalOpen(true)}
         projectSidebarList={projectSidebarList}
       />

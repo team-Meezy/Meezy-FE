@@ -18,7 +18,7 @@ interface SidebarProps {
   }[];
 }
 
-export function Sidebar({ onOpenModal, projectSidebarList }: SidebarProps) {
+export function TeamSidebar({ onOpenModal, projectSidebarList }: SidebarProps) {
   const { imageFile } = useServerCreate();
   const { setJoined } = useServerJoinedTeam();
   const [alarm, setAlarm] = useState(false);

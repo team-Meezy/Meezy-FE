@@ -1,2 +1,2 @@
-export * from './Sidebar';
+export * from './TeamSidebar';
 export * from './JoinedSidebar';

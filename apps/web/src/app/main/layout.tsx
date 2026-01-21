@@ -1,6 +1,9 @@
 import { Sidebar, Header, ServerModal, CalendarMockup } from '@meezy/ui/client';
-import { projectSidebarList } from '@meezy/ui';
-import { useServerJoinedTeam, useServerModal } from '@meezy/ui';
+import {
+  projectSidebarList,
+  useServerJoinedTeam,
+  useServerModal,
+} from '@meezy/ui/client';
 
 export default function MainLayout({
   children,

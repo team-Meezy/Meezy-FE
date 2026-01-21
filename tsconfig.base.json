@@ -7,7 +7,6 @@
     "strict": true,
     "paths": {
       "@meezy/ui": ["libs/ui/src/index.ts"],
-      "@meezy/ui/assets": ["libs/ui/src/assets/index.client.ts"],
       "@meezy/ui/client": ["libs/ui/src/client.ts"]
     }
   }

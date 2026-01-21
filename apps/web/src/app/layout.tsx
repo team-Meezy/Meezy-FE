@@ -4,7 +4,7 @@ import {
   ServerJoinedTeamProvider,
   ServerStateProvider,
   ServerModalProvider,
-} from '@meezy/ui';
+} from '@meezy/ui/client';
 
 export const metadata = {
   title: 'Welcome to web',

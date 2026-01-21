@@ -2,15 +2,14 @@
 
 import { useRouter } from 'next/navigation';
 import { useState } from 'react';
-import { useLoginFlow } from '@meezy/ui';
-import { colors } from '@meezy/ui';
-import { typography } from '@meezy/ui';
+import { useLoginFlow } from '../../hooks';
+import { colors, typography } from '../../design';
 import Image from 'next/image';
 import { SocialButton } from '../components/SocialButton';
-import LoginLogo from '../../assets/loginLogo.png';
-import Google from '../../assets/google.svg';
-import Kakao from '../../assets/kakao.svg';
-import Naver from '../../assets/naver.svg';
+import LoginLogo from '../../assets/LoginLogo.png';
+import Google from '../../assets/Google.svg';
+import Kakao from '../../assets/Kakao.svg';
+import Naver from '../../assets/Naver.svg';
 
 export function LoginPage() {
   const router = useRouter();

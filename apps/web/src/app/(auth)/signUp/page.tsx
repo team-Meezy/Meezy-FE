@@ -2,15 +2,16 @@
 
 import { useRouter } from 'next/navigation';
 import { colors, typography } from '@meezy/ui';
-import { EmailInput } from './components/email';
-import { AuthCodeInput } from './components/authcode';
-import { IdInput } from './components/id';
-import { NameInput } from './components/name';
-import { PasswordInput } from './components/password';
-import { Success } from './components/success';
+import {
+  EmailInput,
+  AuthCodeInput,
+  IdInput,
+  NameInput,
+  PasswordInput,
+  Success,
+} from '@meezy/ui';
 import { useState } from 'react';
-import { useSignupFlow } from './hooks/useSignupFlow';
-import { useTime } from './hooks/useTime';
+import { useSignupFlow, useTime } from '@meezy/ui';
 
 export default function SignUpEmailPage() {
   const { remainingTime, formattedTime } = useTime();

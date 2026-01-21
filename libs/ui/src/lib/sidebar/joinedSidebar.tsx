@@ -4,7 +4,7 @@ import { colors, typography } from '../../design';
 import Image from 'next/image';
 import { ChevronRight, JoinedPlus, Shrap } from '../../assets';
 import { useState, useEffect } from 'react';
-import { JoinedModal, UserKickModal } from '../models';
+import { JoinedModal, UserKickModal } from '../modals';
 import { useRouter } from 'next/navigation';
 
 interface JoinedSidebarProps {

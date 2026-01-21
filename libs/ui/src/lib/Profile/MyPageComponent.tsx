@@ -3,7 +3,7 @@
 import { useState } from 'react';
 import { colors, typography } from '../../design';
 import { ProfileImg, ProfileIdentity, ProfileActions } from './components';
-import { MyPageModal } from '../models';
+import { MyPageModal } from '../modals';
 
 const user = {
   name: 'John Doe',

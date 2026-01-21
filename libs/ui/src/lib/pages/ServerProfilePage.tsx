@@ -4,7 +4,7 @@ import { useState } from 'react';
 import { colors, typography } from '../../design';
 import { useImg } from '../../hooks';
 import Image from 'next/image';
-import { KickMember } from '../../assets';
+import { KickMember } from '../../assets/index.client';
 
 interface ServerProfilePageProps {
   userList: {

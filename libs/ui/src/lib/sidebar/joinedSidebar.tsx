@@ -2,7 +2,7 @@
 
 import { colors, typography } from '../../design';
 import Image from 'next/image';
-import { ChevronRight, JoinedPlus, Shrap } from '../../assets';
+import { ChevronRight, JoinedPlus, Shrap } from '../../assets/index.client';
 import { useState, useEffect } from 'react';
 import { JoinedModal, UserKickModal } from '../modals';
 import { useRouter } from 'next/navigation';

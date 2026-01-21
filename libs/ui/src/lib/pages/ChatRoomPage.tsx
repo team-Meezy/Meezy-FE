@@ -3,7 +3,7 @@
 import { useState } from 'react';
 import { colors, typography } from '../../design';
 import Image from 'next/image';
-import { Shrap } from '../../assets';
+import { Shrap } from '../../assets/index.client';
 import { useChatScroll } from '../../hooks';
 
 interface Message {

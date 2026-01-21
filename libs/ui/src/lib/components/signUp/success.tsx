@@ -2,7 +2,7 @@
 
 import Image from 'next/image';
 import { colors, typography } from '@meezy/ui';
-import { Receive } from '../../../assets';
+import { Receive } from '../../../assets/index.client';
 
 export function Success() {
   return (

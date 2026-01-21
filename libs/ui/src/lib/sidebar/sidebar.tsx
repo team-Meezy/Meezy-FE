@@ -2,7 +2,7 @@
 
 import { colors } from '../../design';
 import Image from 'next/image';
-import { Plus } from '../../assets';
+import { Plus } from '../../assets/index.client';
 import { useServerCreate } from '../../context';
 import { useServerJoinedTeam } from '../../context';
 import { useState } from 'react';

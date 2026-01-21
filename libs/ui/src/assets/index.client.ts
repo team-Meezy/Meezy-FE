@@ -9,6 +9,6 @@ export { default as Shrap } from './Shrap.svg';
 export { default as Google } from './Google.svg';
 export { default as Kakao } from './Kakao.svg';
 export { default as Naver } from './Naver.svg';
-export { default as Receive } from './Reseive.png';
+export { default as Receive } from './Receive.png';
 export { default as LoginLogo } from './LoginLogo.png';
 export { default as NoTeamReceive } from './NoTeam_Receive.png';

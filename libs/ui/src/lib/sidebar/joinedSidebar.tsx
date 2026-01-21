@@ -2,12 +2,9 @@
 
 import { colors, typography } from '../../design';
 import Image from 'next/image';
-import ChevronRight from '../../assets/ChevronRight.svg';
-import joinedPlus from '../../assets/joinedPlus.svg';
-import shrap from '../../assets/shrap.svg';
+import { ChevronRight, JoinedPlus, Shrap } from '../../assets';
 import { useState, useEffect } from 'react';
-import { JoinedModal } from '../models/joinedModel';
-import { UserKickModal } from '../models/userKickModal';
+import { JoinedModal, UserKickModal } from '../models';
 import { useRouter } from 'next/navigation';
 
 interface JoinedSidebarProps {
@@ -132,7 +129,7 @@ export function JoinedSidebar({
                 {team.room_name}
               </div>
               <button onClick={() => onOpenModal(team.type)}>
-                <Image src={joinedPlus} alt="addRoom" className="w-5" />
+                <Image src={JoinedPlus} alt="addRoom" className="w-5" />
               </button>
             </div>
 
@@ -149,7 +146,7 @@ export function JoinedSidebar({
                     onClickChatRoom(room.room_id);
                   }}
                 >
-                  <Image src={shrap} alt="shrap" className="w-4" />
+                  <Image src={Shrap} alt="shrap" className="w-4" />
                   <span>{room.room_name}</span>
                 </div>
               </div>

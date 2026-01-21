@@ -2,9 +2,9 @@
 
 import { colors } from '../../design';
 import Image from 'next/image';
-import plus from '../../assets/plus.svg';
-import { useServerCreate } from '../../context/ServerCreateProvider';
-import { useServerState } from '../../context/ServerStateProvider';
+import { Plus } from '../../assets';
+import { useServerCreate } from '../../context';
+import { useServerJoinedTeam } from '../../context';
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
 
@@ -20,12 +20,12 @@ interface SidebarProps {
 
 export function Sidebar({ onOpenModal, projectSidebarList }: SidebarProps) {
   const { imageFile } = useServerCreate();
-  const { setJoined } = useServerState();
+  const { setJoined } = useServerJoinedTeam();
   const [alarm, setAlarm] = useState(false);
   const router = useRouter();
 
   const handleTeamClick = (teamId: number) => {
-    setJoined(false);
+    setJoined(true);
     router.push(`/main/${teamId}`);
   };
 
@@ -42,7 +42,7 @@ export function Sidebar({ onOpenModal, projectSidebarList }: SidebarProps) {
           aria-label="팀 추가"
           onClick={onOpenModal}
         >
-          <Image src={plus} alt="plus" className="w-5" />
+          <Image src={Plus} alt="plus" className="w-5" />
         </button>
         {projectSidebarList?.map((team) => (
           <div

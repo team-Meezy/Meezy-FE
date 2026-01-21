@@ -1,13 +1,10 @@
-'use client';
-
-import { useState } from 'react';
 import {
   JoinedSidebar,
   CalendarMockup,
   useServerState,
   Header,
 } from '@meezy/ui';
-import { roomsrcList, userList, sidebarList } from '../context/list';
+import { roomsrcList, userList, sidebarList } from '@meezy/ui';
 import { useServerJoinedTeam } from '@meezy/ui';
 
 export default function ServerLayout({
@@ -16,8 +13,7 @@ export default function ServerLayout({
   children: React.ReactNode;
 }) {
   const { setChatRoom, setServerProfile } = useServerState();
-  const [selectedRoomId, setSelectedRoomId] = useState<number | null>(null);
-  const { joined } = useServerJoinedTeam();
+  const { joined, setSelectedRoomId } = useServerJoinedTeam();
 
   return (
     <div className="flex flex-1 overflow-hidden">

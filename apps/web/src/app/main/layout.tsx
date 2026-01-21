@@ -1,17 +1,14 @@
-'use client';
-
 import { Sidebar, Header, ServerModal, CalendarMockup } from '@meezy/ui';
-import { useState } from 'react';
-import { projectSidebarList } from './context/list';
-import { useServerJoinedTeam } from '@meezy/ui';
+import { projectSidebarList } from '@meezy/ui';
+import { useServerJoinedTeam, useServerModal } from '@meezy/ui';
 
 export default function MainLayout({
   children,
 }: {
   children: React.ReactNode;
 }) {
-  const [isModalOpen, setIsModalOpen] = useState(false);
   const { joined } = useServerJoinedTeam();
+  const { isModalOpen, setIsModalOpen } = useServerModal();
 
   return (
     <div className="flex h-screen w-full bg-[#0c0c0c] text-white overflow-hidden">

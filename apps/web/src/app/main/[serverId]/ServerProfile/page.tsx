@@ -1,5 +1,5 @@
 import { ServerProfilePage } from '@meezy/ui';
-import { projectSidebarList, userList } from '../../context/list';
+import { projectSidebarList, userList } from '@meezy/ui';
 
 export default function ServerProfile() {
   return (

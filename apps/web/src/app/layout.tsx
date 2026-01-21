@@ -3,6 +3,7 @@ import {
   ServerCreateProvider,
   ServerJoinedTeamProvider,
   ServerStateProvider,
+  ServerModalProvider,
 } from '@meezy/ui';
 
 export const metadata = {
@@ -20,7 +21,9 @@ export default function RootLayout({
       <body>
         <ServerCreateProvider>
           <ServerJoinedTeamProvider>
-            <ServerStateProvider>{children}</ServerStateProvider>
+            <ServerModalProvider>
+              <ServerStateProvider>{children}</ServerStateProvider>
+            </ServerModalProvider>
           </ServerJoinedTeamProvider>
         </ServerCreateProvider>
       </body>

@@ -3,8 +3,7 @@
 import { useEffect, useState } from 'react';
 import { createPortal } from 'react-dom';
 import { colors, typography } from '../../design';
-import { useImg } from '../../hooks/useImg';
-import { useServerJoinedTeam } from '../../context/ServerJoinedTeamProvider';
+import { useServerJoinedTeam } from '../../context';
 
 interface UserKickModalProps {
   isOpen: boolean;
@@ -15,7 +14,6 @@ interface UserKickModalProps {
 export function UserKickModal({ isOpen, type, onClose }: UserKickModalProps) {
   const [mounted, setMounted] = useState(false);
   const [serverName, setServerName] = useState('');
-  const [serverLink, setServerLink] = useState('');
   const [generalError, setGeneralError] = useState('');
   const { setJoined } = useServerJoinedTeam();
 
@@ -40,7 +38,7 @@ export function UserKickModal({ isOpen, type, onClose }: UserKickModalProps) {
       return false;
     }
 
-    setJoined(true);
+    setJoined(false);
 
     onClose();
   };

@@ -1,4 +1,4 @@
-export * from './serverModal';
-export * from './joinedModel';
-export * from './userKickModal';
+export * from './ServerModal';
 export * from './MyPageModal';
+export * from './JoinedModel';
+export * from './UserKickModal';

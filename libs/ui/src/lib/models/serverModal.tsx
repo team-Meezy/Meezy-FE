@@ -3,8 +3,9 @@
 import { useEffect, useState } from 'react';
 import { createPortal } from 'react-dom';
 import { colors, typography } from '../../design';
-import { useImg } from '../../hooks/useImg';
+import { useImg } from '../../hooks';
 import { useRouter } from 'next/navigation';
+import { useServerJoinedTeam } from '../../context';
 
 interface ServerModalProps {
   isOpen: boolean;
@@ -19,6 +20,7 @@ export function ServerModal({ isOpen, onClose }: ServerModalProps) {
   const [generalError, setGeneralError] = useState('');
   const { previewUrl, fileInputRef, handleClickUpload, handleImageChange } =
     useImg();
+  const { setJoined } = useServerJoinedTeam();
   const router = useRouter();
 
   const handleTeamClick = (teamId: number) => {
@@ -49,6 +51,7 @@ export function ServerModal({ isOpen, onClose }: ServerModalProps) {
     }
 
     handleTeamClick(1);
+    setJoined(true);
 
     onClose();
   };

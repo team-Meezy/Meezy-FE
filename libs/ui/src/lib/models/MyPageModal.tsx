@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from 'react';
 import { createPortal } from 'react-dom';
-import { colors, typography } from '../../design';
+import { typography } from '../../design';
 import { useRouter } from 'next/navigation';
 
 interface MyPageModalProps {

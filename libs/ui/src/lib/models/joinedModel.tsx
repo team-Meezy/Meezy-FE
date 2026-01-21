@@ -3,9 +3,7 @@
 import { useEffect, useState } from 'react';
 import { createPortal } from 'react-dom';
 import { colors, typography } from '../../design';
-import { useImg } from '../../hooks/useImg';
-import { useServerJoinedTeam } from '../../context/ServerJoinedTeamProvider';
-import Link from '../assets/link.svg';
+import { useServerJoinedTeam } from '../../context';
 
 interface JoinedModalProps {
   isOpen: boolean;
@@ -16,10 +14,7 @@ interface JoinedModalProps {
 export function JoinedModal({ isOpen, type, onClose }: JoinedModalProps) {
   const [mounted, setMounted] = useState(false);
   const [serverName, setServerName] = useState('');
-  const [serverLink, setServerLink] = useState('');
   const [generalError, setGeneralError] = useState('');
-  const { previewUrl, fileInputRef, handleClickUpload, handleImageChange } =
-    useImg();
   const { setJoined } = useServerJoinedTeam();
 
   useEffect(() => {
@@ -94,9 +89,9 @@ export function JoinedModal({ isOpen, type, onClose }: JoinedModalProps) {
 
             <input
               type="text"
-              value={serverLink}
+              value={serverName}
               onChange={(e) => {
-                setServerLink(e.target.value);
+                setServerName(e.target.value);
               }}
               placeholder={type === 'ROOM' ? '채널 이름' : 'http:sss....'}
               className="w-full border-none rounded-lg p-3 placeholder:text-gray-500 outline-none transition-all"

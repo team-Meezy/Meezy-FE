@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { ApiError } from '../../../api/types/error';
+import { ApiError } from '../api';
 import { useRouter } from 'next/navigation';
 
 interface SignupFlowParams {

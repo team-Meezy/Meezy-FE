@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react';
-import { colors } from '@meezy/ui';
+import { colors } from '../design';
 
 export function useTime() {
   const [remainingTime, setRemainingTime] = useState(180);
@@ -27,7 +27,7 @@ export function useTime() {
 
     return () => clearInterval(timer);
   }, []);
-  
+
   return {
     remainingTime,
     formattedTime: formatTime(remainingTime),

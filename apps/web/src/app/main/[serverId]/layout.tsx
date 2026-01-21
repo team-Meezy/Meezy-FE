@@ -8,6 +8,7 @@ import {
   Header,
 } from '@meezy/ui';
 import { roomsrcList, userList, sidebarList } from '../context/list';
+import { useServerJoinedTeam } from '@meezy/ui';
 
 export default function ServerLayout({
   children,
@@ -16,6 +17,7 @@ export default function ServerLayout({
 }) {
   const { setChatRoom, setServerProfile } = useServerState();
   const [selectedRoomId, setSelectedRoomId] = useState<number | null>(null);
+  const { joined } = useServerJoinedTeam();
 
   return (
     <div className="flex flex-1 overflow-hidden">
@@ -29,12 +31,14 @@ export default function ServerLayout({
       />
 
       <div className="flex-1 flex flex-col overflow-hidden">
-        <Header />
+        {joined && <Header />}
         <div className="flex flex-1 overflow-hidden">
           {children}
-          <aside className="max-w-[270px] bg-[#111111] border border-white/5 p-6">
-            <CalendarMockup />
-          </aside>
+          {joined && (
+            <aside className="max-w-[270px] bg-[#111111] border border-white/5 p-6">
+              <CalendarMockup />
+            </aside>
+          )}
         </div>
       </div>
     </div>

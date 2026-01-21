@@ -1,6 +1,6 @@
 'use client';
 
-import { Header, Sidebar, ServerModal, CalendarMockup } from '@meezy/ui';
+import { Sidebar, Header, ServerModal, CalendarMockup } from '@meezy/ui';
 import { useState } from 'react';
 import { projectSidebarList } from './context/list';
 import { useServerJoinedTeam } from '@meezy/ui';

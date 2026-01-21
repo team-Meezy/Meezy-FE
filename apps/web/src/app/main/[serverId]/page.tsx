@@ -7,7 +7,6 @@ import { useParams } from 'next/navigation';
 export default function TeamPage() {
   const params = useParams();
   const serverId = Number(params.serverId);
-  const { setFeedback, setSummary } = useServerState();
 
   const roomNameFind = Number.isNaN(serverId)
     ? null

@@ -5,7 +5,7 @@ import {
   useServerJoinedTeam,
   useServerState,
 } from '../../../context';
-import { JoinedSidebar } from '../../sidebar';
+import { JoinedSideba } from '../../sidebar';
 import { CalendarMockup, Header } from '../../components';
 
 export function ServerIdLayoutWrapper({
@@ -18,7 +18,7 @@ export function ServerIdLayoutWrapper({
 
   return (
     <div className="flex flex-1 overflow-hidden">
-      <JoinedSidebar
+      <JoinedSideba
         setChatRoom={setChatRoom}
         setSelectedRoomId={setSelectedRoomId}
         setServerProfile={setServerProfile}

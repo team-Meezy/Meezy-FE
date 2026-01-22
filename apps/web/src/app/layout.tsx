@@ -1,3 +1,4 @@
+import '../globals.css';
 import { RootLayoutWrapper } from '@meezy/ui/client';
 
 export default function RootLayout({

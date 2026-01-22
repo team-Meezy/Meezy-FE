@@ -1,6 +1,5 @@
 'use client';
 
-import './global.css';
 import {
   ServerCreateProvider,
   ServerJoinedTeamProvider,

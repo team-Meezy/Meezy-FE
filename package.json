@@ -75,6 +75,6 @@
     "libs/shared/*",
     "libs/shop/*",
     "web",
-    "ui"
+    "libs/ui"
   ]
 }

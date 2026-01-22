@@ -7,6 +7,8 @@ const ServerJoinedTeamContext = createContext<{
   setJoined: (joined: boolean) => void;
   meeting: boolean;
   setMeeting: (meeting: boolean) => void;
+  selectedRoomId: number | null;
+  setSelectedRoomId: (selectedRoomId: number | null) => void;
 } | null>(null);
 
 export function ServerJoinedTeamProvider({
@@ -16,10 +18,18 @@ export function ServerJoinedTeamProvider({
 }) {
   const [joined, setJoined] = useState(false);
   const [meeting, setMeeting] = useState(false);
+  const [selectedRoomId, setSelectedRoomId] = useState<number | null>(null);
 
   return (
     <ServerJoinedTeamContext.Provider
-      value={{ joined, setJoined, meeting, setMeeting }}
+      value={{
+        joined,
+        setJoined,
+        meeting,
+        setMeeting,
+        selectedRoomId,
+        setSelectedRoomId,
+      }}
     >
       {children}
     </ServerJoinedTeamContext.Provider>

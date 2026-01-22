@@ -6,7 +6,8 @@
     "target": "es2022",
     "strict": true,
     "paths": {
-      "@meezy/ui": ["libs/ui/src/index.ts"]
+      "@meezy/ui": ["libs/ui/src/index.ts"],
+      "@meezy/ui/client": ["libs/ui/src/client.ts"]
     }
   }
 }

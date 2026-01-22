@@ -1,3 +1,5 @@
+'use client';
+
 import { colors, typography } from '../../../design';
 
 interface ProfileIdentityProps {

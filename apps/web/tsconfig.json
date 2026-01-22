@@ -26,7 +26,7 @@
     "src/**/*.jsx",
     ".next/types/**/*.ts",
     "next-env.d.ts"
-, "../../libs/ui/src/lib/ServerProfilePage.tsx"  ],
+, "../../libs/ui/src/lib/pages/ServerProfilePage.tsx", "../../libs/ui/src/hooks/useLoginFlow.tsx", "../../libs/ui/src/hooks/useSignupFlow.tsx", "../../libs/ui/src/hooks/useTime.tsx", "../../libs/ui/src/context/List.ts"  ],
   "exclude": [
     "out-tsc",
     "dist",

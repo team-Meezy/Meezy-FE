@@ -32,7 +32,7 @@ interface JoinedSidebarProps {
   }[];
 }
 
-export function JoinedSideba({
+export function JoinedSidebar({
   setChatRoom,
   setSelectedRoomId,
   setServerProfile,

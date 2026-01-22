@@ -4,9 +4,9 @@ import {
   sidebarList,
   useServerJoinedTeam,
   useServerState,
-} from '../../../../context';
-import { JoinedSidebar } from '../../../sidebar';
-import { CalendarMockup, Header } from '../../../components';
+} from '../../../context';
+import { JoinedSidebar } from '../../sidebar';
+import { CalendarMockup, Header } from '../../components';
 
 export function ServerIdLayoutWrapper({
   children,

@@ -1,7 +1,7 @@
 'use client';
 
-import { MainRoomPage } from '../../MainRoomPage';
-import { projectSidebarList } from '../../../../context';
+import { MainRoomPage } from '../MainRoomPage';
+import { projectSidebarList } from '../../../context';
 import { useParams } from 'next/navigation';
 
 export function MainRoomWrapper() {

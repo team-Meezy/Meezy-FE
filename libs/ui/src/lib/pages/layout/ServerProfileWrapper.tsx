@@ -1,5 +1,5 @@
-import { ServerProfilePage } from '../../ServerProfilePage';
-import { projectSidebarList, userList } from '../../../../context';
+import { ServerProfilePage } from '../ServerProfilePage';
+import { projectSidebarList, userList } from '../../../context';
 
 export function ServerProfileWrapper() {
   return (

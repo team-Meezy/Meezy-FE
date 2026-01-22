@@ -1,6 +1,6 @@
 import Image from 'next/image';
-import { NoTeamReceive } from '../../../../assets/index.client';
-import { colors } from '../../../../design';
+import { NoTeamReceive } from '../../../assets/index.client';
+import { colors } from '../../../design';
 
 export function MainPageWrapper() {
   return (

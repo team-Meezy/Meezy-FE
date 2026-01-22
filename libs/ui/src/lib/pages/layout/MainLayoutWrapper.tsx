@@ -1,13 +1,13 @@
 'use client';
 
-import { Header, CalendarMockup } from '../../../components';
-import { TeamSidebar } from '../../../sidebar';
-import { ServerModal } from '../../../modals';
+import { Header, CalendarMockup } from '../../components';
+import { TeamSidebar } from '../../sidebar';
+import { ServerModal } from '../../modals';
 import {
   projectSidebarList,
   useServerJoinedTeam,
   useServerModal,
-} from '../../../../context';
+} from '../../../context';
 
 export function MainLayoutWrapper({ children }: { children: React.ReactNode }) {
   const { joined } = useServerJoinedTeam();

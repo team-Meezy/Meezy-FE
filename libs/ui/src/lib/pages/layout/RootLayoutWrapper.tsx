@@ -6,7 +6,7 @@ import {
   ServerJoinedTeamProvider,
   ServerStateProvider,
   ServerModalProvider,
-} from '../../../../context';
+} from '../../../context';
 
 export const metadata = {
   title: 'Welcome to web',

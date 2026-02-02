@@ -7,7 +7,7 @@ import {
 } from '../../../context';
 import { JoinedSidebar } from '../../sidebar';
 import { CalendarMockup, Header } from '../../components';
-// import { ReceiveAiAssistant } from '../../components';
+import { ReceiveAiAssistant } from '../../components';
 
 export function ServerIdLayoutWrapper({
   children,
@@ -35,7 +35,7 @@ export function ServerIdLayoutWrapper({
           {joined && (
             <aside className="max-w-[270px] bg-[#111111] border border-white/5 p-6 flex flex-col gap-10">
               <CalendarMockup />
-              {/* <ReceiveAiAssistant /> */}
+              <ReceiveAiAssistant />
             </aside>
           )}
         </div>

@@ -4,3 +4,4 @@ export * from './ServerIdLayoutWrapper';
 export * from './MainRoomWrapper';
 export * from './ServerProfileWrapper';
 export * from './MainPageWrapper';
+export * from './MeetingLayoutWrapper';

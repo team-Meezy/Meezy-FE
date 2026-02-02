@@ -18,6 +18,11 @@ export function Header() {
     router.push('/main/mypage');
   };
 
+  const onClickMeeting = (serverId: number) => {
+    setMeeting(!meeting);
+    router.push(`/main/${serverId}/meeting`);
+  };
+
   return (
     <header
       className="w-full flex justify-between items-center p-6 border-l border-white/5"
@@ -46,7 +51,7 @@ export function Header() {
                 : colors.primary[500],
               ...typography.body.BodyM,
             }}
-            onClick={() => setMeeting(!meeting)}
+            onClick={() => onClickMeeting(1)}
           >
             {meeting ? '회의 나가기' : '회의 시작'}
           </button>

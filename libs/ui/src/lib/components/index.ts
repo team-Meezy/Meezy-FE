@@ -7,4 +7,4 @@ export * from './Input';
 export * from './ParticipationChart';
 export * from './SocialButton';
 export * from './signUp';
-export * from './ReceiveAssistant';
+// export * from './ReceiveAssistant';

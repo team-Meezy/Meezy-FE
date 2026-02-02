@@ -7,7 +7,7 @@ import {
 } from '../../../context';
 import { JoinedSidebar } from '../../sidebar';
 import { CalendarMockup, Header } from '../../components';
-import { ReceiveAiAssistant } from '../../components';
+// import { ReceiveAiAssistant } from '../../components';
 
 export function ServerIdLayoutWrapper({
   children,

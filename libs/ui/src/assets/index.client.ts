@@ -12,3 +12,4 @@ export { default as Naver } from './Naver.svg';
 export { default as Receive } from './Receive.png';
 export { default as LoginLogo } from './LoginLogo.png';
 export { default as NoTeamReceive } from './NoTeam_Receive.png';
+export { default as Nokamera } from './Nokamera.svg';

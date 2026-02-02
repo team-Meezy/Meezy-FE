@@ -20,7 +20,11 @@ export function Header() {
 
   const onClickMeeting = (serverId: number) => {
     setMeeting(!meeting);
-    router.push(`/main/${serverId}/meeting`);
+    if (meeting) {
+      router.push(`/main/${serverId}`);
+    } else {
+      router.push(`/main/${serverId}/meeting`);
+    }
   };
 
   return (

@@ -8,3 +8,5 @@ export * from './ServerProfilePage';
 export * from './LoginPage';
 export * from './SignUpPage';
 export * from './layout';
+export * from './MeetingRoomPage';
+export * from './VideoCard';

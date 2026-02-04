@@ -23,7 +23,7 @@ export function Header() {
     if (meeting) {
       router.push(`/main/${serverId}`);
     } else {
-      router.push(`/main/${serverId}/meeting`);
+      router.push(`/main/${serverId}/webRTC`);
     }
   };
 

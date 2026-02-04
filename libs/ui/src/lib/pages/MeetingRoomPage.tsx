@@ -2,6 +2,7 @@
 
 import { VideoCard } from './VideoCard';
 import { useState } from 'react';
+import UseWebRTC from '../../hooks/useWebRTC';
 import Image from 'next/image';
 import Nokamera from '../../assets/Nokamera.svg';
 import Mike from '../../assets/mike.svg';
@@ -21,6 +22,7 @@ export const MeetingRoomPage = () => {
   const count = userList.length;
   const [isMike, setIsMike] = useState(true);
   const [isKamera, setIsKamera] = useState(false);
+  const localStream = true;
 
   const onMikeClick = () => {
     setIsMike(!isMike);

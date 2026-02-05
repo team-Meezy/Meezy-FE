@@ -1,11 +1,12 @@
 'use client';
 
-import { useWebRTC } from '../../hooks/index';
+interface WebRTCProps {
+  videoRef: React.RefObject<HTMLVideoElement | null>;
+}
 
-export default function WebRTC() {
-  const { videoRef } = useWebRTC('1');
+export default function WebRTC({ videoRef }: WebRTCProps) {
   return (
-    <div className="w-full h-full max-h-[120px] flex-1 flex flex-col items-center justify-center">
+    <div className="w-full h-full max-h-[150px] flex-1 flex flex-col items-center justify-center">
       <video
         ref={videoRef}
         autoPlay

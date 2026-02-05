@@ -2,12 +2,12 @@
 
 import { VideoCard } from './VideoCard';
 import { useState } from 'react';
-import UseWebRTC from '../../hooks/useWebRTC';
 import Image from 'next/image';
 import Nokamera from '../../assets/Nokamera.svg';
 import Mike from '../../assets/mike.svg';
 import NoMike from '../../assets/NoMike.svg';
 import Kamera from '../../assets/Kamera.svg';
+import { useWebRTC } from '../../hooks/index';
 
 //최대 10명
 const userList = [
@@ -22,14 +22,18 @@ export const MeetingRoomPage = () => {
   const count = userList.length;
   const [isMike, setIsMike] = useState(true);
   const [isKamera, setIsKamera] = useState(false);
-  const localStream = true;
+  const { toggleVideo, toggleAudio, videoRef } = useWebRTC('1');
 
   const onMikeClick = () => {
-    setIsMike(!isMike);
+    const nextState = !isMike;
+    setIsMike(nextState);
+    toggleAudio(nextState);
   };
 
   const onKameraClick = () => {
-    setIsKamera(!isKamera);
+    const nextState = !isKamera;
+    setIsKamera(nextState);
+    toggleVideo(nextState);
   };
 
   const getGridCols = () => {
@@ -58,6 +62,9 @@ export const MeetingRoomPage = () => {
                   isSpeaking={user.isSpeaking}
                   isMike={isMike}
                   isKamera={isKamera}
+                  videoRef={user.id === 1 ? videoRef : undefined}
+                  onMikeClick={onMikeClick}
+                  onKameraClick={onKameraClick}
                 />
               </div>
             );

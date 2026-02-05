@@ -1,10 +1,11 @@
-import { useEffect, useRef } from 'react';
+import { useEffect, useRef, useState } from 'react';
 
 export function usePeerConnection(
-  videoRef: React.RefObject<HTMLVideoElement>,
+  videoRef: React.RefObject<HTMLVideoElement | null>,
   onIceCandidate: (candidate: RTCIceCandidate) => void
 ) {
   const pcRef = useRef<RTCPeerConnection | null>(null);
+  const [stream, setStream] = useState<MediaStream | null>(null);
 
   useEffect(() => {
     let isMounted = true;
@@ -79,5 +80,23 @@ export function usePeerConnection(
     };
   }, []);
 
-  return pcRef;
+  const toggleVideo = (isEnable: boolean) => {
+    if (stream) {
+      stream.getVideoTracks().forEach((track) => {
+        track.enabled = isEnable;
+        console.log(`Camera is now ${track.enabled ? 'ON' : 'OFF'}`);
+      });
+    }
+  };
+
+  const toggleAudio = (isEnable: boolean) => {
+    if (stream) {
+      stream.getAudioTracks().forEach((track) => {
+        track.enabled = isEnable;
+        console.log(`Mic is now ${track.enabled ? 'ON' : 'OFF'}`);
+      });
+    }
+  };
+
+  return { pcRef, toggleVideo, toggleAudio };
 }

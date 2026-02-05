@@ -5,7 +5,7 @@ import { useWebRTC } from '../../hooks/index';
 export default function WebRTC() {
   const { videoRef } = useWebRTC('1');
   return (
-    <div className="flex-1 flex flex-col gap-10" style={{ padding: 20 }}>
+    <div className="w-full h-full max-h-[120px] flex-1 flex flex-col items-center justify-center">
       <video
         ref={videoRef}
         autoPlay
@@ -20,10 +20,7 @@ export default function WebRTC() {
             .then(() => console.log('Video playing'))
             .catch((err) => console.error('Play failed:', err));
         }}
-        style={{
-          width: '400px',
-          height: '300px',
-        }}
+        className="w-[500px] h-[300px] object-cover"
       />
     </div>
   );

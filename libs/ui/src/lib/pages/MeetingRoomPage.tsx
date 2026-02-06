@@ -1,13 +1,14 @@
 'use client';
 
 import { VideoCard } from './VideoCard';
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import Image from 'next/image';
 import Nokamera from '../../assets/Nokamera.svg';
 import Mike from '../../assets/mike.svg';
 import NoMike from '../../assets/NoMike.svg';
 import Kamera from '../../assets/Kamera.svg';
 import { useWebRTC } from '../../hooks/index';
+import { useServerJoinedTeam } from '../../context';
 
 //최대 10명
 const userList = [
@@ -19,29 +20,41 @@ const userList = [
 ];
 
 export const MeetingRoomPage = () => {
+  const { meeting, setMeeting } = useServerJoinedTeam();
   const count = userList.length;
   const [isMike, setIsMike] = useState(false);
   const [isKamera, setIsKamera] = useState(false);
   const { toggleVideo, toggleAudio, videoRef, videoEnabled, audioEnabled } =
     useWebRTC('1');
 
+  useEffect(() => {
+    if (!meeting) {
+      toggleAudio(false);
+      toggleVideo(false);
+    }
+  }, [meeting]);
+
   const onMikeClick = () => {
     const nextState = !isMike;
     setIsMike(nextState);
-    if (audioEnabled) {
-      toggleAudio(false);
-    } else {
-      toggleAudio(true);
+    if (meeting) {
+      if (audioEnabled) {
+        toggleAudio(false);
+      } else {
+        toggleAudio(true);
+      }
     }
   };
 
   const onKameraClick = () => {
     const nextState = !isKamera;
     setIsKamera(nextState);
-    if (videoEnabled) {
-      toggleVideo(false);
-    } else {
-      toggleVideo(true);
+    if (meeting) {
+      if (videoEnabled) {
+        toggleVideo(false);
+      } else {
+        toggleVideo(true);
+      }
     }
   };
 

@@ -22,18 +22,19 @@ export const MeetingRoomPage = () => {
   const count = userList.length;
   const [isMike, setIsMike] = useState(true);
   const [isKamera, setIsKamera] = useState(false);
-  const { toggleVideo, toggleAudio, videoRef } = useWebRTC('1');
+  const { toggleVideo, toggleAudio, videoRef, videoEnabled, audioEnabled } =
+    useWebRTC('1');
 
   const onMikeClick = () => {
     const nextState = !isMike;
     setIsMike(nextState);
-    toggleAudio(nextState);
+    toggleAudio(!audioEnabled);
   };
 
   const onKameraClick = () => {
     const nextState = !isKamera;
     setIsKamera(nextState);
-    toggleVideo(nextState);
+    toggleVideo(!videoEnabled);
   };
 
   const getGridCols = () => {

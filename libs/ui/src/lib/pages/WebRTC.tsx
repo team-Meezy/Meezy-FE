@@ -21,6 +21,7 @@ export default function WebRTC({ videoRef }: WebRTCProps) {
             .then(() => console.log('Video playing'))
             .catch((err) => console.error('Play failed:', err));
         }}
+        style={{ transform: 'scaleX(-1)' }}
         className="w-[500px] h-[300px] object-cover"
       />
     </div>

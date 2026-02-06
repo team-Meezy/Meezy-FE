@@ -8,21 +8,15 @@ export function useWebRTC(teamId: string) {
   const videoRef = useRef<HTMLVideoElement | null>(null);
   const sendRef = useRef<((data: any) => void) | null>(null);
 
-  const { pcRef, toggleVideo, toggleAudio } = usePeerConnection(
-    videoRef,
-    (candidate) => {
+  const { pcRef, toggleVideo, toggleAudio, videoEnabled, audioEnabled } =
+    usePeerConnection(videoRef, (candidate) => {
       if (sendRef.current) {
         sendRef.current({
           type: 'ice-candidate',
           candidate,
         });
       }
-    }
-  );
-
-  // ... (existing code) ...
-
-  return { videoRef, toggleVideo, toggleAudio };
+    });
 
   const { send } = useWebSocketSignal(
     `wss://BASE_URL/app/teams/${teamId}/meeting/signal`, //실제 나의 주소
@@ -48,7 +42,9 @@ export function useWebRTC(teamId: string) {
     }
   );
 
-  return { videoRef, toggleVideo, toggleAudio };
+  sendRef.current = send;
+
+  return { videoRef, toggleVideo, toggleAudio, videoEnabled, audioEnabled };
 }
 
 export default useWebRTC;

@@ -6,6 +6,8 @@ export function usePeerConnection(
 ) {
   const pcRef = useRef<RTCPeerConnection | null>(null);
   const [stream, setStream] = useState<MediaStream | null>(null);
+  const [videoEnabled, setVideoEnabled] = useState(false);
+  const [audioEnabled, setAudioEnabled] = useState(false);
 
   useEffect(() => {
     let isMounted = true;
@@ -18,40 +20,24 @@ export function usePeerConnection(
 
     navigator.mediaDevices
       .getUserMedia({ video: true, audio: false })
-      .then((stream) => {
-        console.log('getUserMedia success, stream:', stream);
-        console.log('Stream tracks:', stream.getTracks());
-        console.log(stream.getTracks().filter((d) => d.kind === 'videoinput'));
+      .then((mediaStream) => {
+        console.log('getUserMedia success, stream:', mediaStream);
         if (!isMounted || pc.signalingState === 'closed') {
           console.log('Component unmounted or PC closed');
+          mediaStream.getTracks().forEach((track) => track.stop());
           return;
         }
 
+        setStream(mediaStream);
+
         if (videoRef.current) {
-          console.log('Setting srcObject to video element');
-          videoRef.current.srcObject = stream;
-          console.log('Video element srcObject:', videoRef.current.srcObject);
-        } else {
-          console.log('videoRef.current is null');
+          videoRef.current.srcObject = mediaStream;
         }
 
-        stream.getTracks().forEach((track) => {
+        mediaStream.getTracks().forEach((track) => {
           if (pc.signalingState !== 'closed') {
-            pc.addTrack(track, stream);
+            pc.addTrack(track, mediaStream);
           }
-          console.log('track.readyState:', track.readyState);
-
-          track.onunmute = () => {
-            console.log('track unmuted → frames start');
-          };
-
-          track.onmute = () => {
-            console.log('track muted');
-          };
-
-          track.onended = () => {
-            console.log('track ended');
-          };
         });
       })
       .catch((error) => {
@@ -80,12 +66,49 @@ export function usePeerConnection(
     };
   }, []);
 
-  const toggleVideo = (isEnable: boolean) => {
-    if (stream) {
-      stream.getVideoTracks().forEach((track) => {
-        track.enabled = isEnable;
-        console.log(`Camera is now ${track.enabled ? 'ON' : 'OFF'}`);
+  const toggleVideo = async (isEnable: boolean) => {
+    if (!stream || !pcRef.current) return;
+
+    if (isEnable) {
+      // 1. 카메라 켜기
+      try {
+        const newStream = await navigator.mediaDevices.getUserMedia({
+          video: true,
+        });
+        const newTrack = newStream.getVideoTracks()[0];
+
+        // 기존 스트림에 새 트랙 추가
+        stream.addTrack(newTrack);
+
+        // PeerConnection의 Sender 트랙 교체 (재협상 없이 화면 갱신)
+        const sender = pcRef.current
+          .getSenders()
+          .find((s) => s.track?.kind === 'video');
+        if (sender) {
+          await sender.replaceTrack(newTrack);
+        }
+
+        setVideoEnabled(true);
+      } catch (err) {
+        console.error('카메라를 켜는 데 실패했습니다:', err);
+      }
+    } else {
+      // 2. 카메라 끄기 (하드웨어 종료)
+      const videoTracks = stream.getVideoTracks();
+      videoTracks.forEach((track) => {
+        track.stop(); // 하드웨어 전원 종료
+        stream.removeTrack(track); // 스트림에서 제거
       });
+
+      // 상대방에게 검은 화면(null) 송출
+      const sender = pcRef.current
+        .getSenders()
+        .find((s) => s.track?.kind === 'video');
+      if (sender) {
+        await sender.replaceTrack(null);
+      }
+
+      setVideoEnabled(false);
     }
   };
 
@@ -93,10 +116,18 @@ export function usePeerConnection(
     if (stream) {
       stream.getAudioTracks().forEach((track) => {
         track.enabled = isEnable;
-        console.log(`Mic is now ${track.enabled ? 'ON' : 'OFF'}`);
       });
+      setAudioEnabled(isEnable);
+      console.log(`Mic is now ${isEnable ? 'ON' : 'OFF'}`);
     }
   };
 
-  return { pcRef, toggleVideo, toggleAudio };
+  return {
+    pcRef,
+    toggleVideo,
+    toggleAudio,
+    videoEnabled,
+    audioEnabled,
+    stream,
+  };
 }

@@ -32,7 +32,7 @@ export const MeetingRoomPage = () => {
       toggleAudio(false);
       toggleVideo(false);
     }
-  }, [meeting]);
+  }, [meeting, toggleAudio, toggleVideo]);
 
   const onMikeClick = () => {
     const nextState = !isMike;

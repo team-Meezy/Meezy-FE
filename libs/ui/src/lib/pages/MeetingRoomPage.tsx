@@ -20,7 +20,7 @@ const userList = [
 
 export const MeetingRoomPage = () => {
   const count = userList.length;
-  const [isMike, setIsMike] = useState(true);
+  const [isMike, setIsMike] = useState(false);
   const [isKamera, setIsKamera] = useState(false);
   const { toggleVideo, toggleAudio, videoRef, videoEnabled, audioEnabled } =
     useWebRTC('1');
@@ -28,13 +28,21 @@ export const MeetingRoomPage = () => {
   const onMikeClick = () => {
     const nextState = !isMike;
     setIsMike(nextState);
-    toggleAudio(!audioEnabled);
+    if (audioEnabled) {
+      toggleAudio(false);
+    } else {
+      toggleAudio(true);
+    }
   };
 
   const onKameraClick = () => {
     const nextState = !isKamera;
     setIsKamera(nextState);
-    toggleVideo(!videoEnabled);
+    if (videoEnabled) {
+      toggleVideo(false);
+    } else {
+      toggleVideo(true);
+    }
   };
 
   const getGridCols = () => {

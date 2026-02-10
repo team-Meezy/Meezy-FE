@@ -40,7 +40,7 @@ export function SignUpPage() {
   };
 
   const handleKeyDown = async (e: React.KeyboardEvent) => {
-    if (e.key === 'Enter') {
+    if (e.key === 'Enter' && !isLoading) {
       e.preventDefault();
       await handleNext();
     }

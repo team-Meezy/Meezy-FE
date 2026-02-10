@@ -200,9 +200,21 @@ export function LoginPage() {
                 </div>
               </div>
               <div className="flex justify-center gap-4">
-                <SocialButton icon={Google} color="bg-white text-black" />
-                <SocialButton icon={Kakao} color="bg-yellow-400 text-black" />
-                <SocialButton icon={Naver} color="bg-green-500 text-white" />
+                <SocialButton
+                  icon={Google}
+                  color="bg-white text-black"
+                  provider="google"
+                />
+                <SocialButton
+                  icon={Kakao}
+                  color="bg-yellow-400 text-black"
+                  provider="kakao"
+                />
+                <SocialButton
+                  icon={Naver}
+                  color="bg-green-500 text-white"
+                  provider="naver"
+                />
               </div>
               {/* 하단 버튼 및 가입 링크 */}
               <div className="pt-2 text-center">

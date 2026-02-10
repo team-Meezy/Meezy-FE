@@ -50,3 +50,9 @@ test-output
 # Next.js
 .next
 out
+
+# env files
+.env
+*.env
+.env.*
+!.env.example

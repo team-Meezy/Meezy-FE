@@ -32,7 +32,7 @@ export function LoginPage() {
         backgroundColor: colors.black[100],
       }}
     >
-      <div className="flex w-full items-center justify-between gap-10 md:gap-20">
+      <div className="flex w-full items-center justify-center xl:justify-between gap-10 md:gap-20">
         {/* 왼쪽: 브랜드 섹션 */}
         <div className="hidden lg:block max-w-xl">
           <Image

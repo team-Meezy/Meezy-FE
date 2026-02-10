@@ -8,5 +8,10 @@
     "jsx": "react-jsx",
     "lib": ["dom", "esnext"]
   },
-  "include": ["src/**/*.ts", "src/**/*.tsx"]
+  "include": ["src/**/*.ts", "src/**/*.tsx"],
+  "references": [
+    {
+      "path": "../shop/data/tsconfig.lib.json"
+    }
+  ]
 }

@@ -39,6 +39,13 @@ export function SignUpPage() {
     router.push('/login');
   };
 
+  const handleKeyDown = async (e: React.KeyboardEvent) => {
+    if (e.key === 'Enter') {
+      e.preventDefault();
+      await handleNext();
+    }
+  };
+
   const handleResendCode = async () => {
     // TODO: Implement resend logic - call the auth code API again
     // Reset the timer as well
@@ -123,7 +130,14 @@ export function SignUpPage() {
           </div>
         )}
 
-        <form className="w-full space-y-10">
+        <form
+          className="w-full space-y-10"
+          onKeyDown={handleKeyDown}
+          onSubmit={(e) => {
+            e.preventDefault();
+            handleNext();
+          }}
+        >
           {step === 1 && <EmailInput email={email} setEmail={setEmail} />}
           {step === 2 && (
             <AuthCodeInput authCode={authCode} setAuthCode={setAuthCode} />

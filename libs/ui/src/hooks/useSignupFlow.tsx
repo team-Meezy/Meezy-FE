@@ -3,6 +3,11 @@
 import { useState, useEffect } from 'react';
 import { ApiError } from '../api';
 import { useRouter } from 'next/navigation';
+import {
+  useRequestEmailVerification,
+  useVerifyEmailCode,
+  useLocalSignup,
+} from '@org/shop-data';
 
 interface SignupFlowParams {
   name: string;
@@ -41,20 +46,26 @@ export function useSignupFlow({
 
     try {
       setIsLoading(true);
-      // const response = await signupAuthCode({ email });
-      // console.log('응답 데이터:', response);
+      const response = await useRequestEmailVerification(email);
+      console.log('응답 데이터:', response);
 
       return true;
-    } catch (error) {
-      const apiError = error as ApiError;
-      setGeneralError(apiError.message || '인증번호 전송에 실패했습니다.');
+    } catch (error: any) {
+      const statusCode = error.response?.status || error.statusCode;
+      if (statusCode === 409) {
+        setGeneralError('이미 가입된 이메일입니다.');
+      } else if (statusCode === 400) {
+        setGeneralError('잘못된 이메일 형식입니다.');
+      } else {
+        setGeneralError('인증번호 전송에 실패했습니다. 다시 시도해 주세요.');
+      }
       return false;
     } finally {
       setIsLoading(false);
     }
   };
 
-  const validatePasswordStep = () => {
+  const validatePasswordStep = async () => {
     if (!password || !passwordConfirm) {
       setGeneralError('비밀번호를 입력해주세요.');
       return false;
@@ -74,7 +85,22 @@ export function useSignupFlow({
       return false;
     }
 
-    return true;
+    try {
+      setIsLoading(true);
+      const response = await useLocalSignup(email, id, name, password);
+      console.log('성공', response);
+      return true;
+    } catch (error: any) {
+      const statusCode = error.response?.status || error.statusCode;
+      if (statusCode === 409) {
+        setGeneralError('이미 사용 중인 아이디 또는 이메일입니다.');
+      } else {
+        setGeneralError('회원가입에 실패했습니다. 다시 시도해 주세요.');
+      }
+      return false;
+    } finally {
+      setIsLoading(false);
+    }
   };
 
   const validateNameStep = () => {
@@ -99,17 +125,9 @@ export function useSignupFlow({
       return false;
     }
     try {
+      const response = await useVerifyEmailCode(email, authCode);
+      console.log('응답 데이터:', response);
       setIsLoading(true);
-      // const response = await signupAuthCodeCheck({ email, otp: authCode });
-      // console.log('응답 데이터:', response);
-      // const loginData = await signup({
-      //   name,
-      //   email,
-      //   password,
-      //   passwordConfirm,
-      // });
-      // console.log('회원가입 응답 데이터:', loginData);
-
       return true;
     } catch (error) {
       const apiError = error as ApiError;
@@ -130,7 +148,7 @@ export function useSignupFlow({
     else if (step === 2 && (await validateAuthCodeStep())) setStep(step + 1);
     else if (step === 3 && validateIdStep()) setStep(step + 1);
     else if (step === 4 && validateNameStep()) setStep(step + 1);
-    else if (step === 5 && validatePasswordStep()) setStep(step + 1);
+    else if (step === 5 && (await validatePasswordStep())) setStep(step + 1);
     else if (step === 6 && validateSuccessStep()) setStep(step + 1);
   };
 

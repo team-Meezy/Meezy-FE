@@ -2,6 +2,7 @@
 
 import { useState } from 'react';
 import { Input } from '../../components';
+import { useEmailVerification } from '@org/shop-data';
 
 export function EmailInput({
   email,

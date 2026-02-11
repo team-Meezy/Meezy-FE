@@ -2,12 +2,13 @@ import axios from 'axios';
 
 const getBaseUrl = () => {
   if (typeof process !== 'undefined' && process.env) {
-    return (
-      process.env['NEXT_PUBLIC_BASE_URL'] || process.env['VITE_BASE_URL'] || '/'
-    );
+    const url =
+      process.env['NEXT_PUBLIC_BASE_URL'] || process.env['VITE_BASE_URL'];
+    if (url) return url;
   }
   try {
-    return import.meta.env.VITE_BASE_URL || import.meta.env.BASE_URL || '/';
+    const env = (import.meta as any).env;
+    return env?.VITE_BASE_URL || env?.BASE_URL || '/';
   } catch (e) {
     return '/';
   }

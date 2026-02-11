@@ -7,11 +7,18 @@ import {
   projectSidebarList,
   useServerJoinedTeam,
   useServerModal,
+  useServerLoading,
 } from '../../../context';
+import { useEffect } from 'react';
 
 export function MainLayoutWrapper({ children }: { children: React.ReactNode }) {
   const { joined } = useServerJoinedTeam();
   const { isModalOpen, setIsModalOpen } = useServerModal();
+  const { setLoading } = useServerLoading();
+
+  useEffect(() => {
+    setLoading(false);
+  }, []);
 
   return (
     <div className="flex h-screen w-full bg-[#0c0c0c] text-white overflow-hidden">

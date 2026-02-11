@@ -89,6 +89,7 @@ export function useSignupFlow({
       setLoadingState('회원가입 중...');
       await new Promise((resolve) => setTimeout(resolve, 3000));
       await useLocalSignup(email, id, name, password);
+      setLoading(false);
       return true;
     } catch (error: any) {
       setLoading(false);

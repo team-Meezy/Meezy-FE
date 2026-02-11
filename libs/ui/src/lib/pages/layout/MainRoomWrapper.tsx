@@ -3,6 +3,8 @@
 import { MainRoomPage } from '../MainRoomPage';
 import { projectSidebarList } from '../../../context';
 import { useParams } from 'next/navigation';
+import { useServerLoading } from '../../../context';
+import { useEffect } from 'react';
 
 export function MainRoomWrapper() {
   const params = useParams();

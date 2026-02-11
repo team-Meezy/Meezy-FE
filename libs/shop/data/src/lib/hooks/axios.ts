@@ -52,9 +52,11 @@ privateApi.interceptors.response.use(
       try {
         // 리프레시 토큰으로 새 엑세스 토큰 요청 (publicApi 사용)
         const res = await publicApi.post('reissue');
-        console.log(res);
         const newAccessToken = res.data.accessToken;
-
+        if (!newAccessToken) {
+          throw new Error('Token refresh returned empty access token');
+        }
+        
         localStorage.setItem('accessToken', newAccessToken);
 
         // 새 토큰으로 헤더 교체 후 원래 요청 재시도

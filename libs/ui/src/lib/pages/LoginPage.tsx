@@ -95,7 +95,13 @@ export function LoginPage() {
               </div>
             )}
 
-            <form className="space-y-5">
+            <form
+              className="space-y-5"
+              onSubmit={(e) => {
+                e.preventDefault();
+                handleLogin();
+              }}
+            >
               {/* 이메일 입력 */}
               <div className="flex flex-col gap-1">
                 <label
@@ -104,7 +110,7 @@ export function LoginPage() {
                     ...typography.body.BodyM,
                   }}
                 >
-                  이메일
+                  아이디
                 </label>
                 <input
                   id="accountId"
@@ -251,14 +257,13 @@ export function LoginPage() {
                   </span>
                 </p>
                 <button
-                  type="button"
+                  type="submit"
                   className="w-full rounded-lg py-4 transition-colors hover:bg-orange-600"
                   style={{
                     backgroundColor: colors.primary[500],
                     color: colors.white[100],
                     ...typography.body.LBodyB,
                   }}
-                  onClick={handleLogin}
                 >
                   로그인
                 </button>

@@ -7,6 +7,7 @@ const ProfileContext = createContext<{
   profile: any;
   loading: boolean;
   refetchProfile: () => Promise<void>;
+  silentRefetchProfile: () => Promise<void>;
 } | null>(null);
 
 export function ProfileProvider({ children }: { children: React.ReactNode }) {
@@ -25,13 +26,27 @@ export function ProfileProvider({ children }: { children: React.ReactNode }) {
     }
   };
 
+  const silentFetchProfile = async () => {
+    try {
+      const data = await getMyProfile();
+      setProfile(data);
+    } catch (error) {
+      console.error('Failed to fetch profile:', error);
+    }
+  };
+
   useEffect(() => {
     fetchProfile();
   }, []);
 
   return (
     <ProfileContext.Provider
-      value={{ profile, loading, refetchProfile: fetchProfile }}
+      value={{
+        profile,
+        loading,
+        refetchProfile: fetchProfile,
+        silentRefetchProfile: silentFetchProfile,
+      }}
     >
       {children}
     </ProfileContext.Provider>

@@ -1,11 +1,11 @@
-'use client';
-
 import { useState, useRef, useEffect } from 'react';
 import { useServerCreate } from '../context/ServerCreateProvider';
 import { uploadProfileImage } from '@org/shop-data';
+import { useProfile } from '../context';
 
 export const useImg = () => {
   const { setImageFile } = useServerCreate();
+  const { silentRefetchProfile } = useProfile();
   const [previewUrl, setPreviewUrl] = useState<string | null>(null);
   const fileInputRef = useRef<HTMLInputElement | null>(null);
 
@@ -53,6 +53,8 @@ export const useImg = () => {
     try {
       await uploadProfileImage(file);
       console.log('프로필 이미지 업로드 성공');
+      // 프로필 데이터 조용히 다시 불러오기 (로딩 없이 헤더 이미지만 업데이트)
+      await silentRefetchProfile();
     } catch (error) {
       console.error('프로필 이미지 업로드 실패:', error);
       alert('이미지 업로드에 실패했습니다.');

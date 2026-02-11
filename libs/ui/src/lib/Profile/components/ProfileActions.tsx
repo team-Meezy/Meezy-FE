@@ -26,9 +26,9 @@ export function ProfileActions({
   };
 
   const handlePasswordChangeClick = () => {
-    // Title('비밀번호 변경');
-    // Description('비밀번호를 변경하시겠습니까?');
-    // onConfirmModalOpen();
+    Title('비밀번호 변경');
+    Description('비밀번호를 변경하시겠습니까?');
+    onConfirmModalOpen();
   };
 
   return (

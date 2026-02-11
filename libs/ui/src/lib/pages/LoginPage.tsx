@@ -14,7 +14,7 @@ import { useServerLoading } from '../../context';
 
 export function LoginPage() {
   const router = useRouter();
-  const { setLoading, setLoadingState } = useServerLoading();
+  const { loading, setLoading, setLoadingState } = useServerLoading();
   const [accountId, setAccountId] = useState('');
   const [password, setPassword] = useState('');
   const [rememberMe, setRememberMe] = useState(false);
@@ -27,6 +27,8 @@ export function LoginPage() {
         setLoadingState('로그인 기록이 있습니다!');
         await new Promise((resolve) => setTimeout(resolve, 2000));
         router.push('/main');
+      } else {
+        setLoading(false);
       }
     };
     checkToken();

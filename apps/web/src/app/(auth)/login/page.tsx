@@ -1,5 +1,5 @@
-import { LoadingPage } from '@meezy/ui/client';
+import { LoginPage } from '@meezy/ui/client';
 
 export default function page() {
-  return <LoadingPage />;
+  return <LoginPage />;
 }

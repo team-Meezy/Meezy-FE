@@ -17,7 +17,7 @@ import { useServerLoading } from '../../context';
 export function SignUpPage() {
   const { remainingTime, formattedTime } = useTime();
   const router = useRouter();
-  const { loading, setLoading } = useServerLoading();
+  const { loading, setLoading, setLoadingState } = useServerLoading();
   const [generalError, setGeneralError] = useState('');
   const [name, setName] = useState('');
   const [email, setEmail] = useState('');
@@ -36,10 +36,23 @@ export function SignUpPage() {
   });
 
   useEffect(() => {
-    if (loading) setLoading(false);
-  }, [loading]);
+    const checkToken = async () => {
+      if (localStorage.getItem('accessToken')) {
+        setLoading(true);
+        setLoadingState('로그인 기록이 있습니다!');
+        await new Promise((resolve) => setTimeout(resolve, 2000));
+        router.push('/main');
+      } else {
+        setLoading(false);
+      }
+    };
+    checkToken();
+  }, []);
 
-  const handleGoToLogin = () => {
+  const handleGoToLogin = async () => {
+    setLoading(true);
+    setLoadingState('로그인 페이지로 이동 중!');
+    await new Promise((resolve) => setTimeout(resolve, 2000));
     router.push('/login');
   };
 

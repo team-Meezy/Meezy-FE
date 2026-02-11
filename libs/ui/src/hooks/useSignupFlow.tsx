@@ -31,7 +31,7 @@ export function useSignupFlow({
 }: SignupFlowParams) {
   const [step, setStep] = useState(1);
   const router = useRouter();
-  const { setLoading } = useServerLoading();
+  const { setLoading, setLoadingState } = useServerLoading();
 
   useEffect(() => {
     setGeneralError('');
@@ -86,9 +86,12 @@ export function useSignupFlow({
 
     try {
       setLoading(true);
+      setLoadingState('회원가입 중...');
+      await new Promise((resolve) => setTimeout(resolve, 3000));
       await useLocalSignup(email, id, name, password);
       return true;
     } catch (error: any) {
+      setLoading(false);
       const statusCode = error.response?.status || error.statusCode;
       if (statusCode === 409) {
         setGeneralError('이미 사용 중인 아이디 또는 이메일입니다.');
@@ -96,8 +99,6 @@ export function useSignupFlow({
         setGeneralError('회원가입에 실패했습니다. 다시 시도해 주세요.');
       }
       return false;
-    } finally {
-      setLoading(false);
     }
   };
 
@@ -135,7 +136,10 @@ export function useSignupFlow({
     }
   };
 
-  const validateSuccessStep = () => {
+  const validateSuccessStep = async () => {
+    setLoading(true);
+    setLoadingState('로그인 페이지로 이동 중...');
+    await new Promise((resolve) => setTimeout(resolve, 2000));
     router.push('/login');
     return true;
   };
@@ -146,7 +150,7 @@ export function useSignupFlow({
     else if (step === 3 && validateIdStep()) setStep(step + 1);
     else if (step === 4 && validateNameStep()) setStep(step + 1);
     else if (step === 5 && (await validatePasswordStep())) setStep(step + 1);
-    else if (step === 6 && validateSuccessStep()) setStep(step + 1);
+    else if (step === 6 && (await validateSuccessStep())) setStep(step + 1);
   };
 
   const handleBack = () => {

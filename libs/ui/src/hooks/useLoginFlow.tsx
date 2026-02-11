@@ -6,12 +6,14 @@ import { useLocalLogin } from '@org/shop-data';
 interface LoginFlowParams {
   accountId: string;
   password: string;
+  rememberMe: boolean;
   setGeneralError: (msg: string) => void;
 }
 
 export function useLoginFlow({
   accountId,
   password,
+  rememberMe,
   setGeneralError,
 }: LoginFlowParams) {
   const router = useRouter();
@@ -55,7 +57,13 @@ export function useLoginFlow({
     }
 
     try {
-      await useLocalLogin(accountId, password);
+      const res = await useLocalLogin(accountId, password);
+
+      // 토큰 저장 (구현 필요 시점에 추가)
+      if (res.accessToken) {
+        localStorage.setItem('accessToken', res.accessToken);
+      }
+
       validateSuccessStep();
     } catch (error: any) {
       const statusCode = error.response?.status || error.statusCode;

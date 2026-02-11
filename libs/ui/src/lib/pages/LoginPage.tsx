@@ -15,10 +15,12 @@ export function LoginPage() {
   const router = useRouter();
   const [accountId, setAccountId] = useState('');
   const [password, setPassword] = useState('');
+  const [rememberMe, setRememberMe] = useState(false);
   const [generalError, setGeneralError] = useState('');
   const { handleLogin } = useLoginFlow({
     accountId,
     password,
+    rememberMe,
     setGeneralError,
   });
 
@@ -149,6 +151,8 @@ export function LoginPage() {
                   <div className="relative flex items-center justify-center">
                     <input
                       type="checkbox"
+                      checked={rememberMe}
+                      onChange={(e) => setRememberMe(e.target.checked)}
                       className="peer h-5 w-5 cursor-pointer appearance-none rounded-sm border border-2 border-gray-700 transition-colors checked:border-primary-500 checked:bg-primary-500 hover:border-primary-500"
                       style={{
                         backgroundColor: colors.gray[900],

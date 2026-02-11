@@ -23,14 +23,16 @@ export function LoginPage() {
   useEffect(() => {
     const checkToken = async () => {
       if (localStorage.getItem('accessToken')) {
-        localStorage.removeItem('accessToken');
-        localStorage.removeItem('refreshToken');
-        setLoading(false);
-      } else if (rememberMe) {
-        setLoading(true);
-        setLoadingState('로그인 기록이 있습니다!');
-        await new Promise((resolve) => setTimeout(resolve, 2000));
-        router.push('/main');
+        if (rememberMe) {
+          setLoading(true);
+          setLoadingState('로그인 기록이 있습니다!');
+          await new Promise((resolve) => setTimeout(resolve, 2000));
+          router.push('/main');
+        } else {
+          localStorage.removeItem('accessToken');
+          localStorage.removeItem('refreshToken');
+          setLoading(false);
+        }
       } else {
         setLoading(false);
       }
@@ -175,10 +177,7 @@ export function LoginPage() {
                     <input
                       type="checkbox"
                       checked={rememberMe}
-                      onChange={(e) => {
-                        console.log(rememberMe);
-                        setRememberMe(!rememberMe);
-                      }}
+                      onChange={(e) => setRememberMe(!rememberMe)}
                       className="peer h-5 w-5 cursor-pointer appearance-none rounded-sm border border-2 border-gray-700 transition-colors checked:border-primary-500 checked:bg-primary-500 hover:border-primary-500"
                       style={{
                         backgroundColor: colors.gray[900],

@@ -87,8 +87,11 @@ export function useSignupFlow({
     try {
       setLoading(true);
       setLoadingState('회원가입 중...');
-      await new Promise((resolve) => setTimeout(resolve, 3000));
-      await useLocalSignup(email, id, name, password);
+
+      await Promise.all([
+        useLocalSignup(email, id, name, password),
+        new Promise((resolve) => setTimeout(resolve, 3000)),
+      ]);
       setLoading(false);
       return true;
     } catch (error: any) {
@@ -125,8 +128,9 @@ export function useSignupFlow({
       return false;
     }
     try {
-      await useVerifyEmailCode(email, authCode);
       setLoading(true);
+      setLoadingState('인증번호 확인 중...');
+      await useVerifyEmailCode(email, authCode);
       return true;
     } catch (error) {
       const apiError = error as ApiError;

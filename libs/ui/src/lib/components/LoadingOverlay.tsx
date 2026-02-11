@@ -16,9 +16,11 @@ export function LoadingOverlay() {
       <p className="mt-4 text-lg font-medium text-white animate-pulse text-center px-4">
         {loadingState || '잠시만 기다려주세요!'}
       </p>
-      <p className="text-lg font-medium text-white animate-pulse mt-2">
-        잠시만 기다려주세요!
-      </p>
+      {loadingState && (
+        <p className="text-lg font-medium text-white animate-pulse mt-2">
+          잠시만 기다려주세요!
+        </p>
+      )}
     </div>
   );
 }

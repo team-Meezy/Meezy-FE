@@ -12,10 +12,10 @@ import {
 } from '../components';
 import { useEffect, useState } from 'react';
 import { useSignupFlow, useTime } from '../../hooks';
-import { useServerLoading } from '../../context';
+import { useServerLoading, useAuth } from '../../context';
 
 export function SignUpPage() {
-  const { remainingTime, formattedTime } = useTime();
+  const { formattedTime } = useTime();
   const router = useRouter();
   const { loading, setLoading, setLoadingState } = useServerLoading();
   const [generalError, setGeneralError] = useState('');
@@ -25,6 +25,7 @@ export function SignUpPage() {
   const [authCode, setAuthCode] = useState('');
   const [id, setId] = useState('');
   const [passwordConfirm, setPasswordConfirm] = useState('');
+  const { rememberMe } = useAuth();
   const { step, handleNext, handleBack } = useSignupFlow({
     name,
     email,
@@ -38,10 +39,16 @@ export function SignUpPage() {
   useEffect(() => {
     const checkToken = async () => {
       if (localStorage.getItem('accessToken')) {
-        setLoading(true);
-        setLoadingState('로그인 기록이 있습니다!');
-        await new Promise((resolve) => setTimeout(resolve, 2000));
-        router.push('/main');
+        if (rememberMe) {
+          setLoading(true);
+          setLoadingState('로그인 기록이 있습니다!');
+          await new Promise((resolve) => setTimeout(resolve, 2000));
+          router.push('/main');
+        } else {
+          localStorage.removeItem('accessToken');
+          localStorage.removeItem('refreshToken');
+          setLoading(false);
+        }
       } else {
         setLoading(false);
       }

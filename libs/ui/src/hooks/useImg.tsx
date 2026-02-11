@@ -2,6 +2,7 @@
 
 import { useState, useRef, useEffect } from 'react';
 import { useServerCreate } from '../context/ServerCreateProvider';
+import { uploadProfileImage } from '@org/shop-data';
 
 export const useImg = () => {
   const { setImageFile } = useServerCreate();
@@ -28,7 +29,7 @@ export const useImg = () => {
     }
   };
 
-  const handleImageChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+  const handleImageChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (!file) return;
 
@@ -47,6 +48,15 @@ export const useImg = () => {
       URL.revokeObjectURL(previewUrl);
     }
     setPreviewUrl(URL.createObjectURL(file));
+
+    // 파일 선택 후 서버에 업로드
+    try {
+      await uploadProfileImage(file);
+      console.log('프로필 이미지 업로드 성공');
+    } catch (error) {
+      console.error('프로필 이미지 업로드 실패:', error);
+      alert('이미지 업로드에 실패했습니다.');
+    }
   };
 
   return {

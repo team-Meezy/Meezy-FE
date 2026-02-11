@@ -10,13 +10,14 @@ import {
   PasswordInput,
   Success,
 } from '../components';
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { useSignupFlow, useTime } from '../../hooks';
+import { useServerLoading } from '../../context';
 
 export function SignUpPage() {
   const { remainingTime, formattedTime } = useTime();
   const router = useRouter();
-  const [isLoading, setIsLoading] = useState(false);
+  const { loading, setLoading } = useServerLoading();
   const [generalError, setGeneralError] = useState('');
   const [name, setName] = useState('');
   const [email, setEmail] = useState('');
@@ -32,15 +33,18 @@ export function SignUpPage() {
     passwordConfirm,
     authCode,
     setGeneralError,
-    setIsLoading,
   });
+
+  useEffect(() => {
+    if (loading) setLoading(false);
+  }, [loading]);
 
   const handleGoToLogin = () => {
     router.push('/login');
   };
 
   const handleKeyDown = async (e: React.KeyboardEvent) => {
-    if (e.key === 'Enter' && !isLoading) {
+    if (e.key === 'Enter' && !loading) {
       e.preventDefault();
       await handleNext();
     }
@@ -223,7 +227,7 @@ export function SignUpPage() {
                 </button>
               )}
               <button
-                disabled={isLoading}
+                disabled={loading}
                 type="button"
                 onClick={handleNext}
                 className="flex-1 rounded-lg py-4 transition-colors hover:opacity-90 active:scale-[0.98]"
@@ -231,10 +235,10 @@ export function SignUpPage() {
                   backgroundColor: colors.primary[500],
                   color: colors.white[100],
                   ...typography.body.LBodyB,
-                  opacity: isLoading ? 0.6 : 1,
+                  opacity: loading ? 0.6 : 1,
                 }}
               >
-                {isLoading ? '처리중...' : step === 6 ? '완료' : '다음'}
+                {loading ? '처리중...' : step === 6 ? '완료' : '다음'}
               </button>
             </div>
           </div>

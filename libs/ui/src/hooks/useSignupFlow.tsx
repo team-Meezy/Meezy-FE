@@ -8,6 +8,7 @@ import {
   useVerifyEmailCode,
   useLocalSignup,
 } from '@org/shop-data';
+import { useServerLoading } from '../context';
 
 interface SignupFlowParams {
   name: string;
@@ -17,7 +18,6 @@ interface SignupFlowParams {
   passwordConfirm: string;
   authCode: string;
   setGeneralError: (msg: string) => void;
-  setIsLoading: (v: boolean) => void;
 }
 
 export function useSignupFlow({
@@ -28,10 +28,10 @@ export function useSignupFlow({
   passwordConfirm,
   authCode,
   setGeneralError,
-  setIsLoading,
 }: SignupFlowParams) {
   const [step, setStep] = useState(1);
   const router = useRouter();
+  const { setLoading } = useServerLoading();
 
   useEffect(() => {
     setGeneralError('');
@@ -45,7 +45,7 @@ export function useSignupFlow({
     }
 
     try {
-      setIsLoading(true);
+      setLoading(true);
       await useRequestEmailVerification(email);
 
       return true;
@@ -60,7 +60,7 @@ export function useSignupFlow({
       }
       return false;
     } finally {
-      setIsLoading(false);
+      setLoading(false);
     }
   };
 
@@ -85,7 +85,7 @@ export function useSignupFlow({
     }
 
     try {
-      setIsLoading(true);
+      setLoading(true);
       await useLocalSignup(email, id, name, password);
       return true;
     } catch (error: any) {
@@ -97,7 +97,7 @@ export function useSignupFlow({
       }
       return false;
     } finally {
-      setIsLoading(false);
+      setLoading(false);
     }
   };
 
@@ -124,14 +124,14 @@ export function useSignupFlow({
     }
     try {
       await useVerifyEmailCode(email, authCode);
-      setIsLoading(true);
+      setLoading(true);
       return true;
     } catch (error) {
       const apiError = error as ApiError;
       setGeneralError(apiError.message || '인증번호 확인에 실패했습니다.');
       return false;
     } finally {
-      setIsLoading(false);
+      setLoading(false);
     }
   };
 

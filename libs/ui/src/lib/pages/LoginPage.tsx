@@ -1,7 +1,7 @@
 'use client';
 
 import { useRouter } from 'next/navigation';
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { useLoginFlow } from '../../hooks';
 import { colors, typography } from '../../design';
 import Image from 'next/image';
@@ -10,13 +10,28 @@ import LoginLogo from '../../assets/LoginLogo.png';
 import Google from '../../assets/Google.svg';
 import Kakao from '../../assets/Kakao.svg';
 import Naver from '../../assets/Naver.svg';
+import { useServerLoading } from '../../context';
 
 export function LoginPage() {
   const router = useRouter();
+  const { setLoading, setLoadingState } = useServerLoading();
   const [accountId, setAccountId] = useState('');
   const [password, setPassword] = useState('');
   const [rememberMe, setRememberMe] = useState(false);
   const [generalError, setGeneralError] = useState('');
+
+  useEffect(() => {
+    const checkToken = async () => {
+      if (localStorage.getItem('accessToken')) {
+        setLoading(true);
+        setLoadingState('로그인 기록이 있습니다!');
+        await new Promise((resolve) => setTimeout(resolve, 2000));
+        router.push('/main');
+      }
+    };
+    checkToken();
+  }, []);
+
   const { handleLogin } = useLoginFlow({
     accountId,
     password,
@@ -24,7 +39,10 @@ export function LoginPage() {
     setGeneralError,
   });
 
-  const handleSignUpClick = () => {
+  const handleSignUpClick = async () => {
+    setLoading(true);
+    setLoadingState('회원가입을 위해 이동 중!');
+    await new Promise((resolve) => setTimeout(resolve, 2000));
     router.push('/signUp');
   };
   return (

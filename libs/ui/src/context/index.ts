@@ -3,4 +3,5 @@ export * from './ServerIdProvider';
 export * from './ServerJoinedTeamProvider';
 export * from './ServerStateProvider';
 export * from './ServerModalProvider';
+export * from './ServerLoadingProvider';
 export { sidebarList, roomsrcList, userList, projectSidebarList } from './List';

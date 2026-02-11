@@ -5,6 +5,7 @@ import {
   ServerJoinedTeamProvider,
   ServerStateProvider,
   ServerModalProvider,
+  ServerLoadingProvider,
 } from '../../../context';
 
 export const metadata = {
@@ -19,7 +20,9 @@ export function RootLayoutWrapper({ children }: { children: React.ReactNode }) {
         <ServerCreateProvider>
           <ServerJoinedTeamProvider>
             <ServerModalProvider>
-              <ServerStateProvider>{children}</ServerStateProvider>
+              <ServerStateProvider>
+                <ServerLoadingProvider>{children}</ServerLoadingProvider>
+              </ServerStateProvider>
             </ServerModalProvider>
           </ServerJoinedTeamProvider>
         </ServerCreateProvider>

@@ -4,6 +4,7 @@ import { useEffect, useState } from 'react';
 import { createPortal } from 'react-dom';
 import { typography } from '../../design';
 import { useRouter } from 'next/navigation';
+import { useServerLoading } from '../../context';
 
 interface MyPageModalProps {
   isOpen: boolean;
@@ -20,6 +21,7 @@ export function MyPageModal({
 }: MyPageModalProps) {
   const [mounted, setMounted] = useState(false);
   const [generalError, setGeneralError] = useState('');
+  const { setLoading, setLoadingState } = useServerLoading();
 
   const router = useRouter();
 
@@ -37,7 +39,13 @@ export function MyPageModal({
     }
   }, [generalError]);
 
-  const handleClick = () => {
+  const handleClick = async () => {
+    localStorage.removeItem('accessToken');
+    localStorage.removeItem('refreshToken');
+    localStorage.removeItem('profile');
+    setLoading(true);
+    setLoadingState('로그아웃 되었습니다.');
+    await new Promise((resolve) => setTimeout(resolve, 2000));
     router.push('/login');
     onClose();
   };

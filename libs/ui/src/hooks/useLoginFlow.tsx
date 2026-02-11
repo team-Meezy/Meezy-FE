@@ -7,14 +7,12 @@ import { useServerLoading } from '../context';
 interface LoginFlowParams {
   accountId: string;
   password: string;
-  rememberMe: boolean;
   setGeneralError: (msg: string) => void;
 }
 
 export function useLoginFlow({
   accountId,
   password,
-  rememberMe,
   setGeneralError,
 }: LoginFlowParams) {
   const router = useRouter();

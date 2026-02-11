@@ -1,26 +1,24 @@
 'use client';
 
 import { useRouter } from 'next/navigation';
-import { ApiError } from '../api/types/Error';
 import { useLocalLogin } from '@org/shop-data';
 
 interface LoginFlowParams {
-  email: string;
+  accountId: string;
   password: string;
   setGeneralError: (msg: string) => void;
 }
 
 export function useLoginFlow({
-  email,
+  accountId,
   password,
   setGeneralError,
 }: LoginFlowParams) {
   const router = useRouter();
 
   const validateEmailStep = () => {
-    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-    if (!emailRegex.test(email)) {
-      setGeneralError('이메일 형식이 올바르지 않습니다.');
+    if (!accountId) {
+      setGeneralError('아이디를 입력해주세요.');
       return false;
     }
     return true;
@@ -57,7 +55,7 @@ export function useLoginFlow({
     }
 
     try {
-      await useLocalLogin(email, password);
+      await useLocalLogin(accountId, password);
       validateSuccessStep();
     } catch (error: any) {
       const statusCode = error.response?.status || error.statusCode;

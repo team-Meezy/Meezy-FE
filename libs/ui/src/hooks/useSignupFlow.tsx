@@ -46,8 +46,7 @@ export function useSignupFlow({
 
     try {
       setIsLoading(true);
-      const response = await useRequestEmailVerification(email);
-      console.log('응답 데이터:', response);
+      await useRequestEmailVerification(email);
 
       return true;
     } catch (error: any) {
@@ -87,8 +86,7 @@ export function useSignupFlow({
 
     try {
       setIsLoading(true);
-      const response = await useLocalSignup(email, id, name, password);
-      console.log('성공', response);
+      await useLocalSignup(email, id, name, password);
       return true;
     } catch (error: any) {
       const statusCode = error.response?.status || error.statusCode;
@@ -125,8 +123,7 @@ export function useSignupFlow({
       return false;
     }
     try {
-      const response = await useVerifyEmailCode(email, authCode);
-      console.log('응답 데이터:', response);
+      await useVerifyEmailCode(email, authCode);
       setIsLoading(true);
       return true;
     } catch (error) {

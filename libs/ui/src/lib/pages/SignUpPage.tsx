@@ -10,9 +10,10 @@ import {
   PasswordInput,
   Success,
 } from '../components';
-import { useEffect, useState } from 'react';
+import { useState } from 'react';
 import { useSignupFlow, useTime } from '../../hooks';
 import { useServerLoading, useAuth } from '../../context';
+import { useTokenCheck } from '../../hooks';
 
 export function SignUpPage() {
   const { formattedTime } = useTime();
@@ -26,6 +27,9 @@ export function SignUpPage() {
   const [id, setId] = useState('');
   const [passwordConfirm, setPasswordConfirm] = useState('');
   const { rememberMe } = useAuth();
+
+  useTokenCheck();
+
   const { step, handleNext, handleBack } = useSignupFlow({
     name,
     email,
@@ -35,26 +39,6 @@ export function SignUpPage() {
     authCode,
     setGeneralError,
   });
-
-  useEffect(() => {
-    const checkToken = async () => {
-      if (localStorage.getItem('accessToken')) {
-        if (rememberMe) {
-          setLoading(true);
-          setLoadingState('로그인 기록이 있습니다!');
-          await new Promise((resolve) => setTimeout(resolve, 2000));
-          router.push('/main');
-        } else {
-          localStorage.removeItem('accessToken');
-          localStorage.removeItem('refreshToken');
-          setLoading(false);
-        }
-      } else {
-        setLoading(false);
-      }
-    };
-    checkToken();
-  }, []);
 
   const handleGoToLogin = async () => {
     setLoading(true);

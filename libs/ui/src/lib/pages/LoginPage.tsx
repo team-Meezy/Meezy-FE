@@ -1,7 +1,7 @@
 'use client';
 
 import { useRouter } from 'next/navigation';
-import { useEffect, useState } from 'react';
+import { useState } from 'react';
 import { useLoginFlow } from '../../hooks';
 import { colors, typography } from '../../design';
 import Image from 'next/image';
@@ -11,34 +11,17 @@ import Google from '../../assets/Google.svg';
 import Kakao from '../../assets/Kakao.svg';
 import Naver from '../../assets/Naver.svg';
 import { useServerLoading, useAuth } from '../../context';
+import { useTokenCheck } from '../../hooks';
 
 export function LoginPage() {
   const router = useRouter();
-  const { loading, setLoading, setLoadingState } = useServerLoading();
+  const { setLoading, setLoadingState } = useServerLoading();
   const [accountId, setAccountId] = useState('');
   const [password, setPassword] = useState('');
   const [generalError, setGeneralError] = useState('');
   const { rememberMe, setRememberMe } = useAuth();
 
-  useEffect(() => {
-    const checkToken = async () => {
-      if (localStorage.getItem('accessToken')) {
-        if (rememberMe) {
-          setLoading(true);
-          setLoadingState('로그인 기록이 있습니다!');
-          await new Promise((resolve) => setTimeout(resolve, 2000));
-          router.push('/main');
-        } else {
-          localStorage.removeItem('accessToken');
-          localStorage.removeItem('refreshToken');
-          setLoading(false);
-        }
-      } else {
-        setLoading(false);
-      }
-    };
-    checkToken();
-  }, []);
+  useTokenCheck();
 
   const { handleLogin } = useLoginFlow({
     accountId,

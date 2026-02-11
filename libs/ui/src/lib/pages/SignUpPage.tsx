@@ -12,8 +12,9 @@ import {
 } from '../components';
 import { useState } from 'react';
 import { useSignupFlow, useTime } from '../../hooks';
-import { useServerLoading, useAuth } from '../../context';
+import { useServerLoading } from '../../context';
 import { useTokenCheck } from '../../hooks';
+import { useRequestEmailVerification } from '@org/shop-data';
 
 export function SignUpPage() {
   const { formattedTime } = useTime();
@@ -26,7 +27,6 @@ export function SignUpPage() {
   const [authCode, setAuthCode] = useState('');
   const [id, setId] = useState('');
   const [passwordConfirm, setPasswordConfirm] = useState('');
-  const { rememberMe } = useAuth();
 
   useTokenCheck();
 
@@ -55,8 +55,7 @@ export function SignUpPage() {
   };
 
   const handleResendCode = async () => {
-    // TODO: Implement resend logic - call the auth code API again
-    // Reset the timer as well
+    await useRequestEmailVerification(email);
   };
 
   return (
@@ -232,8 +231,7 @@ export function SignUpPage() {
               )}
               <button
                 disabled={loading}
-                type="button"
-                onClick={handleNext}
+                type="submit"
                 className="flex-1 rounded-lg py-4 transition-colors hover:opacity-90 active:scale-[0.98]"
                 style={{
                   backgroundColor: colors.primary[500],

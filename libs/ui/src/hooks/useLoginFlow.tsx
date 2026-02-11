@@ -1,25 +1,24 @@
 'use client';
 
 import { useRouter } from 'next/navigation';
-import { ApiError } from '../api/types/Error';
+import { useLocalLogin } from '@org/shop-data';
 
 interface LoginFlowParams {
-  email: string;
+  accountId: string;
   password: string;
   setGeneralError: (msg: string) => void;
 }
 
 export function useLoginFlow({
-  email,
+  accountId,
   password,
   setGeneralError,
 }: LoginFlowParams) {
   const router = useRouter();
 
   const validateEmailStep = () => {
-    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-    if (!emailRegex.test(email)) {
-      setGeneralError('이메일 형식이 올바르지 않습니다.');
+    if (!accountId) {
+      setGeneralError('아이디를 입력해주세요.');
       return false;
     }
     return true;
@@ -50,12 +49,32 @@ export function useLoginFlow({
 
   const handleLogin = async () => {
     setGeneralError('');
-    if (validateEmailStep() && validatePasswordStep()) {
-      try {
-        validateSuccessStep();
-      } catch (error) {
-        const apiError = error as ApiError;
-        setGeneralError(apiError.message || '로그인에 실패했습니다.');
+
+    if (!validateEmailStep() || !validatePasswordStep()) {
+      return;
+    }
+
+    try {
+      await useLocalLogin(accountId, password);
+      validateSuccessStep();
+    } catch (error: any) {
+      const statusCode = error.response?.status || error.statusCode;
+      const message = error.response?.data?.message || error.message;
+
+      if (statusCode === 400) {
+        setGeneralError('입력된 정보가 유효하지 않습니다.');
+      } else if (statusCode === 401) {
+        setGeneralError('아이디 또는 비밀번호가 일치하지 않습니다.');
+      } else if (statusCode === 403) {
+        setGeneralError('접근 권한이 없습니다.');
+      } else if (statusCode === 404) {
+        setGeneralError('존재하지 않는 계정입니다.');
+      } else if (statusCode === 409) {
+        setGeneralError('허용되지 않는 요청입니다.');
+      } else if (statusCode === 500) {
+        setGeneralError('서버 오류가 발생했습니다. 잠시 후 다시 시도해주세요.');
+      } else {
+        setGeneralError(message || '로그인 중 오류가 발생했습니다.');
       }
     }
   };

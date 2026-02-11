@@ -4,11 +4,13 @@
     "outDir": "dist",
     "types": [
       "node",
+      "vite/client",
       "@nx/react/typings/cssmodule.d.ts",
       "@nx/react/typings/image.d.ts"
     ],
     "rootDir": "src",
     "jsx": "react-jsx",
+    "composite": true,
     "tsBuildInfoFile": "dist/tsconfig.lib.tsbuildinfo"
   },
   "exclude": [

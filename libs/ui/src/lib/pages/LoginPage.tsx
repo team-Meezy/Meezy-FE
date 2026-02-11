@@ -13,11 +13,11 @@ import Naver from '../../assets/Naver.svg';
 
 export function LoginPage() {
   const router = useRouter();
-  const [email, setEmail] = useState('');
+  const [accountId, setAccountId] = useState('');
   const [password, setPassword] = useState('');
   const [generalError, setGeneralError] = useState('');
   const { handleLogin } = useLoginFlow({
-    email,
+    accountId,
     password,
     setGeneralError,
   });
@@ -97,12 +97,12 @@ export function LoginPage() {
                   이메일
                 </label>
                 <input
-                  id="email"
-                  name="email"
-                  type="email"
-                  value={email}
-                  onChange={(e) => setEmail(e.target.value)}
-                  placeholder="이메일을 입력해주세요."
+                  id="accountId"
+                  name="accountId"
+                  type="text"
+                  value={accountId}
+                  onChange={(e) => setAccountId(e.target.value)}
+                  placeholder="아이디를 입력해주세요."
                   style={{
                     color: colors.gray[500],
                     backgroundColor: colors.gray[900],
@@ -200,9 +200,21 @@ export function LoginPage() {
                 </div>
               </div>
               <div className="flex justify-center gap-4">
-                <SocialButton icon={Google} color="bg-white text-black" />
-                <SocialButton icon={Kakao} color="bg-yellow-400 text-black" />
-                <SocialButton icon={Naver} color="bg-green-500 text-white" />
+                <SocialButton
+                  icon={Google}
+                  color="bg-white text-black"
+                  provider="google"
+                />
+                <SocialButton
+                  icon={Kakao}
+                  color="bg-yellow-400 text-black"
+                  provider="kakao"
+                />
+                <SocialButton
+                  icon={Naver}
+                  color="bg-green-500 text-white"
+                  provider="naver"
+                />
               </div>
               {/* 하단 버튼 및 가입 링크 */}
               <div className="pt-2 text-center">

@@ -77,6 +77,18 @@ export function ProfileIdentity({
           }}
         />
       </div>
+      <div className="fixed bottom-10 right-[calc(20%)]">
+        <button
+          className="px-8 py-3 rounded-lg transition-all hover:scale-105 active:scale-95 shadow-lg shadow-orange-500/20"
+          style={{
+            backgroundColor: colors.primary[500],
+            color: colors.white[100],
+            ...typography.body.BodyB,
+          }}
+        >
+          저장하기
+        </button>
+      </div>
     </section>
   );
 }

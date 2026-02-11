@@ -1,20 +1,11 @@
 import Image from 'next/image';
 import { NoTeamReceive } from '../../../assets/index.client';
 import { colors } from '../../../design';
-import { useEffect, useState } from 'react';
-import { getMyProfile } from '@org/shop-data';
+import { useProfile } from '../../../context';
 
 export function MainPageWrapper() {
-  const [profile, setProfile] = useState<any>(null);
-  console.log('Current Profile State:', profile);
-
-  useEffect(() => {
-    const getProfile = async () => {
-      const data = await getMyProfile();
-      setProfile(data);
-    };
-    getProfile();
-  }, []);
+  const { profile } = useProfile();
+  console.log('Current Profile State (Global):', profile);
 
   return (
     <>

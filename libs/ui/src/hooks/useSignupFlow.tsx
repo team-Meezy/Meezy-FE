@@ -8,6 +8,7 @@ import {
   useVerifyEmailCode,
   useLocalSignup,
 } from '@org/shop-data';
+import { useServerLoading } from '../context';
 
 interface SignupFlowParams {
   name: string;
@@ -17,7 +18,6 @@ interface SignupFlowParams {
   passwordConfirm: string;
   authCode: string;
   setGeneralError: (msg: string) => void;
-  setIsLoading: (v: boolean) => void;
 }
 
 export function useSignupFlow({
@@ -28,10 +28,10 @@ export function useSignupFlow({
   passwordConfirm,
   authCode,
   setGeneralError,
-  setIsLoading,
 }: SignupFlowParams) {
   const [step, setStep] = useState(1);
   const router = useRouter();
+  const { setLoading, setLoadingState } = useServerLoading();
 
   useEffect(() => {
     setGeneralError('');
@@ -45,7 +45,7 @@ export function useSignupFlow({
     }
 
     try {
-      setIsLoading(true);
+      setLoading(true);
       await useRequestEmailVerification(email);
 
       return true;
@@ -60,7 +60,7 @@ export function useSignupFlow({
       }
       return false;
     } finally {
-      setIsLoading(false);
+      setLoading(false);
     }
   };
 
@@ -85,10 +85,17 @@ export function useSignupFlow({
     }
 
     try {
-      setIsLoading(true);
-      await useLocalSignup(email, id, name, password);
+      setLoading(true);
+      setLoadingState('회원가입 중...');
+
+      await Promise.all([
+        useLocalSignup(email, id, name, password),
+        new Promise((resolve) => setTimeout(resolve, 3000)),
+      ]);
+      setLoading(false);
       return true;
     } catch (error: any) {
+      setLoading(false);
       const statusCode = error.response?.status || error.statusCode;
       if (statusCode === 409) {
         setGeneralError('이미 사용 중인 아이디 또는 이메일입니다.');
@@ -96,8 +103,6 @@ export function useSignupFlow({
         setGeneralError('회원가입에 실패했습니다. 다시 시도해 주세요.');
       }
       return false;
-    } finally {
-      setIsLoading(false);
     }
   };
 
@@ -123,19 +128,23 @@ export function useSignupFlow({
       return false;
     }
     try {
+      setLoading(true);
+      setLoadingState('인증번호 확인 중...');
       await useVerifyEmailCode(email, authCode);
-      setIsLoading(true);
       return true;
     } catch (error) {
       const apiError = error as ApiError;
       setGeneralError(apiError.message || '인증번호 확인에 실패했습니다.');
       return false;
     } finally {
-      setIsLoading(false);
+      setLoading(false);
     }
   };
 
-  const validateSuccessStep = () => {
+  const validateSuccessStep = async () => {
+    setLoading(true);
+    setLoadingState('로그인 페이지로 이동 중...');
+    await new Promise((resolve) => setTimeout(resolve, 2000));
     router.push('/login');
     return true;
   };
@@ -146,7 +155,7 @@ export function useSignupFlow({
     else if (step === 3 && validateIdStep()) setStep(step + 1);
     else if (step === 4 && validateNameStep()) setStep(step + 1);
     else if (step === 5 && (await validatePasswordStep())) setStep(step + 1);
-    else if (step === 6 && validateSuccessStep()) setStep(step + 1);
+    else if (step === 6 && (await validateSuccessStep())) setStep(step + 1);
   };
 
   const handleBack = () => {

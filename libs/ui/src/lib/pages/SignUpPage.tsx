@@ -12,11 +12,13 @@ import {
 } from '../components';
 import { useState } from 'react';
 import { useSignupFlow, useTime } from '../../hooks';
+import { useServerLoading, useAuth } from '../../context';
+import { useTokenCheck } from '../../hooks';
 
 export function SignUpPage() {
-  const { remainingTime, formattedTime } = useTime();
+  const { formattedTime } = useTime();
   const router = useRouter();
-  const [isLoading, setIsLoading] = useState(false);
+  const { loading, setLoading, setLoadingState } = useServerLoading();
   const [generalError, setGeneralError] = useState('');
   const [name, setName] = useState('');
   const [email, setEmail] = useState('');
@@ -24,6 +26,10 @@ export function SignUpPage() {
   const [authCode, setAuthCode] = useState('');
   const [id, setId] = useState('');
   const [passwordConfirm, setPasswordConfirm] = useState('');
+  const { rememberMe } = useAuth();
+
+  useTokenCheck();
+
   const { step, handleNext, handleBack } = useSignupFlow({
     name,
     email,
@@ -32,15 +38,17 @@ export function SignUpPage() {
     passwordConfirm,
     authCode,
     setGeneralError,
-    setIsLoading,
   });
 
-  const handleGoToLogin = () => {
+  const handleGoToLogin = async () => {
+    setLoading(true);
+    setLoadingState('로그인 페이지로 이동 중!');
+    await new Promise((resolve) => setTimeout(resolve, 2000));
     router.push('/login');
   };
 
   const handleKeyDown = async (e: React.KeyboardEvent) => {
-    if (e.key === 'Enter' && !isLoading) {
+    if (e.key === 'Enter' && !loading) {
       e.preventDefault();
       await handleNext();
     }
@@ -223,7 +231,7 @@ export function SignUpPage() {
                 </button>
               )}
               <button
-                disabled={isLoading}
+                disabled={loading}
                 type="button"
                 onClick={handleNext}
                 className="flex-1 rounded-lg py-4 transition-colors hover:opacity-90 active:scale-[0.98]"
@@ -231,10 +239,10 @@ export function SignUpPage() {
                   backgroundColor: colors.primary[500],
                   color: colors.white[100],
                   ...typography.body.LBodyB,
-                  opacity: isLoading ? 0.6 : 1,
+                  opacity: loading ? 0.6 : 1,
                 }}
               >
-                {isLoading ? '처리중...' : step === 6 ? '완료' : '다음'}
+                {loading ? '처리중...' : step === 6 ? '완료' : '다음'}
               </button>
             </div>
           </div>

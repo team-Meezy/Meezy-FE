@@ -10,21 +10,29 @@ import LoginLogo from '../../assets/LoginLogo.png';
 import Google from '../../assets/Google.svg';
 import Kakao from '../../assets/Kakao.svg';
 import Naver from '../../assets/Naver.svg';
+import { useServerLoading, useAuth } from '../../context';
+import { useTokenCheck } from '../../hooks';
 
 export function LoginPage() {
   const router = useRouter();
+  const { setLoading, setLoadingState } = useServerLoading();
   const [accountId, setAccountId] = useState('');
   const [password, setPassword] = useState('');
-  const [rememberMe, setRememberMe] = useState(false);
   const [generalError, setGeneralError] = useState('');
+  const { rememberMe, setRememberMe } = useAuth();
+
+  useTokenCheck();
+
   const { handleLogin } = useLoginFlow({
     accountId,
     password,
-    rememberMe,
     setGeneralError,
   });
 
-  const handleSignUpClick = () => {
+  const handleSignUpClick = async () => {
+    setLoading(true);
+    setLoadingState('회원가입을 위해 이동 중!');
+    await new Promise((resolve) => setTimeout(resolve, 2000));
     router.push('/signUp');
   };
   return (
@@ -152,7 +160,7 @@ export function LoginPage() {
                     <input
                       type="checkbox"
                       checked={rememberMe}
-                      onChange={(e) => setRememberMe(e.target.checked)}
+                      onChange={(e) => setRememberMe(!rememberMe)}
                       className="peer h-5 w-5 cursor-pointer appearance-none rounded-sm border border-2 border-gray-700 transition-colors checked:border-primary-500 checked:bg-primary-500 hover:border-primary-500"
                       style={{
                         backgroundColor: colors.gray[900],

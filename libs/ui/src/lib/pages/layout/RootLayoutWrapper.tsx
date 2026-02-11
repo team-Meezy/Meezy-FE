@@ -5,7 +5,10 @@ import {
   ServerJoinedTeamProvider,
   ServerStateProvider,
   ServerModalProvider,
+  ServerLoadingProvider,
+  AuthProvider,
 } from '../../../context';
+import { LoadingOverlay } from '../../components';
 
 export const metadata = {
   title: 'Welcome to web',
@@ -19,7 +22,14 @@ export function RootLayoutWrapper({ children }: { children: React.ReactNode }) {
         <ServerCreateProvider>
           <ServerJoinedTeamProvider>
             <ServerModalProvider>
-              <ServerStateProvider>{children}</ServerStateProvider>
+              <ServerStateProvider>
+                <ServerLoadingProvider>
+                  <AuthProvider>
+                    {children}
+                    <LoadingOverlay />
+                  </AuthProvider>
+                </ServerLoadingProvider>
+              </ServerStateProvider>
             </ServerModalProvider>
           </ServerJoinedTeamProvider>
         </ServerCreateProvider>

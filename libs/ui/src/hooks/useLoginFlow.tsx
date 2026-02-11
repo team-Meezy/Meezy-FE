@@ -2,21 +2,21 @@
 
 import { useRouter } from 'next/navigation';
 import { useLocalLogin } from '@org/shop-data';
+import { useServerLoading } from '../context';
 
 interface LoginFlowParams {
   accountId: string;
   password: string;
-  rememberMe: boolean;
   setGeneralError: (msg: string) => void;
 }
 
 export function useLoginFlow({
   accountId,
   password,
-  rememberMe,
   setGeneralError,
 }: LoginFlowParams) {
   const router = useRouter();
+  const { setLoading, setLoadingState } = useServerLoading();
 
   const validateEmailStep = () => {
     if (!accountId) {
@@ -57,15 +57,23 @@ export function useLoginFlow({
     }
 
     try {
-      const res = await useLocalLogin(accountId, password);
+      setLoading(true);
+      setLoadingState('로그인 중...');
+      const loginPromise = useLocalLogin(accountId, password);
+      const delayPromise = new Promise((resolve) => setTimeout(resolve, 3000));
 
-      // 토큰 저장 (구현 필요 시점에 추가)
+      const [res] = await Promise.all([loginPromise, delayPromise]);
+
       if (res.accessToken) {
         localStorage.setItem('accessToken', res.accessToken);
+      }
+      if (res.refreshToken) {
+        localStorage.setItem('refreshToken', res.refreshToken);
       }
 
       validateSuccessStep();
     } catch (error: any) {
+      setLoading(false);
       const statusCode = error.response?.status || error.statusCode;
       const message = error.response?.data?.message || error.message;
 

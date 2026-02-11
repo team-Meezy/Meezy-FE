@@ -2,10 +2,12 @@ import axios from 'axios';
 
 const getBaseUrl = () => {
   if (typeof process !== 'undefined' && process.env) {
-    return process.env['NEXT_PUBLIC_BASE_URL'] || process.env['VITE_BASE_URL'];
+    return (
+      process.env['NEXT_PUBLIC_BASE_URL'] || process.env['VITE_BASE_URL'] || '/'
+    );
   }
   try {
-    return import.meta.env.VITE_BASE_URL || import.meta.env.BASE_URL;
+    return import.meta.env.VITE_BASE_URL || import.meta.env.BASE_URL || '/';
   } catch (e) {
     return '/';
   }
@@ -56,7 +58,7 @@ privateApi.interceptors.response.use(
         if (!newAccessToken) {
           throw new Error('Token refresh returned empty access token');
         }
-        
+
         localStorage.setItem('accessToken', newAccessToken);
 
         // 새 토큰으로 헤더 교체 후 원래 요청 재시도

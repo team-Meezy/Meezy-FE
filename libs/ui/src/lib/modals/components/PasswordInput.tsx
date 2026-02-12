@@ -49,6 +49,7 @@ export function PasswordInput({
           type="button"
           onClick={() => setShowPassword(!showPassword)}
           className="absolute right-4 top-1/2 -translate-y-1/2 text-gray-400 hover:text-white transition-colors"
+          aria-label={showPassword ? '비밀번호 숨기기' : '비밀번호 보기'}
         >
           {showPassword ? (
             <svg

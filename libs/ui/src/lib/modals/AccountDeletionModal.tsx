@@ -24,6 +24,13 @@ export function AccountDeletionModal({
   const router = useRouter();
 
   useEffect(() => {
+    if (isOpen) {
+      setPassword('');
+      setGeneralError('');
+    }
+  }, [isOpen]);
+
+  useEffect(() => {
     setMounted(true);
     return () => setMounted(false);
   }, []);

@@ -7,6 +7,7 @@ interface ProfileIdentityProps {
   setUserName: (name: string) => void;
   userId: string;
   userEmail: string;
+  handleSave: () => void;
 }
 
 export function ProfileIdentity({
@@ -14,6 +15,7 @@ export function ProfileIdentity({
   setUserName,
   userId,
   userEmail,
+  handleSave,
 }: ProfileIdentityProps) {
   return (
     <section className="flex flex-col gap-4">
@@ -88,6 +90,7 @@ export function ProfileIdentity({
               color: colors.white[100],
               ...typography.body.BodyB,
             }}
+            onClick={handleSave}
           >
             저장하기
           </button>

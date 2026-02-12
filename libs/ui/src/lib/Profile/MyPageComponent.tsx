@@ -44,6 +44,10 @@ export function MyPageComponent() {
   const onTabProfile = () => setTab(true);
   const onTabSettings = () => setTab(false);
 
+  const handleSave = () => {
+    console.log('저장하기');
+  };
+
   const tapStyle = (tab: boolean) => {
     if (tab) {
       return {
@@ -105,6 +109,7 @@ export function MyPageComponent() {
             setUserName={setUserName}
             userId={userId}
             userEmail={userEmail}
+            handleSave={handleSave}
           />
         </>
       ) : (

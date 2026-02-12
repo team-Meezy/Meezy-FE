@@ -1,11 +1,16 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import { useEffect, SetStateAction, Dispatch } from 'react';
 import { colors } from '../design';
 
-export function useTime() {
-  const [remainingTime, setRemainingTime] = useState(180);
+interface TimeParams {
+  remainingTime: number;
+  setRemainingTime: Dispatch<SetStateAction<number>>;
+}
 
+const initialTime = 180;
+
+export function useTime({ remainingTime, setRemainingTime }: TimeParams) {
   const formatTime = (seconds: number) => {
     const m = Math.floor(seconds / 60);
     const s = seconds % 60;
@@ -28,7 +33,7 @@ export function useTime() {
     }, 1000);
 
     return () => clearInterval(timer);
-  }, []);
+  }, [remainingTime === initialTime, setRemainingTime]);
 
   return {
     remainingTime,

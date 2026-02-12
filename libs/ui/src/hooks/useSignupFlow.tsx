@@ -123,7 +123,7 @@ export function useSignupFlow({
   };
 
   const validateAuthCodeStep = async () => {
-    if (!authCode) {
+    if (!authCode || authCode.length !== 6) {
       setGeneralError('인증번호를 입력해주세요.');
       return false;
     }
@@ -132,9 +132,13 @@ export function useSignupFlow({
       setLoadingState('인증번호 확인 중...');
       await useVerifyEmailCode(email, authCode);
       return true;
-    } catch (error) {
-      const apiError = error as ApiError;
-      setGeneralError(apiError.message || '인증번호 확인에 실패했습니다.');
+    } catch (error: any) {
+      const statusCode = error.response?.status || error.statusCode;
+      if (statusCode === 400) {
+        setGeneralError('잘못된 인증번호입니다.');
+      } else {
+        setGeneralError('인증번호 전송에 실패했습니다. 다시 시도해 주세요.');
+      }
       return false;
     } finally {
       setLoading(false);

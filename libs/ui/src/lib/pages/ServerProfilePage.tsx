@@ -30,11 +30,6 @@ export function ServerProfilePage({
     projectSidebarList?.[0]?.team_name || ''
   );
 
-  // 팀 선택 시 서버 이름 변경
-  const selectTeam = (team_name: string) => {
-    setServerName(team_name);
-  };
-
   const [tab, setTab] = useState(true);
   const [users, setUsers] = useState(userList);
   const {

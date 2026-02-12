@@ -95,7 +95,15 @@ export function useLoginFlow({
     }
   };
 
+  const handleSignUpClick = async () => {
+    setLoading(true);
+    setLoadingState('회원가입을 위해 이동 중!');
+    await new Promise((resolve) => setTimeout(resolve, 2000));
+    router.push('/signUp');
+  };
+
   return {
     handleLogin,
+    handleSignUpClick,
   };
 }

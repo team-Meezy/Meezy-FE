@@ -135,24 +135,24 @@ export const Input = forwardRef<HTMLInputElement, InputProps>(
 
         {/* Error Message */}
         {error && (
-          <div className="flex items-start gap-1">
+          <div className="flex items-center gap-1 mt-1">
             {/* Error Icon */}
-            <svg
-              width="12"
-              height="12"
-              viewBox="0 0 12 12"
-              fill="none"
-              className="mt-[2px] flex-shrink-0"
-            >
-              <circle cx="6" cy="6" r="6" fill={colors.system.error[500]} />
-              <path
-                d="M6 3.5V6.5M6 8.5H6.005"
-                stroke="white"
-                strokeWidth="1.5"
+            <span className="text-red-500">
+              <svg
+                width="16"
+                height="16"
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="currentColor"
+                strokeWidth="2"
                 strokeLinecap="round"
                 strokeLinejoin="round"
-              />
-            </svg>
+              >
+                <circle cx="12" cy="12" r="10" />
+                <line x1="12" y1="8" x2="12" y2="12" />
+                <line x1="12" y1="16" x2="12.01" y2="16" />
+              </svg>
+            </span>
 
             {/* Error Text */}
             <span

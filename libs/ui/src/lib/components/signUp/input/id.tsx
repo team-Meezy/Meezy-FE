@@ -1,17 +1,18 @@
 'use client';
 
-import { useState } from 'react';
-import { Input } from '../../components';
+import { Input } from '../..';
 
 export function IdInput({
   id,
   setId,
+  generalError,
+  setGeneralError,
 }: {
   id: string;
   setId: (value: string) => void;
+  generalError: string;
+  setGeneralError: (msg: string) => void;
 }) {
-  const [idError, setIdError] = useState('');
-
   return (
     <div className="flex flex-col gap-3">
       <Input
@@ -22,10 +23,9 @@ export function IdInput({
         value={id}
         onChange={(e) => {
           setId(e.target.value);
-          setIdError('');
+          setGeneralError('');
         }}
-        error={idError}
-        required
+        error={generalError}
       />
     </div>
   );

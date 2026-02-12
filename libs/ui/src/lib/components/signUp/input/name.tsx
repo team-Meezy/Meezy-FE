@@ -1,17 +1,18 @@
 'use client';
 
-import { useState } from 'react';
-import { Input } from '../../components';
+import { Input } from '../..';
 
 export function NameInput({
   name,
   setName,
+  generalError,
+  setGeneralError,
 }: {
   name: string;
   setName: (value: string) => void;
+  generalError: string;
+  setGeneralError: (msg: string) => void;
 }) {
-  const [nameError, setNameError] = useState('');
-
   return (
     <div className="flex flex-col gap-3">
       <Input
@@ -22,10 +23,9 @@ export function NameInput({
         value={name}
         onChange={(e) => {
           setName(e.target.value);
-          setNameError('');
+          setGeneralError('');
         }}
-        error={nameError}
-        required
+        error={generalError}
       />
     </div>
   );

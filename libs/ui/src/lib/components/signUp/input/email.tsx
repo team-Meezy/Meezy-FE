@@ -1,17 +1,18 @@
 'use client';
 
-import { useState } from 'react';
-import { Input } from '../../components';
+import { Input } from '../..';
 
 export function EmailInput({
   email,
   setEmail,
+  generalError,
+  setGeneralError,
 }: {
   email: string;
   setEmail: (email: string) => void;
+  generalError: string;
+  setGeneralError: (generalError: string) => void;
 }) {
-  const [emailError, setEmailError] = useState('');
-
   return (
     <div className="flex flex-col gap-3">
       <Input
@@ -22,10 +23,9 @@ export function EmailInput({
         value={email}
         onChange={(e) => {
           setEmail(e.target.value);
-          setEmailError('');
+          setGeneralError('');
         }}
-        error={emailError}
-        required
+        error={generalError}
       />
     </div>
   );

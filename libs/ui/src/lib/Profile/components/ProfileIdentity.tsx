@@ -7,6 +7,7 @@ interface ProfileIdentityProps {
   setUserName: (name: string) => void;
   userId: string;
   userEmail: string;
+  handleSave: () => void;
 }
 
 export function ProfileIdentity({
@@ -14,6 +15,7 @@ export function ProfileIdentity({
   setUserName,
   userId,
   userEmail,
+  handleSave,
 }: ProfileIdentityProps) {
   return (
     <section className="flex flex-col gap-4">
@@ -59,23 +61,40 @@ export function ProfileIdentity({
 
       <hr className="border-white/10" />
 
-      {/* 이메일 필드 */}
-      <div className="flex flex-col gap-3">
-        <label htmlFor="profile-email" style={{ ...typography.body.BodyB }}>
-          이메일
-        </label>
-        <input
-          type="email"
-          id="profile-email"
-          value={userEmail}
-          readOnly
-          className="w-full max-w-lg h-10 px-4 rounded-lg outline-none opacity-80 cursor-default"
-          style={{
-            backgroundColor: '#1C1C1E',
-            color: '#FFFFFF',
-            ...typography.body.BodyM,
-          }}
-        />
+      <div className="flex justify-between w-full">
+        {/* 이메일 필드 */}
+        <div className="flex flex-col gap-3 min-w-[70%]">
+          <label htmlFor="profile-email" style={{ ...typography.body.BodyB }}>
+            이메일
+          </label>
+          <input
+            type="email"
+            id="profile-email"
+            value={userEmail}
+            readOnly
+            className="w-full max-w-lg h-10 px-4 rounded-lg outline-none opacity-80 cursor-default"
+            style={{
+              backgroundColor: '#1C1C1E',
+              color: '#FFFFFF',
+              ...typography.body.BodyM,
+            }}
+          />
+        </div>
+
+        {/* 저장하기 버튼 */}
+        <div className="flex justify-end w-full items-end">
+          <button
+            className="px-8 py-3 rounded-lg transition-all hover:scale-105 active:scale-95 shadow-lg shadow-orange-500/20"
+            style={{
+              backgroundColor: colors.primary[500],
+              color: colors.white[100],
+              ...typography.body.BodyB,
+            }}
+            onClick={handleSave}
+          >
+            저장하기
+          </button>
+        </div>
       </div>
     </section>
   );

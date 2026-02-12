@@ -2,6 +2,7 @@
 
 import { colors, typography } from '../../../design';
 import { useImg } from '../../../hooks';
+import { useProfile } from '../../../context';
 
 export function ProfileImg() {
   const {
@@ -11,6 +12,10 @@ export function ProfileImg() {
     handleImageChange,
     handleDeleteImg,
   } = useImg();
+  const { profile } = useProfile();
+
+  // 새로 업로드한 이미지가 있으면 previewUrl, 없으면 서버의 profileImage 사용
+  const displayImage = previewUrl || profile?.profileImage;
 
   return (
     <section className="flex justify-between items-start">
@@ -50,9 +55,9 @@ export function ProfileImg() {
 
       {/* 이미지 미리보기 박스 */}
       <div className="w-24 h-24 rounded-xl bg-[#D9D9D9] flex items-center justify-center overflow-hidden shrink-0">
-        {previewUrl ? (
+        {displayImage ? (
           <img
-            src={previewUrl}
+            src={displayImage}
             alt="Preview"
             className="w-full h-full object-cover"
           />

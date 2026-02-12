@@ -1,25 +1,40 @@
-'use client';
-
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { colors, typography } from '../../design';
 import { ProfileImg, ProfileIdentity, ProfileActions } from './components';
 import { MyPageModal } from '../modals';
-
-const user = {
-  name: 'John Doe',
-  id: '123456789',
-  email: 'john.doe@example.com',
-  profileImg: null,
-};
+import { useProfile } from '../../context';
 
 export function MyPageComponent() {
   const [tab, setTab] = useState(true);
-  const [userName, setUserName] = useState(user.name);
-  const [userId, setUserId] = useState(user.id);
-  const [userEmail, setUserEmail] = useState(user.email);
   const [confirmModalOpen, setConfirmModalOpen] = useState(false);
   const [confirmModalTitle, setConfirmModalTitle] = useState('');
   const [confirmModalDescription, setConfirmModalDescription] = useState('');
+
+  const { profile, loading } = useProfile();
+  const [userName, setUserName] = useState('');
+  const [userId, setUserId] = useState('');
+  const [userEmail, setUserEmail] = useState('');
+
+  useEffect(() => {
+    if (profile) {
+      setUserName(profile.name || '');
+      setUserId(profile.accountId || '');
+      setUserEmail(profile.email || '');
+    }
+  }, [profile]);
+
+  if (loading || !profile) {
+    return (
+      <div
+        className="flex-[3] min-h-screen p-5 flex items-center justify-center border border-white/5"
+        style={{ backgroundColor: colors.black[100], color: '#FFFFFF' }}
+      >
+        <p style={{ ...typography.body.BodyM, color: colors.gray[400] }}>
+          프로필 정보를 불러오는 중입니다...
+        </p>
+      </div>
+    );
+  }
 
   const onConfirmModalOpen = () => {
     setConfirmModalOpen(true);
@@ -28,6 +43,10 @@ export function MyPageComponent() {
 
   const onTabProfile = () => setTab(true);
   const onTabSettings = () => setTab(false);
+
+  const handleSave = () => {
+    console.log('저장하기');
+  };
 
   const tapStyle = (tab: boolean) => {
     if (tab) {
@@ -90,6 +109,7 @@ export function MyPageComponent() {
             setUserName={setUserName}
             userId={userId}
             userEmail={userEmail}
+            handleSave={handleSave}
           />
         </>
       ) : (

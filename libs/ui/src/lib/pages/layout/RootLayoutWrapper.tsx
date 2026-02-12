@@ -7,6 +7,7 @@ import {
   ServerModalProvider,
   ServerLoadingProvider,
   AuthProvider,
+  ProfileProvider,
 } from '../../../context';
 import { LoadingOverlay } from '../../components';
 
@@ -25,7 +26,7 @@ export function RootLayoutWrapper({ children }: { children: React.ReactNode }) {
               <ServerStateProvider>
                 <ServerLoadingProvider>
                   <AuthProvider>
-                    {children}
+                    <ProfileProvider>{children}</ProfileProvider>
                     <LoadingOverlay />
                   </AuthProvider>
                 </ServerLoadingProvider>

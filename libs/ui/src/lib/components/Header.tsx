@@ -1,11 +1,10 @@
-'use client';
-
 import { colors, typography } from '../../design';
-import { useServerJoinedTeam } from '../../context';
+import { useServerJoinedTeam, useProfile } from '../../context';
 import { useRouter } from 'next/navigation';
 
 export function Header() {
   const { joined, setJoined, meeting, setMeeting } = useServerJoinedTeam();
+  const { profile } = useProfile();
 
   const router = useRouter();
 
@@ -60,16 +59,23 @@ export function Header() {
             {meeting ? '회의 나가기' : '회의 시작'}
           </button>
         )}
-        <div
-          className="w-10 h-10 bg-[#d9d9d9] rounded-full cursor-pointer hover:opacity-80 transition-opacity"
-          style={{
-            ...typography.body.BodyM,
-            backgroundColor: colors.white[100],
-          }}
-          onClick={() => {
-            onClickMypage();
-          }}
-        />
+        {profile?.profileImage ? (
+          <img
+            src={profile.profileImage}
+            alt="profile"
+            className="w-10 h-10 rounded-full cursor-pointer hover:opacity-80 transition-opacity object-cover"
+            onClick={() => {
+              onClickMypage();
+            }}
+          />
+        ) : (
+          <div
+            className="w-10 h-10 bg-[#d9d9d9] rounded-full cursor-pointer hover:opacity-80 transition-opacity"
+            onClick={() => {
+              onClickMypage();
+            }}
+          />
+        )}
       </div>
     </header>
   );

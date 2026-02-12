@@ -1,8 +1,12 @@
 import Image from 'next/image';
 import { NoTeamReceive } from '../../../assets/index.client';
 import { colors } from '../../../design';
+import { useProfile } from '../../../context';
 
 export function MainPageWrapper() {
+  const { profile } = useProfile();
+  console.log('Current Profile State (Global):', profile);
+
   return (
     <>
       {/* [메인] 실제 내용이 들어가는 둥근 박스 */}

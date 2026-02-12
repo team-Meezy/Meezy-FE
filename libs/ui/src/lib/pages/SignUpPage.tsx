@@ -17,7 +17,8 @@ import { useTokenCheck } from '../../hooks';
 import { useRequestEmailVerification } from '@org/shop-data';
 
 export function SignUpPage() {
-  const { formattedTime } = useTime();
+  const [remainingTime, setRemainingTime] = useState(180);
+  const { formattedTime } = useTime({ remainingTime, setRemainingTime });
   const router = useRouter();
   const { loading, setLoading, setLoadingState } = useServerLoading();
   const [generalError, setGeneralError] = useState('');
@@ -56,6 +57,7 @@ export function SignUpPage() {
 
   const handleResendCode = async () => {
     await useRequestEmailVerification(email);
+    setRemainingTime(180);
   };
 
   return (
@@ -117,26 +119,6 @@ export function SignUpPage() {
           )}
         </div>
 
-        {/* General Error Message */}
-        {generalError && (
-          <div
-            className="w-full p-4 rounded-lg mb-8"
-            style={{
-              backgroundColor: colors.system.error[300] || '#FEE2E2',
-              border: `1px solid ${colors.system.error[500] || '#ffa0a0ff'}`,
-            }}
-          >
-            <p
-              style={{
-                ...typography.body.BodyM,
-                color: colors.system.error[700] || '#DC2626',
-              }}
-            >
-              {generalError}
-            </p>
-          </div>
-        )}
-
         <form
           className="w-full space-y-10"
           onKeyDown={handleKeyDown}
@@ -145,9 +127,36 @@ export function SignUpPage() {
             handleNext();
           }}
         >
-          {step === 1 && <EmailInput email={email} setEmail={setEmail} />}
-          {step === 2 && (
-            <AuthCodeInput authCode={authCode} setAuthCode={setAuthCode} />
+          {step === 1 && (
+            <EmailInput
+              email={email}
+              setEmail={setEmail}
+              generalError={generalError}
+              setGeneralError={setGeneralError}
+            />
+          )}
+          {remainingTime === 0 ? (
+            <div className="w-full flex flex-col items-center gap-2 -mb-7">
+              <span
+                style={{
+                  color: colors.system.error[300],
+                  ...typography.title.TitleB,
+                }}
+              >
+                인증 시간이 종료되었습니다.
+              </span>
+            </div>
+          ) : (
+            <>
+              {step === 2 && (
+                <AuthCodeInput
+                  authCode={authCode}
+                  setAuthCode={setAuthCode}
+                  generalError={generalError}
+                  setGeneralError={setGeneralError}
+                />
+              )}
+            </>
           )}
           {step === 3 && <IdInput id={id} setId={setId} />}
           {step === 4 && <NameInput name={name} setName={setName} />}

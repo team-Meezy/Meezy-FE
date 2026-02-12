@@ -6,13 +6,16 @@ import { colors, typography } from '../../../design';
 export function AuthCodeInput({
   authCode,
   setAuthCode,
+  generalError,
+  setGeneralError,
 }: {
   authCode: string;
   setAuthCode: (authCode: string) => void;
+  generalError: string;
+  setGeneralError: (generalError: string) => void;
 }) {
   const LENGTH = 6;
   const inputsRef = useRef<Array<HTMLInputElement | null>>([]);
-  const [authCodeError, setAuthCodeError] = useState('');
 
   const handleChange = (index: number, char: string) => {
     if (!/^\d?$/.test(char)) return;
@@ -20,7 +23,7 @@ export function AuthCodeInput({
     const nextValue = authCode.padEnd(LENGTH, ' ').split('');
     nextValue[index] = char;
     setAuthCode(nextValue.join('').trimEnd());
-    setAuthCodeError('');
+    setGeneralError('');
 
     if (char && index < LENGTH - 1) {
       inputsRef.current[index + 1]?.focus();
@@ -59,7 +62,7 @@ export function AuthCodeInput({
               font-semibold
               outline-none
               ${
-                authCodeError
+                generalError
                   ? 'ring-2 ring-red-500'
                   : 'focus:ring-2 focus:ring-orange-500'
               }
@@ -73,7 +76,37 @@ export function AuthCodeInput({
         ))}
       </div>
 
-      {authCodeError && <p className="text-sm text-red-500">{authCodeError}</p>}
+      {generalError && (
+        <div className="flex items-center gap-1 mt-1 -mb-6">
+          {/* Error Icon */}
+          <span className="text-red-500">
+            <svg
+              width="16"
+              height="16"
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke="currentColor"
+              strokeWidth="2"
+              strokeLinecap="round"
+              strokeLinejoin="round"
+            >
+              <circle cx="12" cy="12" r="10" />
+              <line x1="12" y1="8" x2="12" y2="12" />
+              <line x1="12" y1="16" x2="12.01" y2="16" />
+            </svg>
+          </span>
+
+          {/* Error Text */}
+          <span
+            style={{
+              ...typography.label.labelM,
+              color: colors.system.error[500],
+            }}
+          >
+            {generalError}
+          </span>
+        </div>
+      )}
     </div>
   );
 }

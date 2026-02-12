@@ -20,7 +20,7 @@ import {
 } from '../components';
 
 export function SignUpPage() {
-  const [remainingTime, setRemainingTime] = useState(180);
+  const [remainingTime, setRemainingTime] = useState(0);
   const { formattedTime } = useTime({ remainingTime, setRemainingTime });
   const { loading } = useServerLoading();
   const [generalError, setGeneralError] = useState('');

@@ -122,7 +122,7 @@ export function useSignupFlow({
     if (!name) {
       setGeneralError('이름을 입력해주세요.');
       return false;
-    } else if (name.length <= 2 || name.length >= 10) {
+    } else if (name.length < 2 || name.length > 10) {
       setGeneralError('이름은 2자 이상 10자 이내로 입력해주세요.');
       return false;
     }
@@ -133,7 +133,7 @@ export function useSignupFlow({
     if (!id) {
       setGeneralError('아이디를 입력해주세요.');
       return false;
-    } else if (id.length <= 6 || id.length >= 15) {
+    } else if (id.length < 6 || id.length > 15) {
       setGeneralError('아이디는 6자 이상 15자 이내로 입력해주세요.');
       return false;
     }

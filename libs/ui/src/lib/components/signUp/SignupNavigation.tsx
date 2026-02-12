@@ -26,6 +26,7 @@ export function SignupNavigation({
         <div className="flex gap-2">
           <button
             type="button"
+            disabled={loading}
             onClick={handleGoToLogin}
             className="hover:text-white transition-colors border-b border-orange-500"
             style={{
@@ -57,6 +58,7 @@ export function SignupNavigation({
           </span>
           <button
             type="button"
+            disabled={loading}
             onClick={handleResendCode}
             className="hover:text-white transition-colors border-b border-orange-500"
             style={{

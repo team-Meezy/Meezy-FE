@@ -7,6 +7,7 @@ interface SignupNavigationProps {
   handleResendCode: () => void;
   handleBack: () => void;
   loading: boolean;
+  remainingTime: number;
 }
 
 export function SignupNavigation({
@@ -16,6 +17,7 @@ export function SignupNavigation({
   handleResendCode,
   handleBack,
   loading,
+  remainingTime,
 }: SignupNavigationProps) {
   return (
     <div className="flex flex-col items-center gap-2">
@@ -94,9 +96,11 @@ export function SignupNavigation({
             color: colors.white[100],
             ...typography.body.LBodyB,
             opacity: loading ? 0.6 : 1,
+            cursor:
+              step === 2 && remainingTime === 0 ? 'not-allowed' : 'pointer',
           }}
         >
-          {loading ? '처리중...' : step === 6 ? '완료' : '다음'}
+          {loading ? '처리중...' : '다음'}
         </button>
       </div>
     </div>

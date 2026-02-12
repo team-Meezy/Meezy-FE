@@ -186,8 +186,22 @@ export function useSignupFlow({
   };
 
   const handleResendCode = async () => {
-    await useRequestEmailVerification(email);
-    setRemainingTime(180);
+    try {
+      setLoading(true);
+      await useRequestEmailVerification(email);
+      setRemainingTime(180);
+    } catch (error: any) {
+      const statusCode = error.response?.status || error.statusCode;
+      if (statusCode === 429) {
+        setGeneralError(
+          '너무 많은 요청을 보냈습니다. 24시간 후에 다시 시도해주세요.'
+        );
+      } else {
+        setGeneralError('인증번호 재전송에 실패했습니다. 다시 시도해 주세요.');
+      }
+    } finally {
+      setLoading(false);
+    }
   };
 
   const handleNext = async () => {

@@ -17,7 +17,7 @@ import {
   SignupHeader,
   SignupGuideText,
   SignupNavigation,
-} from '../components/signUp';
+} from '../components';
 
 export function SignUpPage() {
   const [remainingTime, setRemainingTime] = useState(180);
@@ -142,6 +142,7 @@ export function SignUpPage() {
             handleResendCode={handleResendCode}
             handleBack={handleBack}
             loading={loading}
+            remainingTime={remainingTime}
           />
         </form>
       </div>

@@ -6,7 +6,8 @@ export * from './DashboardCard';
 export * from './Input';
 export * from './ParticipationChart';
 export * from './SocialButton';
-export * from './signUp/input';
+export * from './signUp';
 export * from './ReceiveAiAssistant';
 export * from './LoadingOverlay';
 export * from './login';
+

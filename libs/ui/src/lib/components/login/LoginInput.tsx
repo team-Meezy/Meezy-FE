@@ -42,8 +42,8 @@ export const LoginInput = ({
         backgroundColor: colors.gray[900],
         ...typography.body.BodyM,
       }}
-      className={`w-full rounded-lg p-4 outline-none ring-1 ring-gray-700 focus:ring-orange-500 ${
-        error ? 'ring-red-500' : ''
+      className={`w-full rounded-lg p-4 outline-none ring-1 focus:ring-orange-500 ${
+        error ? 'ring-red-500' : 'ring-gray-700'
       }`}
     />
     {error && (

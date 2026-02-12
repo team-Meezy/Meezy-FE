@@ -7,7 +7,8 @@ interface LoginFooterProps {
 export const LoginFooter = ({ handleSignUpClick }: LoginFooterProps) => (
   <div className="pt-2 text-center">
     <p className="mb-4 text-sm">
-      <span
+      <button
+        type="button"
         className="cursor-pointer underline underline-offset-4"
         style={{
           color: colors.primary[500],
@@ -16,7 +17,7 @@ export const LoginFooter = ({ handleSignUpClick }: LoginFooterProps) => (
         onClick={handleSignUpClick}
       >
         회원가입
-      </span>{' '}
+      </button>{' '}
       <span
         style={{
           color: colors.gray[500],

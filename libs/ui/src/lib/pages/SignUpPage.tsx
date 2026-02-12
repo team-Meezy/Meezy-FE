@@ -39,6 +39,7 @@ export function SignUpPage() {
     passwordConfirm,
     authCode,
     setGeneralError,
+    setRemainingTime,
   });
 
   const handleGoToLogin = async () => {
@@ -135,7 +136,7 @@ export function SignUpPage() {
               setGeneralError={setGeneralError}
             />
           )}
-          {remainingTime === 0 ? (
+          {remainingTime === 0 && step === 2 ? (
             <div className="w-full flex flex-col items-center gap-2 -mb-7">
               <span
                 style={{
@@ -158,14 +159,30 @@ export function SignUpPage() {
               )}
             </>
           )}
-          {step === 3 && <IdInput id={id} setId={setId} />}
-          {step === 4 && <NameInput name={name} setName={setName} />}
+          {step === 3 && (
+            <IdInput
+              id={id}
+              setId={setId}
+              generalError={generalError}
+              setGeneralError={setGeneralError}
+            />
+          )}
+          {step === 4 && (
+            <NameInput
+              name={name}
+              setName={setName}
+              generalError={generalError}
+              setGeneralError={setGeneralError}
+            />
+          )}
           {step === 5 && (
             <PasswordInput
               password={password}
               setPassword={setPassword}
               passwordConfirm={passwordConfirm}
               setPasswordConfirm={setPasswordConfirm}
+              generalError={generalError}
+              setGeneralError={setGeneralError}
             />
           )}
           {step === 6 && <Success />}

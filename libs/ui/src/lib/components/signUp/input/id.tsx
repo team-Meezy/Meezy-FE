@@ -1,16 +1,15 @@
 'use client';
 
-import { useState } from 'react';
-import { Input } from '../../components';
+import { Input } from '../..';
 
-export function NameInput({
-  name,
-  setName,
+export function IdInput({
+  id,
+  setId,
   generalError,
   setGeneralError,
 }: {
-  name: string;
-  setName: (value: string) => void;
+  id: string;
+  setId: (value: string) => void;
   generalError: string;
   setGeneralError: (msg: string) => void;
 }) {
@@ -18,12 +17,12 @@ export function NameInput({
     <div className="flex flex-col gap-3">
       <Input
         type="text"
-        id="name"
-        label="이름"
-        placeholder="이름을 입력해주세요."
-        value={name}
+        id="id"
+        label="아이디"
+        placeholder="아이디를 입력해주세요."
+        value={id}
         onChange={(e) => {
-          setName(e.target.value);
+          setId(e.target.value);
           setGeneralError('');
         }}
         error={generalError}

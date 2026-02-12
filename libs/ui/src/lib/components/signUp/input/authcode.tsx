@@ -1,7 +1,7 @@
 'use client';
 
-import { useRef, useState } from 'react';
-import { colors, typography } from '../../../design';
+import { useRef } from 'react';
+import { colors, typography } from '../../../../design';
 
 export function AuthCodeInput({
   authCode,

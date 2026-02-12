@@ -1,7 +1,6 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import { ApiError } from '../api';
 import { useRouter } from 'next/navigation';
 import {
   useRequestEmailVerification,
@@ -17,6 +16,7 @@ interface SignupFlowParams {
   id: string;
   passwordConfirm: string;
   authCode: string;
+  loading: boolean;
   setGeneralError: (msg: string) => void;
   setRemainingTime: (time: number) => void;
 }
@@ -28,6 +28,7 @@ export function useSignupFlow({
   id,
   passwordConfirm,
   authCode,
+  loading,
   setGeneralError,
   setRemainingTime,
 }: SignupFlowParams) {
@@ -170,6 +171,25 @@ export function useSignupFlow({
     return true;
   };
 
+  const handleGoToLogin = async () => {
+    setLoading(true);
+    setLoadingState('로그인 페이지로 이동 중!');
+    await new Promise((resolve) => setTimeout(resolve, 2000));
+    router.push('/login');
+  };
+
+  const handleKeyDown = async (e: React.KeyboardEvent) => {
+    if (e.key === 'Enter' && !loading) {
+      e.preventDefault();
+      await handleNext();
+    }
+  };
+
+  const handleResendCode = async () => {
+    await useRequestEmailVerification(email);
+    setRemainingTime(180);
+  };
+
   const handleNext = async () => {
     if (step === 1 && (await validateEmailStep())) {
       setStep(step + 1);
@@ -195,5 +215,8 @@ export function useSignupFlow({
     step,
     handleNext,
     handleBack,
+    handleGoToLogin,
+    handleKeyDown,
+    handleResendCode,
   };
 }

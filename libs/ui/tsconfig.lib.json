@@ -8,7 +8,7 @@
     "jsx": "react-jsx",
     "lib": ["dom", "esnext"]
   },
-  "include": ["src/**/*.ts", "src/**/*.tsx"],
+  "include": ["src/**/*.ts", "src/**/*.tsx", "src/lib/components/signUp/SignupHeader.tsz"],
   "references": [
     {
       "path": "../shop/data/tsconfig.lib.json"

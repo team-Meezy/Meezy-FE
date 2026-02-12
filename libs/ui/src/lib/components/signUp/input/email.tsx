@@ -1,7 +1,6 @@
 'use client';
 
-import { useState } from 'react';
-import { Input } from '../../components';
+import { Input } from '../..';
 
 export function EmailInput({
   email,

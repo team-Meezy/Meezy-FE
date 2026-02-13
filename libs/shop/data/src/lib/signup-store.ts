@@ -8,6 +8,7 @@ interface SignupState {
   id: string;
   name: string;
   loading: boolean;
+  loadingState: string;
   password: string;
   passwordConfirm: string;
   generalError: string;
@@ -30,6 +31,7 @@ interface SignupState {
   setId: (id: string) => void;
   setName: (name: string) => void;
   setLoading: (loading: boolean) => void;
+  setLoadingState: (loadingState: string) => void;
   setPassword: (password: string) => void;
   setPasswordConfirm: (passwordConfirm: string) => void;
 }
@@ -41,6 +43,7 @@ export const useSignupStore = create<SignupState>((set) => ({
   id: '',
   name: '',
   loading: false,
+  loadingState: '',
   password: '',
   passwordConfirm: '',
   generalError: '',
@@ -77,6 +80,7 @@ export const useSignupStore = create<SignupState>((set) => ({
   setId: (id) => set({ id }),
   setName: (name) => set({ name }),
   setLoading: (loading) => set({ loading }),
+  setLoadingState: (loadingState) => set({ loadingState }),
   setPassword: (password) => set({ password }),
   setPasswordConfirm: (passwordConfirm) => set({ passwordConfirm }),
 }));

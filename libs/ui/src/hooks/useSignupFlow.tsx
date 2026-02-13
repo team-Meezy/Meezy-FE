@@ -6,9 +6,8 @@ import {
   useRequestEmailVerification,
   useVerifyEmailCode,
   useLocalSignup,
+  useSignupStore,
 } from '@org/shop-data';
-import { useServerLoading } from '../context';
-import { useSignupStore } from '@org/shop-data';
 
 export function useSignupFlow() {
   const {
@@ -23,9 +22,10 @@ export function useSignupFlow() {
     loading,
     setGeneralError,
     setRemainingTime,
+    setLoading,
+    setLoadingState,
   } = useSignupStore();
   const router = useRouter();
-  const { setLoading, setLoadingState } = useServerLoading();
 
   useEffect(() => {
     setGeneralError('');

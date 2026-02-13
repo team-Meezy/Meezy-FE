@@ -7,11 +7,8 @@ interface SignupState {
   authCode: string;
   id: string;
   name: string;
-  loading: boolean;
-  loadingState: string;
   password: string;
   passwordConfirm: string;
-  generalError: string;
   remainingTime: number;
 
   // 액션 (Actions)
@@ -24,14 +21,11 @@ interface SignupState {
     value: string
   ) => void;
   setRemainingTime: (time: number | ((prev: number) => number)) => void;
-  setGeneralError: (error: string) => void;
   reset: () => void;
   setEmail: (email: string) => void;
   setAuthCode: (authCode: string) => void;
   setId: (id: string) => void;
   setName: (name: string) => void;
-  setLoading: (loading: boolean) => void;
-  setLoadingState: (loadingState: string) => void;
   setPassword: (password: string) => void;
   setPasswordConfirm: (passwordConfirm: string) => void;
 }
@@ -42,11 +36,8 @@ export const useSignupStore = create<SignupState>((set) => ({
   authCode: '',
   id: '',
   name: '',
-  loading: false,
-  loadingState: '',
   password: '',
   passwordConfirm: '',
-  generalError: '',
   remainingTime: 180,
 
   setStep: (step) => set({ step }),
@@ -59,8 +50,12 @@ export const useSignupStore = create<SignupState>((set) => ({
       remainingTime:
         typeof time === 'function' ? time(state.remainingTime) : time,
     })),
-
-  setGeneralError: (generalError) => set({ generalError }),
+  setEmail: (email) => set({ email }),
+  setAuthCode: (authCode) => set({ authCode }),
+  setId: (id) => set({ id }),
+  setName: (name) => set({ name }),
+  setPassword: (password) => set({ password }),
+  setPasswordConfirm: (passwordConfirm) => set({ passwordConfirm }),
 
   reset: () =>
     set({
@@ -71,16 +66,6 @@ export const useSignupStore = create<SignupState>((set) => ({
       name: '',
       password: '',
       passwordConfirm: '',
-      generalError: '',
       remainingTime: 180,
     }),
-
-  setEmail: (email) => set({ email }),
-  setAuthCode: (authCode) => set({ authCode }),
-  setId: (id) => set({ id }),
-  setName: (name) => set({ name }),
-  setLoading: (loading) => set({ loading }),
-  setLoadingState: (loadingState) => set({ loadingState }),
-  setPassword: (password) => set({ password }),
-  setPasswordConfirm: (passwordConfirm) => set({ passwordConfirm }),
 }));

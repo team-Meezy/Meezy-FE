@@ -10,47 +10,42 @@ import {
   Success,
 } from '../components';
 import { useState } from 'react';
-import { useSignupFlow, useTime } from '../../hooks';
+import { useSignupFlow, useTime, useTokenCheck } from '../../hooks';
 import { useServerLoading } from '../../context';
-import { useTokenCheck } from '../../hooks';
-import {
-  SignupHeader,
-  SignupGuideText,
-  SignupNavigation,
-} from '../components';
+import { SignupHeader, SignupGuideText, SignupNavigation } from '../components';
+import { useSignupStore } from '@org/shop-data';
 
 export function SignUpPage() {
+  const {
+    step,
+    setStep,
+    email,
+    setEmail,
+    authCode,
+    setAuthCode,
+    id,
+    setId,
+    name,
+    setName,
+    password,
+    setPassword,
+    passwordConfirm,
+    setPasswordConfirm,
+  } = useSignupStore();
   const [remainingTime, setRemainingTime] = useState(0);
   const { formattedTime } = useTime({ remainingTime, setRemainingTime });
   const { loading } = useServerLoading();
   const [generalError, setGeneralError] = useState('');
-  const [name, setName] = useState('');
-  const [email, setEmail] = useState('');
-  const [password, setPassword] = useState('');
-  const [authCode, setAuthCode] = useState('');
-  const [id, setId] = useState('');
-  const [passwordConfirm, setPasswordConfirm] = useState('');
 
   useTokenCheck();
 
   const {
-    step,
     handleNext,
     handleBack,
     handleGoToLogin,
     handleKeyDown,
     handleResendCode,
-  } = useSignupFlow({
-    name,
-    email,
-    password,
-    id,
-    passwordConfirm,
-    authCode,
-    loading,
-    setGeneralError,
-    setRemainingTime,
-  });
+  } = useSignupFlow();
 
   return (
     <div

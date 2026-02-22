@@ -1,6 +1,6 @@
 import { privateApi } from '../axios';
 
-export const createTeam = async (name: string, serverImage: string) => {
+export const useCreateTeam = async (name: string, serverImage: string) => {
   const body = {
     name,
     serverImage,

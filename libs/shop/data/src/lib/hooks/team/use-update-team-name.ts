@@ -1,6 +1,6 @@
 import { privateApi } from '../axios';
 
-export const updateTeamName = async (teamId: string, name: string) => {
+export const useUpdateTeamName = async (teamId: string, name: string) => {
   const body = {
     name,
   };

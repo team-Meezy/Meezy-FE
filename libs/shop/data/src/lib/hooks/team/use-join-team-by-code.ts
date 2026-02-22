@@ -1,6 +1,6 @@
 import { privateApi } from '../axios';
 
-export const joinTeamByCode = async (inviteCode: string) => {
+export const useJoinTeamByCode = async (inviteCode: string) => {
   const body = {
     inviteCode,
   };

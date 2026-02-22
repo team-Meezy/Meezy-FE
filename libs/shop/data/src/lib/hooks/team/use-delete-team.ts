@@ -1,6 +1,6 @@
 import { privateApi } from '../axios';
 
-export const deleteTeam = async (teamId: string) => {
+export const useDeleteTeam = async (teamId: string) => {
   try {
     const response = await privateApi.delete(`/teams/${teamId}`);
     console.log('deleteTeam response', response);

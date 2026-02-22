@@ -1,6 +1,6 @@
 import { privateApi } from '../axios';
 
-export const getTeamMembers = async (teamId: string) => {
+export const useGetTeamMembers = async (teamId: string) => {
   try {
     const response = await privateApi.get(`/teams/${teamId}/members`);
     console.log('getTeamMembers response', response);

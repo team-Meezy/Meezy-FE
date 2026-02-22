@@ -1,6 +1,6 @@
 import { privateApi } from '../axios';
 
-export const updateTeamImage = async (teamId: string, image: File) => {
+export const useUpdateTeamImage = async (teamId: string, image: File) => {
   try {
     const formData = new FormData();
     formData.append('serverImage', image);

@@ -5,7 +5,6 @@ import { useLoginFlow } from '../../hooks';
 import { colors, typography } from '../../design';
 import Image from 'next/image';
 import LoginLogo from '../../assets/LoginLogo.png';
-import { useAuth } from '../../context';
 import { useTokenCheck } from '../../hooks';
 import {
   SocialLoginSection,
@@ -13,12 +12,13 @@ import {
   LoginFooter,
   LoginOptions,
 } from '../components';
+import { useLoginStore } from '@org/shop-data';
 
 export function LoginPage() {
   const [accountId, setAccountId] = useState('');
   const [password, setPassword] = useState('');
   const [generalError, setGeneralError] = useState('');
-  const { rememberMe, setRememberMe } = useAuth();
+  const { rememberMe, setRememberMe } = useLoginStore();
 
   useTokenCheck();
 

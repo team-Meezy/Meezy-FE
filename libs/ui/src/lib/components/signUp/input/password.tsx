@@ -1,22 +1,13 @@
 'use client';
 
 import { Input } from '../..';
+import { useSignupStore, useErrorStore } from '@org/shop-data';
 
-export function PasswordInput({
-  password,
-  setPassword,
-  passwordConfirm,
-  setPasswordConfirm,
-  generalError,
-  setGeneralError,
-}: {
-  password: string;
-  setPassword: (value: string) => void;
-  passwordConfirm: string;
-  setPasswordConfirm: (value: string) => void;
-  generalError: string;
-  setGeneralError: (msg: string) => void;
-}) {
+export function PasswordInput() {
+  const { password, setPassword, passwordConfirm, setPasswordConfirm } =
+    useSignupStore();
+  const { generalError, setGeneralError } = useErrorStore();
+
   const isPasswordError =
     generalError === '비밀번호를 입력해주세요.' ||
     generalError ===
@@ -26,6 +17,7 @@ export function PasswordInput({
     generalError === '비밀번호가 일치하지 않습니다.' ||
     generalError ===
       '비밀번호는 8~30자의 영문, 숫자, 특수문자(@$!%*#?&)를 모두 포함해야 합니다';
+
   return (
     <div className="flex flex-col gap-3">
       <Input

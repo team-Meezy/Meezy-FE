@@ -1,18 +1,11 @@
 'use client';
 
 import { Input } from '../..';
+import { useSignupStore, useErrorStore } from '@org/shop-data';
 
-export function EmailInput({
-  email,
-  setEmail,
-  generalError,
-  setGeneralError,
-}: {
-  email: string;
-  setEmail: (email: string) => void;
-  generalError: string;
-  setGeneralError: (generalError: string) => void;
-}) {
+export function EmailInput() {
+  const { email, setEmail } = useSignupStore();
+  const { generalError, setGeneralError } = useErrorStore();
   return (
     <div className="flex flex-col gap-3">
       <Input

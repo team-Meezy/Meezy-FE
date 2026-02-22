@@ -1,15 +1,16 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import { useEffect } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { ApiError } from '../../api';
 import { colors } from '../../design';
+import { useErrorStore, useLoginStore } from '@org/shop-data';
 
 export function LoginCallbackClient() {
   const router = useRouter();
   const searchParams = useSearchParams();
-  const [error, setError] = useState('');
-  const [isProcessing, setIsProcessing] = useState(true);
+  const { generalError, setGeneralError } = useErrorStore();
+  const { isProcessing, setIsProcessing } = useLoginStore();
 
   useEffect(() => {
     let timeoutId: NodeJS.Timeout | null = null;
@@ -20,14 +21,14 @@ export function LoginCallbackClient() {
         const errorParam = searchParams.get('error');
 
         if (errorParam) {
-          setError('OAuth 인증이 취소되었습니다.');
+          setGeneralError('OAuth 인증이 취소되었습니다.');
           setIsProcessing(false);
           timeoutId = setTimeout(() => router.push('/login'), 3000);
           return;
         }
 
         if (!code) {
-          setError('인증 코드가 없습니다.');
+          setGeneralError('인증 코드가 없습니다.');
           setIsProcessing(false);
           timeoutId = setTimeout(() => router.push('/login'), 3000);
           return;
@@ -44,7 +45,7 @@ export function LoginCallbackClient() {
         router.push('/');
       } catch (err) {
         const apiError = err as ApiError;
-        setError(apiError.message || 'OAuth 인증에 실패했습니다.');
+        setGeneralError(apiError.message || 'OAuth 인증에 실패했습니다.');
         setIsProcessing(false);
         timeoutId = setTimeout(() => router.push('/login'), 3000);
       }
@@ -82,7 +83,7 @@ export function LoginCallbackClient() {
               잠시만 기다려주세요.
             </p>
           </>
-        ) : error ? (
+        ) : generalError ? (
           <>
             {/* Error Icon */}
             <div className="mb-6 flex justify-center">
@@ -112,7 +113,7 @@ export function LoginCallbackClient() {
               </div>
             </div>
             <h1 className="mb-2 font-headlineB text-gray-800">로그인 실패</h1>
-            <p className="mb-4 font-bodyM text-gray-600">{error}</p>
+            <p className="mb-4 font-bodyM text-gray-600">{generalError}</p>
             <p className="font-labelM text-gray-500">
               3초 후 로그인 페이지로 이동합니다...
             </p>

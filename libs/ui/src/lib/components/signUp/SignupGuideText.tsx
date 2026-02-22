@@ -1,6 +1,9 @@
 import { colors, typography } from '../../../design';
+import { useSignupStore } from '@org/shop-data';
 
-export function SignupGuideText({ step }: { step: number }) {
+export function SignupGuideText() {
+  const { step } = useSignupStore();
+
   return (
     <div
       className="w-full mb-8"

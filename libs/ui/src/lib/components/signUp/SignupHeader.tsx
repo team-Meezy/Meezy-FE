@@ -1,12 +1,10 @@
 'use client';
 
 import { colors, typography } from '../../../design';
+import { useSignupStore } from '@org/shop-data';
 
-interface SignupHeaderProps {
-  step: number;
-}
-
-export function SignupHeader({ step }: SignupHeaderProps) {
+export function SignupHeader() {
+  const { step } = useSignupStore();
   return (
     <div className="w-full flex justify-between items-end mb-2">
       <h2

@@ -1,8 +1,7 @@
 'use client';
 
 import { useRouter } from 'next/navigation';
-import { useLocalLogin } from '@org/shop-data';
-import { useServerLoading } from '../context';
+import { useLocalLogin, useLoadingStore } from '@org/shop-data';
 
 interface LoginFlowParams {
   accountId: string;
@@ -15,8 +14,8 @@ export function useLoginFlow({
   password,
   setGeneralError,
 }: LoginFlowParams) {
+  const { setLoading, setLoadingState } = useLoadingStore();
   const router = useRouter();
-  const { setLoading, setLoadingState } = useServerLoading();
 
   const validateEmailStep = () => {
     if (!accountId) {

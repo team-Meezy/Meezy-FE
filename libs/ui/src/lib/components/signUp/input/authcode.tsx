@@ -2,18 +2,12 @@
 
 import { useRef } from 'react';
 import { colors, typography } from '../../../../design';
+import { useSignupStore, useErrorStore } from '@org/shop-data';
 
-export function AuthCodeInput({
-  authCode,
-  setAuthCode,
-  generalError,
-  setGeneralError,
-}: {
-  authCode: string;
-  setAuthCode: (authCode: string) => void;
-  generalError: string;
-  setGeneralError: (generalError: string) => void;
-}) {
+export function AuthCodeInput() {
+  const { authCode, setAuthCode } = useSignupStore();
+  const { generalError, setGeneralError } = useErrorStore();
+
   const LENGTH = 6;
   const inputsRef = useRef<Array<HTMLInputElement | null>>([]);
 

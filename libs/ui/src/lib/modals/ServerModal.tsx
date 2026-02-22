@@ -1,12 +1,13 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import { useEffect } from 'react';
 import { createPortal } from 'react-dom';
 import { colors, typography } from '../../design';
 import { useImg } from '../../hooks';
 import { useRouter } from 'next/navigation';
-import { useServerJoinedTeam } from '../../context';
+import { useServerJoinedTeam, useServerCreate } from '../../context';
 import { useModalStore, useErrorStore } from '@org/shop-data';
+import { useCreateTeam } from '@org/shop-data';
 
 interface ServerModalProps {
   isOpen: boolean;
@@ -27,6 +28,7 @@ export function ServerModal({ isOpen, onClose }: ServerModalProps) {
   const { generalError, setGeneralError } = useErrorStore();
   const { previewUrl, fileInputRef, handleClickUpload, handleImageChange } =
     useImg();
+  const { imageFile } = useServerCreate();
   const { setJoined } = useServerJoinedTeam();
   const router = useRouter();
 
@@ -48,13 +50,26 @@ export function ServerModal({ isOpen, onClose }: ServerModalProps) {
     }
   }, [generalError]);
 
-  const createServer = () => {
+  const createServer = async () => {
     const valueToValidate = createModal ? serverName : serverLink;
     if (!valueToValidate) {
       setGeneralError(
         `${createModal ? '서버 이름을 입력해주세요.' : '링크를 입력해주세요.'}`
       );
       return false;
+    }
+
+    if (createModal) {
+      if (!imageFile) {
+        setGeneralError('서버 대표 이미지를 업로드해주세요.');
+        return false;
+      }
+      try {
+        const res = await useCreateTeam(serverName, imageFile);
+        console.log(res);
+      } catch (e: any) {
+        console.log(e.response?.data?.message || '팀 생성 실패');
+      }
     }
 
     handleTeamClick(1);

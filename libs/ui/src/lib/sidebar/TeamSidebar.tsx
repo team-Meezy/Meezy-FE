@@ -33,7 +33,7 @@ export function TeamSidebar({ onOpenModal }: SidebarProps) {
       setTeams(data);
     };
     getTeamsData();
-  }, []);
+  }, [teams]);
 
   const handleTeamClick = (teamId: string) => {
     setJoined(true);
@@ -42,7 +42,7 @@ export function TeamSidebar({ onOpenModal }: SidebarProps) {
 
   return (
     <nav
-      className="w-[100px] h-screen flex flex-col items-center"
+      className="w-[100px] max-w-[90px] h-screen flex flex-col items-center"
       style={{
         backgroundColor: colors.gray[900],
       }}

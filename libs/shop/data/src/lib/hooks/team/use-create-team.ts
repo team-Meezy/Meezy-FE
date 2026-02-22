@@ -1,16 +1,20 @@
 import { privateApi } from '../axios';
 
-export const useCreateTeam = async (name: string, serverImage: string) => {
-  const body = {
-    name,
-    serverImage,
-  };
+export const useCreateTeam = async (name: string, image: File) => {
   try {
-    const response = await privateApi.post('/teams', { data: body });
-    console.log('createTeam response', response);
+    const formData = new FormData();
+    formData.append('name', name);
+    formData.append('serverImage', image);
+
+    const response = await privateApi.post('/teams', formData, {
+      headers: {
+        'Content-Type': 'multipart/form-data',
+      },
+    });
+    console.log('useCreateTeam response', response);
     return response.data;
   } catch (error) {
-    console.log('createTeam error', error);
+    console.log('useCreateTeam error', error);
     throw error;
   }
 };

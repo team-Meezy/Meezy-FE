@@ -16,6 +16,8 @@ const ServerStateContext = createContext<{
   setProjectSidebarList: React.Dispatch<
     React.SetStateAction<ProjectSidebarList[]>
   >;
+  inviteCode: InviteCode;
+  setInviteCode: React.Dispatch<React.SetStateAction<InviteCode>>;
   updateTeams: () => Promise<void>;
 } | null>(null);
 
@@ -39,6 +41,11 @@ interface ProjectSidebarList {
   invite_link: string;
 }
 
+interface InviteCode {
+  inviteCode: string;
+  expiresAt: string;
+}
+
 export function ServerStateProvider({ children }: { children: ReactNode }) {
   const [chatRoom, setChatRoom] = useState(false);
   const [serverProfile, setServerProfile] = useState(false);
@@ -47,6 +54,10 @@ export function ServerStateProvider({ children }: { children: ReactNode }) {
   const [projectSidebarList, setProjectSidebarList] = useState<
     ProjectSidebarList[]
   >([]);
+  const [inviteCode, setInviteCode] = useState<InviteCode>({
+    inviteCode: '',
+    expiresAt: '',
+  });
 
   const updateTeams = async () => {
     try {
@@ -71,6 +82,8 @@ export function ServerStateProvider({ children }: { children: ReactNode }) {
         updateTeams,
         projectSidebarList,
         setProjectSidebarList,
+        inviteCode,
+        setInviteCode,
       }}
     >
       {children}

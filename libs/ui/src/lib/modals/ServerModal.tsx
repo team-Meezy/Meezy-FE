@@ -11,7 +11,7 @@ import {
   useServerState,
 } from '../../context';
 import { useModalStore, useErrorStore } from '@org/shop-data';
-import { useCreateTeam } from '@org/shop-data';
+import { useCreateTeam, useJoinTeamByCode } from '@org/shop-data';
 import { useServerIdStore } from '@org/shop-data';
 
 interface ServerModalProps {
@@ -91,6 +91,27 @@ export function ServerModal({ isOpen, onClose }: ServerModalProps) {
         }
       } catch (e: any) {
         console.log(e.response?.data?.message || '팀 생성 실패');
+      }
+    } else if (!createModal) {
+      try {
+        const res = await useJoinTeamByCode(serverLink);
+        console.log(res);
+        await updateTeams();
+        if (res && (res.teamId || res.id)) {
+          const newTeamId = res.teamId || res.id;
+
+          // 상태 업데이트 및 즉시 이동
+          setServerId(newTeamId);
+          setJoined(true);
+          router.push(`/main/${newTeamId}`);
+          onClose();
+
+          // 백그라운드에서 목록 동기화
+          updateTeams();
+          return;
+        }
+      } catch (e: any) {
+        console.log(e.response?.data?.message || '팀 가입 실패');
       }
     }
 

@@ -5,6 +5,9 @@ import { createPortal } from 'react-dom';
 import { colors, typography } from '../../design';
 import { useServerJoinedTeam } from '../../context';
 import { useModalStore, useErrorStore } from '@org/shop-data';
+import { useServerIdStore } from '@org/shop-data';
+import { useCreateInviteCode } from '@org/shop-data';
+import { useServerState } from '../../context';
 
 interface JoinedModalProps {
   isOpen: boolean;
@@ -16,6 +19,8 @@ export function JoinedModal({ isOpen, type, onClose }: JoinedModalProps) {
   const { mounted, setMounted, serverName, setServerName } = useModalStore();
   const { generalError, setGeneralError } = useErrorStore();
   const { setJoined } = useServerJoinedTeam();
+  const { serverId } = useServerIdStore();
+  const { inviteCode, setInviteCode } = useServerState();
 
   useEffect(() => {
     setMounted(true);
@@ -30,6 +35,27 @@ export function JoinedModal({ isOpen, type, onClose }: JoinedModalProps) {
       return () => clearTimeout(timer);
     }
   }, [generalError]);
+
+  useEffect(() => {
+    if (isOpen && type === 'MEMBER' && serverId) {
+      const createInviteCode = async () => {
+        try {
+          const res = await useCreateInviteCode(serverId);
+          console.log(res, '초대 코드 생성 결과');
+          if (res && res.inviteCode) {
+            setInviteCode({
+              inviteCode: res.inviteCode,
+              expiresAt: res.expiresAt || '',
+            });
+            setServerName(res.inviteCode); // 입력창에 즉시 표시
+          }
+        } catch (error) {
+          console.error('초대 코드 생성 실패:', error);
+        }
+      };
+      createInviteCode();
+    }
+  }, [isOpen, type, serverId, setServerName]);
 
   const createServer = () => {
     const valueToValidate = serverName;
@@ -93,7 +119,9 @@ export function JoinedModal({ isOpen, type, onClose }: JoinedModalProps) {
               onChange={(e) => {
                 setServerName(e.target.value);
               }}
-              placeholder={type === 'ROOM' ? '채널 이름' : 'http:sss....'}
+              placeholder={
+                type === 'ROOM' ? '채널 이름' : inviteCode.inviteCode
+              }
               className="w-full border-none rounded-lg p-3 placeholder:text-gray-500 outline-none transition-all"
               style={{
                 ...typography.body.BodyM,
@@ -117,7 +145,7 @@ export function JoinedModal({ isOpen, type, onClose }: JoinedModalProps) {
             onClick={createServer}
             className="flex-1 py-3 px-4 bg-[#ff5c00] text-white rounded-md font-bold hover:bg-[#e65300] transition-colors"
           >
-            추가
+            {type === 'ROOM' ? '추가' : '초대'}
           </button>
         </div>
       </div>

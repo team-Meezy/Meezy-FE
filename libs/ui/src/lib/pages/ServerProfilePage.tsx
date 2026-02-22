@@ -266,8 +266,8 @@ export function ServerProfilePage() {
                     accept="image/*"
                     className="hidden"
                     onChange={(e) => {
-                      handleImageChange(e); // 미리보기 처리
-                      onServerImageChange(e); // 서버 전송
+                      handleImageChange(e, true); // 미리보기만 처리 (개인 프로필 업로드 건너뜀)
+                      onServerImageChange(e); // 서버 이미지 전용 API 호출
                     }}
                   />
 

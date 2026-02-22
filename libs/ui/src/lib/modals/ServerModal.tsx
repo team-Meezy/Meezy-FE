@@ -5,7 +5,11 @@ import { createPortal } from 'react-dom';
 import { colors, typography } from '../../design';
 import { useImg } from '../../hooks';
 import { useRouter } from 'next/navigation';
-import { useServerJoinedTeam, useServerCreate } from '../../context';
+import {
+  useServerJoinedTeam,
+  useServerCreate,
+  useServerState,
+} from '../../context';
 import { useModalStore, useErrorStore } from '@org/shop-data';
 import { useCreateTeam } from '@org/shop-data';
 import { useServerIdStore } from '@org/shop-data';
@@ -31,11 +35,13 @@ export function ServerModal({ isOpen, onClose }: ServerModalProps) {
     useImg();
   const { imageFile } = useServerCreate();
   const { setJoined } = useServerJoinedTeam();
+  const { updateTeams } = useServerState();
   const router = useRouter();
   const { serverId } = useServerIdStore();
+  const { setServerId } = useServerIdStore();
 
-  const handleTeamClick = () => {
-    router.push(`/main/${serverId}`);
+  const handleTeamClick = (id?: string) => {
+    router.push(`/main/${id || serverId}`);
   };
 
   useEffect(() => {
@@ -69,6 +75,20 @@ export function ServerModal({ isOpen, onClose }: ServerModalProps) {
       try {
         const res = await useCreateTeam(serverName, imageFile);
         console.log(res);
+        await updateTeams();
+        if (res && (res.teamId || res.id)) {
+          const newTeamId = res.teamId || res.id;
+
+          // 상태 업데이트 및 즉시 이동
+          setServerId(newTeamId);
+          setJoined(true);
+          router.push(`/main/${newTeamId}`);
+          onClose();
+
+          // 백그라운드에서 목록 동기화
+          updateTeams();
+          return;
+        }
       } catch (e: any) {
         console.log(e.response?.data?.message || '팀 생성 실패');
       }

@@ -4,7 +4,11 @@ import { useState } from 'react';
 import { colors, typography } from '../../design';
 import { useImg } from '../../hooks';
 import Image from 'next/image';
+import { useServerState, useServerJoinedTeam } from '../../context';
 import { KickMember } from '../../assets/index.client';
+import { useDeleteTeam } from '@org/shop-data';
+import { useRouter } from 'next/navigation';
+import { useServerIdStore } from '@org/shop-data';
 
 interface ServerProfilePageProps {
   userList: {
@@ -30,6 +34,8 @@ export function ServerProfilePage({
     projectSidebarList?.[0]?.team_name || ''
   );
 
+  const router = useRouter();
+
   const [tab, setTab] = useState(true);
   const [users, setUsers] = useState(userList);
   const {
@@ -39,6 +45,9 @@ export function ServerProfilePage({
     handleImageChange,
     handleDeleteImg,
   } = useImg();
+  const { teams, setTeams, updateTeams } = useServerState();
+  const { setJoined } = useServerJoinedTeam();
+  const { serverId, setServerId } = useServerIdStore();
 
   const onTabProfile = () => setTab(true);
   const onTabSettings = () => setTab(false);
@@ -60,6 +69,27 @@ export function ServerProfilePage({
         color: colors.gray[400],
         backgroundColor: 'transparent',
       };
+    }
+  };
+
+  const handleDeleteServer = async () => {
+    // 1. 낙관적 업데이트: 사이드바에서 즉시 제거
+    setTeams((prev) => prev.filter((team) => team.teamId !== serverId));
+
+    // 2. 즉시 페이지 이동 및 상태 초기화
+    setServerId('');
+    setJoined(false);
+    router.push('/main');
+
+    // 3. 백그라운드에서 API 호출 (차단하지 않음)
+    try {
+      await useDeleteTeam(serverId);
+      // API 완료 후 최신 목록으로 다시 동기화
+      await updateTeams();
+    } catch (error) {
+      console.error('서버 삭제 실패:', error);
+      // 실패 시 원래 데이터를 복구하기 위해 다시 불러옴
+      await updateTeams();
     }
   };
 
@@ -217,7 +247,7 @@ export function ServerProfilePage({
                   backgroundColor: colors.gray[600],
                 }}
               >
-                <button>서버 삭제</button>
+                <button onClick={handleDeleteServer}>서버 삭제</button>
               </div>
             )}
           </div>

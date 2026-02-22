@@ -1,10 +1,20 @@
 import Image from 'next/image';
 import { NoTeamReceive } from '../../../assets/index.client';
 import { colors } from '../../../design';
-import { useProfile } from '../../../context';
+import { useProfile, useServerJoinedTeam } from '../../../context';
+import { useServerIdStore } from '@org/shop-data';
+import { useEffect } from 'react';
 
 export function MainPageWrapper() {
   const { profile } = useProfile();
+  const { setServerId } = useServerIdStore();
+  const { setJoined } = useServerJoinedTeam();
+
+  useEffect(() => {
+    setServerId('');
+    setJoined(false);
+  }, []);
+
   console.log('Current Profile State (Global):', profile);
 
   return (

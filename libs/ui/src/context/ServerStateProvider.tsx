@@ -1,6 +1,7 @@
 'use client';
 
 import { createContext, useContext, useState, type ReactNode } from 'react';
+import { useGetTeams } from '@org/shop-data';
 
 const ServerStateContext = createContext<{
   chatRoom: boolean;
@@ -9,6 +10,7 @@ const ServerStateContext = createContext<{
   setServerProfile: (open: boolean) => void;
   teams: Team[];
   setTeams: React.Dispatch<React.SetStateAction<Team[]>>;
+  updateTeams: () => Promise<void>;
 } | null>(null);
 
 interface Team {
@@ -22,6 +24,15 @@ export function ServerStateProvider({ children }: { children: ReactNode }) {
   const [serverProfile, setServerProfile] = useState(false);
   const [teams, setTeams] = useState<Team[]>([]);
 
+  const updateTeams = async () => {
+    try {
+      const data = await useGetTeams();
+      setTeams(data);
+    } catch (error) {
+      console.error('Failed to update teams:', error);
+    }
+  };
+
   return (
     <ServerStateContext.Provider
       value={{
@@ -31,6 +42,7 @@ export function ServerStateProvider({ children }: { children: ReactNode }) {
         setServerProfile,
         teams,
         setTeams,
+        updateTeams,
       }}
     >
       {children}

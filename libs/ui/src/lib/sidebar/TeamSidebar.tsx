@@ -21,20 +21,16 @@ export function TeamSidebar({ onOpenModal }: SidebarProps) {
   const { setJoined } = useServerJoinedTeam();
   const [alarm, setAlarm] = useState(false);
   const router = useRouter();
-  const { teams, setTeams } = useServerState();
+  const { teams, updateTeams } = useServerState();
   const { serverId } = useServerIdStore();
 
   useEffect(() => {
-    const getTeamsData = async () => {
-      const data = await useGetTeams();
-      setTeams(data);
-    };
-    getTeamsData();
-  }, [serverId]);
+    updateTeams();
+  }, []);
 
-  const handleTeamClick = (serverId: string) => {
+  const handleTeamClick = (teamId: string) => {
     setJoined(true);
-    router.push(`/main/${serverId}`);
+    router.push(`/main/${teamId}`);
   };
 
   return (
@@ -68,7 +64,7 @@ export function TeamSidebar({ onOpenModal }: SidebarProps) {
               type="button"
               aria-label={team.teamName}
               className="relative w-14 h-14 flex items-center justify-center rounded-lg border border-gray-800 bg-[#262626] hover:bg-[#252525] transition-colors overflow-hidden"
-              onClick={() => handleTeamClick(serverId)}
+              onClick={() => handleTeamClick(team.teamId)}
             >
               {team.serverImageUrl ? (
                 <Image

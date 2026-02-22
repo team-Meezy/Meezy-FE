@@ -6,6 +6,7 @@ import { ChevronRight, JoinedPlus, Shrap } from '../../assets/index.client';
 import { useState, useEffect } from 'react';
 import { JoinedModal, UserKickModal } from '../modals';
 import { useRouter } from 'next/navigation';
+import { useServerIdStore } from '@org/shop-data';
 
 interface JoinedSidebarProps {
   setChatRoom: (chatRoom: boolean) => void;
@@ -46,6 +47,7 @@ export function JoinedSidebar({
     null
   );
   const router = useRouter();
+  const { serverId } = useServerIdStore();
   const [users, setUsers] = useState(userList);
 
   const onOpenModal = (type: 'ROOM' | 'MEMBER' | null) => {
@@ -83,8 +85,8 @@ export function JoinedSidebar({
     setContextMenuUserId(null);
   };
 
-  const onClickServerProfile = (room_id: number) => {
-    router.push(`/main/${room_id}/ServerProfile`);
+  const onClickServerProfile = () => {
+    router.push(`/main/${serverId}/ServerProfile`);
   };
 
   const onClickChatRoom = (room_id: number) => {
@@ -104,7 +106,7 @@ export function JoinedSidebar({
         type="button"
         className="mt-12 flex justify-center items-center gap-4 bg-transparent border-0 p-0"
         style={{ ...typography.body.BodyB }}
-        onClick={() => onClickServerProfile(1)}
+        onClick={onClickServerProfile}
         aria-label="서버 프로필 열기"
       >
         <span

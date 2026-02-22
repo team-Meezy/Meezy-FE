@@ -6,7 +6,11 @@ import { ParticipationChart } from '../components/ParticipationChart';
 import { DashboardCard } from '../components/DashboardCard';
 import { useRouter } from 'next/navigation';
 
-export function MainRoomPage() {
+interface MainRoomPageProps {
+  serverId: string;
+}
+
+export function MainRoomPage({ serverId }: MainRoomPageProps) {
   const [chartSize, setChartSize] = useState(192);
   const router = useRouter();
 

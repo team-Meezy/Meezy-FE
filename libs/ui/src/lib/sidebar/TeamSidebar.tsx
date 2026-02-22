@@ -33,7 +33,7 @@ export function TeamSidebar({ onOpenModal }: SidebarProps) {
       setTeams(data);
     };
     getTeamsData();
-  }, [teams]);
+  }, []);
 
   const handleTeamClick = (teamId: string) => {
     setJoined(true);

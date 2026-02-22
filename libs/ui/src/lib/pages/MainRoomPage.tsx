@@ -5,6 +5,7 @@ import { colors, typography } from '../../design';
 import { ParticipationChart } from '../components/ParticipationChart';
 import { DashboardCard } from '../components/DashboardCard';
 import { useRouter } from 'next/navigation';
+import { useGetTeamDetail } from '@org/shop-data';
 
 interface MainRoomPageProps {
   serverId: string;
@@ -20,6 +21,14 @@ export function MainRoomPage({ serverId }: MainRoomPageProps) {
     window.addEventListener('resize', calc);
     return () => window.removeEventListener('resize', calc);
   }, []);
+
+  useEffect(() => {
+    const getTeamDetail = async () => {
+      const data = await useGetTeamDetail(serverId);
+      console.log('getTeamDetail data', data);
+    };
+    getTeamDetail();
+  }, [serverId]);
 
   const onClickFeedback = (serverId: number) => {
     router.push(`/main/${serverId}/feedback`);

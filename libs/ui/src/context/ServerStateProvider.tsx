@@ -10,6 +10,8 @@ const ServerStateContext = createContext<{
   setServerProfile: (open: boolean) => void;
   teams: Team[];
   setTeams: React.Dispatch<React.SetStateAction<Team[]>>;
+  teamMembers: TeamMember[];
+  setTeamMembers: React.Dispatch<React.SetStateAction<TeamMember[]>>;
   updateTeams: () => Promise<void>;
 } | null>(null);
 
@@ -19,10 +21,18 @@ interface Team {
   serverImageUrl: string | null;
 }
 
+interface TeamMember {
+  teamMemberId: string;
+  name: string;
+  role: string;
+  team_id?: number;
+}
+
 export function ServerStateProvider({ children }: { children: ReactNode }) {
   const [chatRoom, setChatRoom] = useState(false);
   const [serverProfile, setServerProfile] = useState(false);
   const [teams, setTeams] = useState<Team[]>([]);
+  const [teamMembers, setTeamMembers] = useState<TeamMember[]>([]);
 
   const updateTeams = async () => {
     try {
@@ -42,6 +52,8 @@ export function ServerStateProvider({ children }: { children: ReactNode }) {
         setServerProfile,
         teams,
         setTeams,
+        teamMembers,
+        setTeamMembers,
         updateTeams,
       }}
     >

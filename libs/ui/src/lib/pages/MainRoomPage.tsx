@@ -6,12 +6,14 @@ import { ParticipationChart } from '../components/ParticipationChart';
 import { DashboardCard } from '../components/DashboardCard';
 import { useRouter } from 'next/navigation';
 import { useGetTeamDetail } from '@org/shop-data';
-import { useServerIdStore } from '@org/shop-data';
+import { useServerState } from '../../context';
+import { useServerIdStore, useGetTeamMembers } from '@org/shop-data';
 
 export function MainRoomPage() {
   const [chartSize, setChartSize] = useState(192);
   const { serverId } = useServerIdStore();
   const router = useRouter();
+  const { setTeamMembers } = useServerState();
 
   useEffect(() => {
     const calc = () => setChartSize(Math.min(window.innerWidth * 0.1, 240));
@@ -25,7 +27,15 @@ export function MainRoomPage() {
       const data = await useGetTeamDetail(serverId);
       console.log('getTeamDetail data', data);
     };
+
+    const getTeamMembers = async () => {
+      const data = await useGetTeamMembers(serverId);
+      console.log('getTeamMembers data', data);
+      setTeamMembers(data);
+    };
+
     getTeamDetail();
+    getTeamMembers();
   }, [serverId]);
 
   const onClickFeedback = (serverId: number) => {

@@ -7,6 +7,7 @@ import { useState, useEffect } from 'react';
 import { JoinedModal, UserKickModal } from '../modals';
 import { useRouter } from 'next/navigation';
 import { useServerIdStore } from '@org/shop-data';
+import { useServerState } from '../../context';
 
 interface JoinedSidebarProps {
   setChatRoom: (chatRoom: boolean) => void;
@@ -24,13 +25,6 @@ interface JoinedSidebarProps {
     room_name: string;
     create_at: null;
   }[];
-  userList: {
-    user_id: number;
-    team_id: number;
-    user_name: string;
-    create_at: null;
-    img: null;
-  }[];
 }
 
 export function JoinedSidebar({
@@ -39,7 +33,6 @@ export function JoinedSidebar({
   setServerProfile,
   sidebarList,
   roomsrcList,
-  userList,
 }: JoinedSidebarProps) {
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [modalType, setModalType] = useState<'ROOM' | 'MEMBER' | null>(null);
@@ -48,7 +41,7 @@ export function JoinedSidebar({
   );
   const router = useRouter();
   const { serverId } = useServerIdStore();
-  const [users, setUsers] = useState(userList);
+  const { teamMembers, setTeamMembers } = useServerState();
 
   const onOpenModal = (type: 'ROOM' | 'MEMBER' | null) => {
     setModalType(type);
@@ -62,8 +55,8 @@ export function JoinedSidebar({
 
   const teamRoomMap = sidebarList.map((team) => ({
     ...team,
-    rooms: roomsrcList.filter((room) => room.team_id === team.team_id),
-    users: users.filter((user) => user.team_id === team.team_id),
+    rooms: team.type === 'ROOM' ? roomsrcList : [],
+    users: team.type === 'MEMBER' ? teamMembers : [],
   }));
 
   const onContextMenu = (e: React.MouseEvent, userId: number) => {
@@ -79,8 +72,8 @@ export function JoinedSidebar({
   }, []);
 
   const onKickUser = () => {
-    setUsers((prev) =>
-      prev.filter((user) => user.user_id !== contextMenuUserId)
+    setTeamMembers((prev) =>
+      prev.filter((user) => user.team_id !== contextMenuUserId)
     );
     setContextMenuUserId(null);
   };
@@ -120,8 +113,8 @@ export function JoinedSidebar({
       </button>
       <div className="w-full h-[1px] bg-white/5 mt-5" />
       <div className="flex flex-col items-center flex-1 overflow-y-auto no-scrollbar w-full">
-        {teamRoomMap.map((team) => (
-          <div key={team.team_id} className="w-full">
+        {teamRoomMap.map((team, index) => (
+          <div key={`team-section-${team.team_id}-${index}`} className="w-full">
             {/* 팀 */}
             <div className="flex justify-center items-center gap-4 mt-5">
               <div
@@ -136,9 +129,9 @@ export function JoinedSidebar({
             </div>
 
             {/* 팀의 룸 */}
-            {team.rooms.map((room) => (
+            {team.rooms.map((room, roomIdx) => (
               <div
-                key={room.room_id}
+                key={`room-${room.room_id || roomIdx}`}
                 className="flex justify-center items-center gap-4"
               >
                 <div
@@ -155,37 +148,51 @@ export function JoinedSidebar({
             ))}
 
             {/* 팀의 사용자 */}
-            {team.users.map((user) => (
-              <div
-                key={user.user_id}
-                className="flex flex-col justify-center items-center"
-              >
+            {team.users.map((user, userIdx) => {
+              const currentUserId =
+                user.teamMemberId || (user as any).user_id || userIdx;
+              const currentUserName =
+                user.name || (user as any).user_name || '알 수 없는 사용자';
+
+              return (
                 <div
-                  className="min-w-24 min-h-8 mt-3 flex gap-5 items-center justify-center rounded-lg transition-colors"
-                  style={{ color: colors.gray[300], ...typography.body.BodyB }}
+                  key={`user-${currentUserId}`}
+                  className="flex flex-col justify-center items-center"
                 >
                   <div
-                    className="rounded-full w-5 h-5"
-                    style={{ backgroundColor: colors.white[100] }}
-                  />
-
-                  <span onContextMenu={(e) => onContextMenu(e, user.user_id)}>
-                    {user.user_name}
-                  </span>
-                </div>
-                {contextMenuUserId === user.user_id && (
-                  <div
-                    className="mt-2 px-4 py-3 flex items-center justify-center rounded-lg transition-colors"
+                    className="min-w-24 min-h-8 mt-3 flex gap-5 items-center justify-center rounded-lg transition-colors"
                     style={{
-                      backgroundColor: colors.gray[800],
-                      ...typography.label.labelB,
+                      color: colors.gray[300],
+                      ...typography.body.BodyB,
                     }}
                   >
-                    <button onClick={onKickUser}>내보내기</button>
+                    <div
+                      className="rounded-full w-5 h-5"
+                      style={{ backgroundColor: colors.white[100] }}
+                    />
+
+                    <span
+                      onContextMenu={(e) =>
+                        onContextMenu(e, currentUserId as any)
+                      }
+                    >
+                      {currentUserName}
+                    </span>
                   </div>
-                )}
-              </div>
-            ))}
+                  {contextMenuUserId === currentUserId && (
+                    <div
+                      className="mt-2 px-4 py-3 flex items-center justify-center rounded-lg transition-colors"
+                      style={{
+                        backgroundColor: colors.gray[800],
+                        ...typography.label.labelB,
+                      }}
+                    >
+                      <button onClick={onKickUser}>내보내기</button>
+                    </div>
+                  )}
+                </div>
+              );
+            })}
           </div>
         ))}
       </div>

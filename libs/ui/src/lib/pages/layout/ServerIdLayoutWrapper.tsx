@@ -25,7 +25,6 @@ export function ServerIdLayoutWrapper({
         setServerProfile={setServerProfile}
         sidebarList={sidebarList}
         roomsrcList={roomsrcList}
-        userList={userList}
       />
 
       <div className="flex-1 flex flex-col overflow-hidden">

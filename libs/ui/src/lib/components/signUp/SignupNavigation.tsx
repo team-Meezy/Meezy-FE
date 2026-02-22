@@ -1,24 +1,23 @@
 import { colors, typography } from '../../../design';
+import { useSignupStore, useLoadingStore } from '@org/shop-data';
 
 interface SignupNavigationProps {
-  step: number;
   formattedTime: React.ReactNode;
   handleGoToLogin: () => void;
   handleResendCode: () => void;
   handleBack: () => void;
-  loading: boolean;
   remainingTime: number;
 }
 
 export function SignupNavigation({
-  step,
   formattedTime,
   handleGoToLogin,
   handleResendCode,
   handleBack,
-  loading,
   remainingTime,
 }: SignupNavigationProps) {
+  const { step } = useSignupStore();
+  const { loading } = useLoadingStore();
   return (
     <div className="flex flex-col items-center gap-2">
       {step === 2 && formattedTime}

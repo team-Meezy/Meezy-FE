@@ -1,6 +1,11 @@
-import { colors, typography } from '../../../design';
+'use client';
 
-export function SignupGuideText({ step }: { step: number }) {
+import { colors, typography } from '../../../design';
+import { useSignupStore } from '@org/shop-data';
+
+export function SignupGuideText() {
+  const { step } = useSignupStore();
+
   return (
     <div
       className="w-full mb-8"

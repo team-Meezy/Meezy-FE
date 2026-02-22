@@ -1,16 +1,13 @@
 'use client';
 
-import { useEffect, SetStateAction, Dispatch } from 'react';
+import { useEffect } from 'react';
 import { colors } from '../design';
-
-interface TimeParams {
-  remainingTime: number;
-  setRemainingTime: Dispatch<SetStateAction<number>>;
-}
+import { useTimeStore } from '@org/shop-data';
 
 const initialTime = 180;
 
-export function useTime({ remainingTime, setRemainingTime }: TimeParams) {
+export function useTime() {
+  const { remainingTime, setRemainingTime } = useTimeStore();
   const formatTime = (seconds: number) => {
     const m = Math.floor(seconds / 60);
     const s = seconds % 60;

@@ -9,48 +9,24 @@ import {
   PasswordInput,
   Success,
 } from '../components';
-import { useState } from 'react';
-import { useSignupFlow, useTime } from '../../hooks';
-import { useServerLoading } from '../../context';
-import { useTokenCheck } from '../../hooks';
-import {
-  SignupHeader,
-  SignupGuideText,
-  SignupNavigation,
-} from '../components';
+import { useSignupFlow, useTime, useTokenCheck } from '../../hooks';
+import { SignupHeader, SignupGuideText, SignupNavigation } from '../components';
+import { useSignupStore, useTimeStore } from '@org/shop-data';
 
 export function SignUpPage() {
-  const [remainingTime, setRemainingTime] = useState(0);
-  const { formattedTime } = useTime({ remainingTime, setRemainingTime });
-  const { loading } = useServerLoading();
-  const [generalError, setGeneralError] = useState('');
-  const [name, setName] = useState('');
-  const [email, setEmail] = useState('');
-  const [password, setPassword] = useState('');
-  const [authCode, setAuthCode] = useState('');
-  const [id, setId] = useState('');
-  const [passwordConfirm, setPasswordConfirm] = useState('');
+  const { step } = useSignupStore();
+  const { remainingTime } = useTimeStore();
+  const { formattedTime } = useTime();
 
   useTokenCheck();
 
   const {
-    step,
     handleNext,
     handleBack,
     handleGoToLogin,
     handleKeyDown,
     handleResendCode,
-  } = useSignupFlow({
-    name,
-    email,
-    password,
-    id,
-    passwordConfirm,
-    authCode,
-    loading,
-    setGeneralError,
-    setRemainingTime,
-  });
+  } = useSignupFlow();
 
   return (
     <div
@@ -61,10 +37,10 @@ export function SignUpPage() {
     >
       <div className="w-full max-w-[500px] px-6 flex flex-col items-center">
         {/* 헤더 섹션: 타이틀 및 단계 표시 */}
-        <SignupHeader step={step} />
+        <SignupHeader />
 
         {/* 안내 문구 */}
-        <SignupGuideText step={step} />
+        <SignupGuideText />
 
         {/* 입력 폼 */}
         <form
@@ -75,14 +51,7 @@ export function SignUpPage() {
             handleNext();
           }}
         >
-          {step === 1 && (
-            <EmailInput
-              email={email}
-              setEmail={setEmail}
-              generalError={generalError}
-              setGeneralError={setGeneralError}
-            />
-          )}
+          {step === 1 && <EmailInput />}
           {remainingTime === 0 && step === 2 ? (
             <div className="w-full flex flex-col items-center gap-2 -mb-7">
               <span
@@ -95,53 +64,19 @@ export function SignUpPage() {
               </span>
             </div>
           ) : (
-            <>
-              {step === 2 && (
-                <AuthCodeInput
-                  authCode={authCode}
-                  setAuthCode={setAuthCode}
-                  generalError={generalError}
-                  setGeneralError={setGeneralError}
-                />
-              )}
-            </>
+            <>{step === 2 && <AuthCodeInput />}</>
           )}
-          {step === 3 && (
-            <IdInput
-              id={id}
-              setId={setId}
-              generalError={generalError}
-              setGeneralError={setGeneralError}
-            />
-          )}
-          {step === 4 && (
-            <NameInput
-              name={name}
-              setName={setName}
-              generalError={generalError}
-              setGeneralError={setGeneralError}
-            />
-          )}
-          {step === 5 && (
-            <PasswordInput
-              password={password}
-              setPassword={setPassword}
-              passwordConfirm={passwordConfirm}
-              setPasswordConfirm={setPasswordConfirm}
-              generalError={generalError}
-              setGeneralError={setGeneralError}
-            />
-          )}
+          {step === 3 && <IdInput />}
+          {step === 4 && <NameInput />}
+          {step === 5 && <PasswordInput />}
           {step === 6 && <Success />}
 
           {/* 하단 버튼 및 로그인 링크 */}
           <SignupNavigation
-            step={step}
             formattedTime={formattedTime}
             handleGoToLogin={handleGoToLogin}
             handleResendCode={handleResendCode}
             handleBack={handleBack}
-            loading={loading}
             remainingTime={remainingTime}
           />
         </form>

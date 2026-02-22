@@ -1,9 +1,9 @@
 'use client';
 
-import { useServerLoading } from '../../context';
+import { useLoadingStore } from '@org/shop-data';
 
 export function LoadingOverlay() {
-  const { loading, loadingState } = useServerLoading();
+  const { loading, loadingState } = useLoadingStore();
 
   if (!loading) return null;
 

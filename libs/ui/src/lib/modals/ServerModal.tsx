@@ -6,6 +6,7 @@ import { colors, typography } from '../../design';
 import { useImg } from '../../hooks';
 import { useRouter } from 'next/navigation';
 import { useServerJoinedTeam } from '../../context';
+import { useModalStore, useErrorStore } from '@org/shop-data';
 
 interface ServerModalProps {
   isOpen: boolean;
@@ -13,11 +14,17 @@ interface ServerModalProps {
 }
 
 export function ServerModal({ isOpen, onClose }: ServerModalProps) {
-  const [mounted, setMounted] = useState(false);
-  const [createModal, setCreateModal] = useState(true);
-  const [serverName, setServerName] = useState('');
-  const [serverLink, setServerLink] = useState('');
-  const [generalError, setGeneralError] = useState('');
+  const {
+    mounted,
+    setMounted,
+    serverName,
+    setServerName,
+    serverLink,
+    setServerLink,
+    createModal,
+    setCreateModal,
+  } = useModalStore();
+  const { generalError, setGeneralError } = useErrorStore();
   const { previewUrl, fileInputRef, handleClickUpload, handleImageChange } =
     useImg();
   const { setJoined } = useServerJoinedTeam();

@@ -1,10 +1,10 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import { useEffect } from 'react';
 import { createPortal } from 'react-dom';
-import { typography, colors } from '../../design';
+import { typography } from '../../design';
 import { useRouter } from 'next/navigation';
-import { useServerLoading } from '../../context';
+import { useModalStore, useLoadingStore } from '@org/shop-data';
 
 interface LogoutModalProps {
   isOpen: boolean;
@@ -12,8 +12,8 @@ interface LogoutModalProps {
 }
 
 export function LogoutModal({ isOpen, onClose }: LogoutModalProps) {
-  const [mounted, setMounted] = useState(false);
-  const { setLoading, setLoadingState } = useServerLoading();
+  const { mounted, setMounted } = useModalStore();
+  const { setLoading, setLoadingState } = useLoadingStore();
   const router = useRouter();
 
   useEffect(() => {

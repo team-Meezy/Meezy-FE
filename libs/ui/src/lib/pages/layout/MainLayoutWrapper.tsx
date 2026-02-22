@@ -3,18 +3,15 @@
 import { Header, CalendarMockup } from '../../components';
 import { TeamSidebar } from '../../sidebar';
 import { ServerModal } from '../../modals';
-import {
-  projectSidebarList,
-  useServerJoinedTeam,
-  useServerModal,
-  useServerLoading,
-} from '../../../context';
+import { projectSidebarList, useServerJoinedTeam } from '../../../context';
 import { useEffect } from 'react';
+import { useModalStore } from '@org/shop-data';
+import { useLoadingStore } from '@org/shop-data';
 
 export function MainLayoutWrapper({ children }: { children: React.ReactNode }) {
   const { joined } = useServerJoinedTeam();
-  const { isModalOpen, setIsModalOpen } = useServerModal();
-  const { setLoading } = useServerLoading();
+  const { isModalOpen, setIsModalOpen } = useModalStore();
+  const { setLoading } = useLoadingStore();
 
   useEffect(() => {
     setLoading(false);

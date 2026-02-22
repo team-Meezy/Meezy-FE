@@ -2,12 +2,12 @@
 
 import { useEffect } from 'react';
 import { useRouter } from 'next/navigation';
-import { useAuth, useServerLoading } from '../context';
+import { useLoginStore, useLoadingStore } from '@org/shop-data';
 
 export function useTokenCheck() {
   const router = useRouter();
-  const { rememberMe, isHydrated } = useAuth();
-  const { setLoading, setLoadingState } = useServerLoading();
+  const { rememberMe, isHydrated } = useLoginStore();
+  const { setLoading, setLoadingState } = useLoadingStore();
 
   useEffect(() => {
     const checkToken = async () => {

@@ -1,40 +1,31 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import {
   useRequestEmailVerification,
   useVerifyEmailCode,
   useLocalSignup,
+  useSignupStore,
+  useLoadingStore,
+  useErrorStore,
 } from '@org/shop-data';
-import { useServerLoading } from '../context';
 
-interface SignupFlowParams {
-  name: string;
-  email: string;
-  password: string;
-  id: string;
-  passwordConfirm: string;
-  authCode: string;
-  loading: boolean;
-  setGeneralError: (msg: string) => void;
-  setRemainingTime: (time: number) => void;
-}
-
-export function useSignupFlow({
-  name,
-  email,
-  password,
-  id,
-  passwordConfirm,
-  authCode,
-  loading,
-  setGeneralError,
-  setRemainingTime,
-}: SignupFlowParams) {
-  const [step, setStep] = useState(1);
+export function useSignupFlow() {
+  const {
+    step,
+    setStep,
+    name,
+    email,
+    password,
+    id,
+    passwordConfirm,
+    authCode,
+    setRemainingTime,
+  } = useSignupStore();
   const router = useRouter();
-  const { setLoading, setLoadingState } = useServerLoading();
+  const { loading, setLoading, setLoadingState } = useLoadingStore();
+  const { setGeneralError } = useErrorStore();
 
   useEffect(() => {
     setGeneralError('');

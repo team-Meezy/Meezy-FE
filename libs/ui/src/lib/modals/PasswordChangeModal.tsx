@@ -1,9 +1,9 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import { useEffect } from 'react';
 import { createPortal } from 'react-dom';
-import { typography, colors } from '../../design';
-import { useServerLoading } from '../../context';
+import { typography } from '../../design';
+import { useLoadingStore, useModalStore, useErrorStore } from '@org/shop-data';
 import { updatePassword } from '@org/shop-data';
 import { PasswordInput } from './components';
 
@@ -16,11 +16,16 @@ export function PasswordChangeModal({
   isOpen,
   onClose,
 }: PasswordChangeModalProps) {
-  const [mounted, setMounted] = useState(false);
-  const [generalError, setGeneralError] = useState('');
-  const [password, setPassword] = useState('');
-  const [newPassword, setNewPassword] = useState('');
-  const { setLoading, setLoadingState } = useServerLoading();
+  const {
+    mounted,
+    setMounted,
+    password,
+    setPassword,
+    newPassword,
+    setNewPassword,
+  } = useModalStore();
+  const { generalError, setGeneralError } = useErrorStore();
+  const { setLoading, setLoadingState } = useLoadingStore();
 
   useEffect(() => {
     setMounted(true);

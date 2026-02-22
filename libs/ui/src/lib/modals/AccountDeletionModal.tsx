@@ -1,12 +1,13 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import { useEffect } from 'react';
 import { createPortal } from 'react-dom';
 import { typography, colors } from '../../design';
 import { useRouter } from 'next/navigation';
-import { useServerLoading } from '../../context';
+import { useLoadingStore } from '@org/shop-data';
 import { deleteAccount } from '@org/shop-data';
 import { PasswordInput } from './components';
+import { useErrorStore, useModalStore } from '@org/shop-data';
 
 interface AccountDeletionModalProps {
   isOpen: boolean;
@@ -17,10 +18,9 @@ export function AccountDeletionModal({
   isOpen,
   onClose,
 }: AccountDeletionModalProps) {
-  const [mounted, setMounted] = useState(false);
-  const [generalError, setGeneralError] = useState('');
-  const [password, setPassword] = useState('');
-  const { setLoading, setLoadingState } = useServerLoading();
+  const { generalError, setGeneralError } = useErrorStore();
+  const { mounted, setMounted, password, setPassword } = useModalStore();
+  const { setLoading, setLoadingState } = useLoadingStore();
   const router = useRouter();
 
   useEffect(() => {

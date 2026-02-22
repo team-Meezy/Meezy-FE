@@ -1,11 +1,6 @@
 import { ServerProfilePage } from '../ServerProfilePage';
-import { projectSidebarList, userList } from '../../../context';
+import { projectSidebarList } from '../../../context';
 
 export function ServerProfileWrapper() {
-  return (
-    <ServerProfilePage
-      userList={userList}
-      projectSidebarList={projectSidebarList}
-    />
-  );
+  return <ServerProfilePage projectSidebarList={projectSidebarList} />;
 }

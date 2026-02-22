@@ -11,13 +11,6 @@ import { useRouter } from 'next/navigation';
 import { useServerIdStore } from '@org/shop-data';
 
 interface ServerProfilePageProps {
-  userList: {
-    user_id: number;
-    team_id: number;
-    user_name: string;
-    create_at: null;
-    img: null;
-  }[];
   projectSidebarList: {
     team_id: number;
     team_name: string;
@@ -27,7 +20,6 @@ interface ServerProfilePageProps {
 }
 
 export function ServerProfilePage({
-  userList,
   projectSidebarList,
 }: ServerProfilePageProps) {
   const [serverName, setServerName] = useState(
@@ -37,7 +29,8 @@ export function ServerProfilePage({
   const router = useRouter();
 
   const [tab, setTab] = useState(true);
-  const [users, setUsers] = useState(userList);
+  const { setTeams, updateTeams, teamMembers } = useServerState();
+  const [users, setUsers] = useState(teamMembers);
   const {
     previewUrl,
     fileInputRef,
@@ -45,15 +38,16 @@ export function ServerProfilePage({
     handleImageChange,
     handleDeleteImg,
   } = useImg();
-  const { teams, setTeams, updateTeams } = useServerState();
   const { setJoined } = useServerJoinedTeam();
   const { serverId, setServerId } = useServerIdStore();
 
   const onTabProfile = () => setTab(true);
   const onTabSettings = () => setTab(false);
 
-  const onKickUser = (userId: number) => {
-    setUsers((prev) => prev.filter((user) => user.user_id !== userId));
+  const onKickUser = (teamMemberId: string) => {
+    setUsers((prev) =>
+      prev.filter((user) => user.teamMemberId !== teamMemberId)
+    );
   };
 
   const tapStyle = (tab: boolean) => {
@@ -163,15 +157,15 @@ export function ServerProfilePage({
           >
             {users.map((user) => (
               <div
-                key={user.user_id}
+                key={user.teamMemberId}
                 className="flex gap-2 items-center justify-between px-4"
               >
                 <div className="flex gap-4 items-center">
                   <div className="w-9 h-9 rounded-full bg-gray-800" />
-                  <div>{user.user_name}</div>
+                  <div>{user.name}</div>
                 </div>
                 <button
-                  onClick={() => onKickUser(user.user_id)}
+                  onClick={() => onKickUser(user.teamMemberId)}
                   className="w-7 h-7"
                 >
                   <Image

@@ -12,6 +12,7 @@ const nextConfig = {
   nx: {},
   transpilePackages: ['@meezy/ui', '@org/shop-data'],
   images: {
+    unoptimized: true,
     remotePatterns: [
       {
         protocol: 'https',

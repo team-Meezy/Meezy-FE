@@ -7,11 +7,20 @@ const ServerStateContext = createContext<{
   setChatRoom: (open: boolean) => void;
   serverProfile: boolean;
   setServerProfile: (open: boolean) => void;
+  teams: Team[];
+  setTeams: React.Dispatch<React.SetStateAction<Team[]>>;
 } | null>(null);
+
+interface Team {
+  teamId: string;
+  teamName: string;
+  serverImageUrl: string | null;
+}
 
 export function ServerStateProvider({ children }: { children: ReactNode }) {
   const [chatRoom, setChatRoom] = useState(false);
   const [serverProfile, setServerProfile] = useState(false);
+  const [teams, setTeams] = useState<Team[]>([]);
 
   return (
     <ServerStateContext.Provider
@@ -20,6 +29,8 @@ export function ServerStateProvider({ children }: { children: ReactNode }) {
         setChatRoom,
         serverProfile,
         setServerProfile,
+        teams,
+        setTeams,
       }}
     >
       {children}

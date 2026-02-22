@@ -9,3 +9,4 @@ export * from './lib/error-store';
 export * from './lib/login-store';
 export * from './lib/time-store';
 export * from './lib/modal-store';
+export * from './lib/serverId-store';

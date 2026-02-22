@@ -2,10 +2,15 @@
 
 import { MainRoomPage } from '../MainRoomPage';
 import { useParams } from 'next/navigation';
+import { useServerIdStore } from '@org/shop-data';
+import { useEffect } from 'react';
 
 export function MainRoomWrapper() {
   const params = useParams();
-  const serverId = params.serverId as string; // UUID는 문자열입니다.
+  const { serverId, setServerId } = useServerIdStore();
+  useEffect(() => {
+    setServerId(params.serverId as string);
+  }, [params.serverId]);
 
   // 1. URL 파라미터가 아예 없는 경우 방어 로직
   if (!serverId) {
@@ -14,7 +19,7 @@ export function MainRoomWrapper() {
 
   return (
     <div className="flex-1 flex overflow-hidden">
-      <MainRoomPage serverId={serverId} />
+      <MainRoomPage />
     </div>
   );
 }

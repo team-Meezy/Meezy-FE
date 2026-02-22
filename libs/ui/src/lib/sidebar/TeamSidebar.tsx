@@ -9,12 +9,8 @@ import { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { useGetTeams } from '@org/shop-data';
 import { useEffect } from 'react';
-
-interface Team {
-  teamId: string;
-  teamName: string;
-  serverImageUrl: string | null;
-}
+import { useServerIdStore } from '@org/shop-data';
+import { useServerState } from '../../context';
 
 interface SidebarProps {
   onOpenModal?: () => void;
@@ -24,8 +20,9 @@ export function TeamSidebar({ onOpenModal }: SidebarProps) {
   const { imageFile } = useServerCreate();
   const { setJoined } = useServerJoinedTeam();
   const [alarm, setAlarm] = useState(false);
-  const [teams, setTeams] = useState<Team[]>([]);
   const router = useRouter();
+  const { teams, setTeams } = useServerState();
+  const { serverId } = useServerIdStore();
 
   useEffect(() => {
     const getTeamsData = async () => {
@@ -33,11 +30,11 @@ export function TeamSidebar({ onOpenModal }: SidebarProps) {
       setTeams(data);
     };
     getTeamsData();
-  }, []);
+  }, [serverId]);
 
-  const handleTeamClick = (teamId: string) => {
+  const handleTeamClick = (serverId: string) => {
     setJoined(true);
-    router.push(`/main/${teamId}`);
+    router.push(`/main/${serverId}`);
   };
 
   return (
@@ -70,16 +67,16 @@ export function TeamSidebar({ onOpenModal }: SidebarProps) {
             <button
               type="button"
               aria-label={team.teamName}
-              className="min-w-14 min-h-14 flex items-center justify-center rounded-lg border border-gray-800 bg-[#262626] hover:bg-[#252525] transition-colors overflow-hidden"
-              onClick={() => handleTeamClick(team.teamId)}
+              className="relative w-14 h-14 flex items-center justify-center rounded-lg border border-gray-800 bg-[#262626] hover:bg-[#252525] transition-colors overflow-hidden"
+              onClick={() => handleTeamClick(serverId)}
             >
               {team.serverImageUrl ? (
                 <Image
                   src={team.serverImageUrl}
                   alt={team.teamName}
-                  width={56}
-                  height={56}
-                  className="w-full h-full object-cover"
+                  fill
+                  className="object-cover"
+                  unoptimized
                 />
               ) : (
                 <div className="text-xs">{team.teamName}</div>

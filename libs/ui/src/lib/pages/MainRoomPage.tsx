@@ -6,13 +6,11 @@ import { ParticipationChart } from '../components/ParticipationChart';
 import { DashboardCard } from '../components/DashboardCard';
 import { useRouter } from 'next/navigation';
 import { useGetTeamDetail } from '@org/shop-data';
+import { useServerIdStore } from '@org/shop-data';
 
-interface MainRoomPageProps {
-  serverId: string;
-}
-
-export function MainRoomPage({ serverId }: MainRoomPageProps) {
+export function MainRoomPage() {
   const [chartSize, setChartSize] = useState(192);
+  const { serverId } = useServerIdStore();
   const router = useRouter();
 
   useEffect(() => {

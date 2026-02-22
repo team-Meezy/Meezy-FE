@@ -8,6 +8,7 @@ import { useRouter } from 'next/navigation';
 import { useServerJoinedTeam, useServerCreate } from '../../context';
 import { useModalStore, useErrorStore } from '@org/shop-data';
 import { useCreateTeam } from '@org/shop-data';
+import { useServerIdStore } from '@org/shop-data';
 
 interface ServerModalProps {
   isOpen: boolean;
@@ -31,9 +32,10 @@ export function ServerModal({ isOpen, onClose }: ServerModalProps) {
   const { imageFile } = useServerCreate();
   const { setJoined } = useServerJoinedTeam();
   const router = useRouter();
+  const { serverId } = useServerIdStore();
 
-  const handleTeamClick = (teamId: number) => {
-    router.push(`/main/${teamId}`);
+  const handleTeamClick = () => {
+    router.push(`/main/${serverId}`);
   };
 
   useEffect(() => {
@@ -72,7 +74,7 @@ export function ServerModal({ isOpen, onClose }: ServerModalProps) {
       }
     }
 
-    handleTeamClick(1);
+    handleTeamClick();
     setJoined(true);
 
     onClose();

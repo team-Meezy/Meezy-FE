@@ -9,7 +9,8 @@ import { KickMember } from '../../assets/index.client';
 import { useDeleteTeam } from '@org/shop-data';
 import { useRouter } from 'next/navigation';
 import { useServerIdStore } from '@org/shop-data';
-import { useUpdateTeamName } from '@org/shop-data';
+import { useUpdateTeamName, useUpdateTeamImage } from '@org/shop-data';
+import { useServerCreate } from '../../context';
 
 interface ServerProfilePageProps {
   projectSidebarList: {
@@ -27,6 +28,7 @@ export function ServerProfilePage() {
   const { setTeams, updateTeams, teamMembers, teams } = useServerState();
   const { setJoined } = useServerJoinedTeam();
   const { serverId, setServerId } = useServerIdStore();
+  const { imageFile, setImageFile } = useServerCreate();
 
   const [serverName, setServerName] = useState('');
   const [users, setUsers] = useState(teamMembers);
@@ -112,6 +114,23 @@ export function ServerProfilePage() {
     } catch (error) {
       console.error('서버 이름 변경 실패:', error);
       alert('서버 이름 변경에 실패했습니다.');
+    }
+  };
+
+  const onServerImageChange = async (
+    e: React.ChangeEvent<HTMLInputElement>
+  ) => {
+    const file = e.target.files?.[0];
+    if (!file || !serverId) return;
+
+    try {
+      await useUpdateTeamImage(serverId, file);
+      alert('서버 이미지가 변경되었습니다.');
+      // 파일 상태 업데이트 및 미리보기는 handleImageChange에서 처리됨 (훅 연동 필요 시)
+      await updateTeams();
+    } catch (error) {
+      console.error('서버 이미지 변경 실패:', error);
+      alert('서버 이미지 변경에 실패했습니다.');
     }
   };
 
@@ -246,7 +265,10 @@ export function ServerProfilePage() {
                     type="file"
                     accept="image/*"
                     className="hidden"
-                    onChange={handleImageChange}
+                    onChange={(e) => {
+                      handleImageChange(e); // 미리보기 처리
+                      onServerImageChange(e); // 서버 전송
+                    }}
                   />
 
                   <button

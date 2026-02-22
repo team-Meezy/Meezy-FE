@@ -73,15 +73,13 @@ export function ServerProfilePage({
   };
 
   const handleDeleteServer = async () => {
-    // 1. 낙관적 업데이트: 사이드바에서 즉시 제거
     setTeams((prev) => prev.filter((team) => team.teamId !== serverId));
 
-    // 2. 즉시 페이지 이동 및 상태 초기화
+    // 즉시 페이지 이동 및 상태 초기화
     setServerId('');
     setJoined(false);
     router.push('/main');
 
-    // 3. 백그라운드에서 API 호출 (차단하지 않음)
     try {
       await useDeleteTeam(serverId);
       // API 완료 후 최신 목록으로 다시 동기화

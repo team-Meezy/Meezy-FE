@@ -12,6 +12,10 @@ const ServerStateContext = createContext<{
   setTeams: React.Dispatch<React.SetStateAction<Team[]>>;
   teamMembers: TeamMember[];
   setTeamMembers: React.Dispatch<React.SetStateAction<TeamMember[]>>;
+  projectSidebarList: ProjectSidebarList[];
+  setProjectSidebarList: React.Dispatch<
+    React.SetStateAction<ProjectSidebarList[]>
+  >;
   updateTeams: () => Promise<void>;
 } | null>(null);
 
@@ -28,11 +32,21 @@ interface TeamMember {
   team_id?: number;
 }
 
+interface ProjectSidebarList {
+  team_id: number;
+  team_name: string;
+  create_at: null;
+  invite_link: string;
+}
+
 export function ServerStateProvider({ children }: { children: ReactNode }) {
   const [chatRoom, setChatRoom] = useState(false);
   const [serverProfile, setServerProfile] = useState(false);
   const [teams, setTeams] = useState<Team[]>([]);
   const [teamMembers, setTeamMembers] = useState<TeamMember[]>([]);
+  const [projectSidebarList, setProjectSidebarList] = useState<
+    ProjectSidebarList[]
+  >([]);
 
   const updateTeams = async () => {
     try {
@@ -55,6 +69,8 @@ export function ServerStateProvider({ children }: { children: ReactNode }) {
         teamMembers,
         setTeamMembers,
         updateTeams,
+        projectSidebarList,
+        setProjectSidebarList,
       }}
     >
       {children}

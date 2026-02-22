@@ -1,6 +1,17 @@
 import { ServerProfilePage } from '../ServerProfilePage';
-import { projectSidebarList } from '../../../context';
+import { useParams } from 'next/navigation';
+import { useEffect } from 'react';
+import { useServerIdStore } from '@org/shop-data';
 
 export function ServerProfileWrapper() {
-  return <ServerProfilePage projectSidebarList={projectSidebarList} />;
+  const params = useParams();
+  const { setServerId } = useServerIdStore();
+
+  useEffect(() => {
+    if (params.serverId) {
+      setServerId(params.serverId as string);
+    }
+  }, [params.serverId]);
+
+  return <ServerProfilePage />;
 }

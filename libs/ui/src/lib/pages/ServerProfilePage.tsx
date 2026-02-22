@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { colors, typography } from '../../design';
 import { useImg } from '../../hooks';
 import Image from 'next/image';
@@ -9,6 +9,7 @@ import { KickMember } from '../../assets/index.client';
 import { useDeleteTeam } from '@org/shop-data';
 import { useRouter } from 'next/navigation';
 import { useServerIdStore } from '@org/shop-data';
+import { useUpdateTeamName } from '@org/shop-data';
 
 interface ServerProfilePageProps {
   projectSidebarList: {
@@ -19,17 +20,15 @@ interface ServerProfilePageProps {
   }[];
 }
 
-export function ServerProfilePage({
-  projectSidebarList,
-}: ServerProfilePageProps) {
-  const [serverName, setServerName] = useState(
-    projectSidebarList?.[0]?.team_name || ''
-  );
-
+export function ServerProfilePage() {
   const router = useRouter();
 
   const [tab, setTab] = useState(true);
-  const { setTeams, updateTeams, teamMembers } = useServerState();
+  const { setTeams, updateTeams, teamMembers, teams } = useServerState();
+  const { setJoined } = useServerJoinedTeam();
+  const { serverId, setServerId } = useServerIdStore();
+
+  const [serverName, setServerName] = useState('');
   const [users, setUsers] = useState(teamMembers);
   const {
     previewUrl,
@@ -38,8 +37,19 @@ export function ServerProfilePage({
     handleImageChange,
     handleDeleteImg,
   } = useImg();
-  const { setJoined } = useServerJoinedTeam();
-  const { serverId, setServerId } = useServerIdStore();
+
+  useEffect(() => {
+    if (serverId && teams.length > 0) {
+      const currentTeam = teams.find((t) => t.teamId === serverId);
+      if (currentTeam) {
+        setServerName(currentTeam.teamName);
+      }
+    }
+  }, [serverId, teams]);
+
+  useEffect(() => {
+    setUsers(teamMembers);
+  }, [teamMembers]);
 
   const onTabProfile = () => setTab(true);
   const onTabSettings = () => setTab(false);
@@ -82,6 +92,26 @@ export function ServerProfilePage({
       console.error('서버 삭제 실패:', error);
       // 실패 시 원래 데이터를 복구하기 위해 다시 불러옴
       await updateTeams();
+    }
+  };
+
+  const handleUpdateServerName = async () => {
+    if (!serverId) {
+      alert('서버 정보를 찾을 수 없습니다.');
+      return;
+    }
+    if (!serverName.trim()) {
+      alert('서버 이름을 입력해주세요.');
+      return;
+    }
+    try {
+      await useUpdateTeamName(serverId, serverName);
+      alert('서버 이름이 변경되었습니다.');
+      // 사이드바 목록 갱신
+      await updateTeams();
+    } catch (error) {
+      console.error('서버 이름 변경 실패:', error);
+      alert('서버 이름 변경에 실패했습니다.');
     }
   };
 
@@ -135,7 +165,7 @@ export function ServerProfilePage({
           )}
         </div>
         {tab ? (
-          <>
+          <div className="flex gap-3 items-center">
             <input
               type="text"
               value={serverName}
@@ -147,7 +177,14 @@ export function ServerProfilePage({
                 ...typography.body.BodyM,
               }}
             />
-          </>
+            <button
+              onClick={handleUpdateServerName}
+              className="h-12 px-6 rounded-lg bg-[#FF5C00] hover:bg-[#E55200] transition-colors shrink-0"
+              style={{ ...typography.body.BodyB, color: '#FFFFFF' }}
+            >
+              저장
+            </button>
+          </div>
         ) : (
           <div
             className="w-full max-h-[30vh] overflow-y-scroll flex flex-col gap-4 no-scrollbar"

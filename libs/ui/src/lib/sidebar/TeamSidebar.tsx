@@ -42,7 +42,7 @@ export function TeamSidebar({ onOpenModal }: SidebarProps) {
 
   return (
     <nav
-      className="w-[100px] max-w-[90px] h-screen flex flex-col items-center"
+      className="w-[100px] max-w-[80px] h-screen flex flex-col items-center"
       style={{
         backgroundColor: colors.gray[900],
       }}
@@ -61,7 +61,7 @@ export function TeamSidebar({ onOpenModal }: SidebarProps) {
             className="flex justify-center items-center mr-4"
           >
             <div
-              className="w-2 h-2 rounded-full mr-2"
+              className="h-2 rounded-full mr-4"
               style={{
                 backgroundColor: alarm ? colors.primary[500] : 'transparent',
               }}

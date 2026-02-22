@@ -14,10 +14,6 @@ export function MainRoomWrapper() {
 
   return (
     <div className="flex-1 flex overflow-hidden">
-      {/* 이제 여기서 리스트를 뒤지지 않고, 
-         MainRoomPage 내부에서 serverId로 직접 API를 호출하여 
-         데이터가 없으면 404 처리를 하도록 합니다.
-      */}
       <MainRoomPage serverId={serverId} />
     </div>
   );

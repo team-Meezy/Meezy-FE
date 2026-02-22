@@ -1,9 +1,10 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import { useEffect } from 'react';
 import { createPortal } from 'react-dom';
 import { colors, typography } from '../../design';
 import { useServerJoinedTeam } from '../../context';
+import { useModalStore, useErrorStore } from '@org/shop-data';
 
 interface UserKickModalProps {
   isOpen: boolean;
@@ -12,9 +13,8 @@ interface UserKickModalProps {
 }
 
 export function UserKickModal({ isOpen, type, onClose }: UserKickModalProps) {
-  const [mounted, setMounted] = useState(false);
-  const [serverName, setServerName] = useState('');
-  const [generalError, setGeneralError] = useState('');
+  const { mounted, setMounted, serverName, setServerName } = useModalStore();
+  const { generalError, setGeneralError } = useErrorStore();
   const { setJoined } = useServerJoinedTeam();
 
   useEffect(() => {

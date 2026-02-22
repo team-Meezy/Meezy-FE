@@ -5,7 +5,7 @@ export const useJoinTeamByCode = async (inviteCode: string) => {
     inviteCode,
   };
   try {
-    const response = await privateApi.post('/teams/join', { data: body });
+    const response = await privateApi.post('/teams/join', body);
     console.log('joinTeamByCode response', response);
     return response.data;
   } catch (error) {

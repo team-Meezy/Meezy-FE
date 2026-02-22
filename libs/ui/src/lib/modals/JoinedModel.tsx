@@ -145,7 +145,7 @@ export function JoinedModal({ isOpen, type, onClose }: JoinedModalProps) {
             onClick={createServer}
             className="flex-1 py-3 px-4 bg-[#ff5c00] text-white rounded-md font-bold hover:bg-[#e65300] transition-colors"
           >
-            {type === 'ROOM' ? '추가' : '초대'}
+            {type === 'ROOM' ? '추가' : '완료'}
           </button>
         </div>
       </div>

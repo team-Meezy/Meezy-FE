@@ -94,8 +94,11 @@ export function ServerModal({ isOpen, onClose }: ServerModalProps) {
       }
     } else if (!createModal) {
       try {
-        const res = await useJoinTeamByCode(serverLink);
-        console.log(res);
+        // 전체 URL이 입력되었을 경우 코드만 추출 (예: https://.../5a87eb01 -> 5a87eb01)
+        const extractedCode = serverLink.split('/').pop() || serverLink;
+
+        const res = await useJoinTeamByCode(extractedCode);
+        console.log(res, '팀 가입 시도 결과');
         await updateTeams();
         if (res && (res.teamId || res.id)) {
           const newTeamId = res.teamId || res.id;

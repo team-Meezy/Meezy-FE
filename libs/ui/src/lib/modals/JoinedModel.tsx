@@ -113,22 +113,22 @@ export function JoinedModal({ isOpen, type, onClose }: JoinedModalProps) {
               </div>
             )}
 
-            <input
-              type="text"
+              <input
+                type="text"
               value={serverName}
-              onChange={(e) => {
+                onChange={(e) => {
                 setServerName(e.target.value);
-              }}
+                }}
               placeholder={
                 type === 'ROOM' ? '채널 이름' : inviteCode.inviteCode
               }
               className="w-full border-none rounded-lg p-3 placeholder:text-gray-500 outline-none transition-all"
-              style={{
-                ...typography.body.BodyM,
-                backgroundColor: colors.gray[700],
-                color: colors.white[100],
-              }}
-            />
+                style={{
+                  ...typography.body.BodyM,
+                  backgroundColor: colors.gray[700],
+                  color: colors.white[100],
+                }}
+              />
           </section>
         </div>
 

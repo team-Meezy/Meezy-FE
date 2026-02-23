@@ -130,7 +130,7 @@ export function ServerModal({ isOpen, onClose }: ServerModalProps) {
   return createPortal(
     // 배경 Overlay
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/30 backdrop-blur-[2px]">
-      {/* 모달 컨테이너 */}
+      {/*   모달 컨테이너 */}
       <div className="w-[480px] bg-[#2b2d31] rounded-xl shadow-2xl border border-white/5 overflow-hidden">
         {/* 상단 탭 및 닫기 버튼 */}
         <div className="flex justify-between items-center px-4 pt-4">

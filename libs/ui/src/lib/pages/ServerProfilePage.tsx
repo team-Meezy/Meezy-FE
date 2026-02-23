@@ -10,16 +10,6 @@ import { useDeleteTeam } from '@org/shop-data';
 import { useRouter } from 'next/navigation';
 import { useServerIdStore } from '@org/shop-data';
 import { useUpdateTeamName, useUpdateTeamImage } from '@org/shop-data';
-import { useServerCreate } from '../../context';
-
-interface ServerProfilePageProps {
-  projectSidebarList: {
-    team_id: number;
-    team_name: string;
-    create_at: null;
-    invite_link: string;
-  }[];
-}
 
 export function ServerProfilePage() {
   const router = useRouter();
@@ -28,7 +18,6 @@ export function ServerProfilePage() {
   const { setTeams, updateTeams, teamMembers, teams } = useServerState();
   const { setJoined } = useServerJoinedTeam();
   const { serverId, setServerId } = useServerIdStore();
-  const { imageFile, setImageFile } = useServerCreate();
 
   const [serverName, setServerName] = useState('');
   const [users, setUsers] = useState(teamMembers);

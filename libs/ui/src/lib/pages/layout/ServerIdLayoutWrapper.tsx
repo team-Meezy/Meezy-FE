@@ -1,6 +1,5 @@
 import {
   roomsrcList,
-  userList,
   sidebarList,
   useServerJoinedTeam,
   useServerState,
@@ -8,14 +7,35 @@ import {
 import { JoinedSidebar } from '../../sidebar';
 import { CalendarMockup, Header } from '../../components';
 import { ReceiveAiAssistant } from '../../components';
+import { useEffect } from 'react';
+import { useServerIdStore, useGetTeamMembers } from '@org/shop-data';
 
 export function ServerIdLayoutWrapper({
   children,
 }: {
   children: React.ReactNode;
 }) {
-  const { setChatRoom, setServerProfile } = useServerState();
+  const { setChatRoom, setServerProfile, setTeamMembers } = useServerState();
   const { joined, setSelectedRoomId } = useServerJoinedTeam();
+  const { serverId } = useServerIdStore();
+
+  useEffect(() => {
+    if (!serverId) return;
+
+    const fetchMembers = async () => {
+      try {
+        // 서버 전환 시 이전 멤버 목록 즉시 초기화하여 '공유'되는 현상 방지
+        setTeamMembers([]);
+
+        const data = await useGetTeamMembers(serverId);
+        setTeamMembers(data);
+      } catch (error) {
+        console.error('Failed to fetch members in layout:', error);
+      }
+    };
+
+    fetchMembers();
+  }, [serverId, setTeamMembers]);
 
   return (
     <div className="flex flex-1 overflow-hidden">

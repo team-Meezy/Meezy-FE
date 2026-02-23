@@ -24,18 +24,15 @@ export function MainRoomPage() {
 
   useEffect(() => {
     const getTeamDetail = async () => {
-      const data = await useGetTeamDetail(serverId);
-      console.log('getTeamDetail data', data);
-    };
-
-    const getTeamMembers = async () => {
-      const data = await useGetTeamMembers(serverId);
-      console.log('getTeamMembers data', data);
-      setTeamMembers(data);
+      try {
+        const data = await useGetTeamDetail(serverId);
+        console.log('getTeamDetail data', data);
+      } catch (error) {
+        console.error('Failed to get team detail:', error);
+      }
     };
 
     getTeamDetail();
-    getTeamMembers();
   }, [serverId]);
 
   const onClickFeedback = (serverId: number) => {

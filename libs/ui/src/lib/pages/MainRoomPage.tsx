@@ -5,9 +5,9 @@ import { colors, typography } from '../../design';
 import { ParticipationChart } from '../components/ParticipationChart';
 import { DashboardCard } from '../components/DashboardCard';
 import { useRouter } from 'next/navigation';
-import { useGetTeamDetail } from '@org/shop-data';
+import { getTeamDetail } from '@org/shop-data';
 import { useServerState } from '../../context';
-import { useServerIdStore, useGetTeamMembers } from '@org/shop-data';
+import { useServerIdStore } from '@org/shop-data';
 
 export function MainRoomPage() {
   const [chartSize, setChartSize] = useState(192);
@@ -23,16 +23,18 @@ export function MainRoomPage() {
   }, []);
 
   useEffect(() => {
-    const getTeamDetail = async () => {
+    if (!serverId) return;
+
+    const getDetail = async () => {
       try {
-        const data = await useGetTeamDetail(serverId);
+        const data = await getTeamDetail(serverId);
         console.log('getTeamDetail data', data);
       } catch (error) {
         console.error('Failed to get team detail:', error);
       }
     };
 
-    getTeamDetail();
+    getDetail();
   }, [serverId]);
 
   const onClickFeedback = (serverId: number) => {

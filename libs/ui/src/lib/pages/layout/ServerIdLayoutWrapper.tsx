@@ -9,7 +9,7 @@ import { JoinedSidebar } from '../../sidebar';
 import { CalendarMockup, Header } from '../../components';
 import { ReceiveAiAssistant } from '../../components';
 import { useEffect } from 'react';
-import { useServerIdStore, useGetTeamMembers } from '@org/shop-data';
+import { useServerIdStore } from '@org/shop-data';
 import { useParams, useRouter } from 'next/navigation';
 
 export function ServerIdLayoutWrapper({

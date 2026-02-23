@@ -9,6 +9,7 @@ import { CalendarMockup, Header } from '../../components';
 import { ReceiveAiAssistant } from '../../components';
 import { useEffect } from 'react';
 import { useServerIdStore, useGetTeamMembers } from '@org/shop-data';
+import { useParams } from 'next/navigation';
 
 export function ServerIdLayoutWrapper({
   children,
@@ -17,17 +18,23 @@ export function ServerIdLayoutWrapper({
 }) {
   const { setChatRoom, setServerProfile, setTeamMembers } = useServerState();
   const { joined, setSelectedRoomId } = useServerJoinedTeam();
-  const { serverId } = useServerIdStore();
+  const { setServerId } = useServerIdStore();
+  const params = useParams();
+  const currentServerId = params.serverId as string;
 
   useEffect(() => {
-    if (!serverId) return;
+    if (!currentServerId) return;
+
+    // 전역 스토어도 동기화 (다른 컴포넌트들을 위해)
+    setServerId(currentServerId);
 
     const fetchMembers = async () => {
       try {
-        // 서버 전환 시 이전 멤버 목록 즉시 초기화하여 '공유'되는 현상 방지
+        // 서버 전환 시 이전 멤버 목록 즉시 초기화
         setTeamMembers([]);
 
-        const data = await useGetTeamMembers(serverId);
+        const data = await useGetTeamMembers(currentServerId);
+        console.log(`Fetched members for ${currentServerId}:`, data);
         setTeamMembers(data);
       } catch (error) {
         console.error('Failed to fetch members in layout:', error);
@@ -35,7 +42,7 @@ export function ServerIdLayoutWrapper({
     };
 
     fetchMembers();
-  }, [serverId, setTeamMembers]);
+  }, [currentServerId, setServerId, setTeamMembers]);
 
   return (
     <div className="flex flex-1 overflow-hidden">

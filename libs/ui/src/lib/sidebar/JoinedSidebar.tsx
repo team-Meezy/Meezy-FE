@@ -7,7 +7,7 @@ import { useState, useEffect } from 'react';
 import { JoinedModal, UserKickModal } from '../modals';
 import { useRouter } from 'next/navigation';
 import { useServerIdStore } from '@org/shop-data';
-import { useServerState } from '../../context';
+import { useServerState, useProfile } from '../../context';
 
 interface JoinedSidebarProps {
   setChatRoom: (chatRoom: boolean) => void;
@@ -42,6 +42,7 @@ export function JoinedSidebar({
   const router = useRouter();
   const { serverId } = useServerIdStore();
   const { teamMembers, setTeamMembers } = useServerState();
+  const { profile } = useProfile();
 
   const onOpenModal = (type: 'ROOM' | 'MEMBER' | null) => {
     setModalType(type);
@@ -79,7 +80,16 @@ export function JoinedSidebar({
   };
 
   const onClickServerProfile = () => {
-    router.push(`/main/${serverId}/ServerProfile`);
+    const myMemberInfo = teamMembers?.find(
+      (m) =>
+        m.teamMemberId === profile?.id || (m as any).user_id === profile?.id
+    );
+
+    if (myMemberInfo?.role.includes('LEADER')) {
+      router.push(`/main/${serverId}/ServerProfile`);
+    } else {
+      alert('서버 관리 권한이 없습니다.');
+    }
   };
 
   const onClickChatRoom = (room_id: number) => {

@@ -13,9 +13,7 @@ export function MainPageWrapper() {
   useEffect(() => {
     setServerId('');
     setJoined(false);
-  }, []);
-
-  console.log('Current Profile State (Global):', profile);
+  }, [setServerId, setJoined]);
 
   return (
     <>

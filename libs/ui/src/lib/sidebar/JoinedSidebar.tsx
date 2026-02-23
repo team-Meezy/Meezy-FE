@@ -80,15 +80,41 @@ export function JoinedSidebar({
   };
 
   const onClickServerProfile = () => {
-    const myMemberInfo = teamMembers?.find(
-      (m) =>
-        m.teamMemberId === profile?.id || (m as any).user_id === profile?.id
-    );
+    console.log('--- Permission Check Start ---');
+    console.log('Current Profile:', profile);
+    console.log('Team Members:', teamMembers);
+
+    const myMemberInfo = teamMembers?.find((m) => {
+      const profileId =
+        profile?.id || profile?.userId || (profile as any)?.user_id;
+      const memberUserId =
+        (m as any).userId ||
+        (m as any).user_id ||
+        (m as any).user?.id ||
+        (m as any).user?.userId;
+
+      // 1. 유저 ID로 직접 비교
+      if (profileId && memberUserId && profileId === memberUserId) return true;
+
+      // 2. 이름으로 보조 비교 (ID가 불확실할 때)
+      if (
+        m.name === profile?.name ||
+        m.name === profile?.userName ||
+        m.name === profile?.nickName
+      )
+        return true;
+
+      return false;
+    });
+
+    console.log('Matched Member Info:', myMemberInfo);
+    console.log('--- Permission Check End ---');
 
     if (myMemberInfo?.role.includes('LEADER')) {
       router.push(`/main/${serverId}/ServerProfile`);
     } else {
-      alert('서버 관리 권한이 없습니다.');
+      const myRole = myMemberInfo?.role || 'NONE';
+      alert(`서버 관리 권한이 없습니다. (내 역할: ${myRole})`);
     }
   };
 

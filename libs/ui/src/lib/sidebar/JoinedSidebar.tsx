@@ -160,18 +160,19 @@ export function JoinedSidebar({
                   className="flex flex-col justify-center items-center"
                 >
                   <div
-                    className="min-w-24 min-h-8 mt-3 flex gap-5 items-center justify-center rounded-lg transition-colors"
+                    className="w-full px-4 min-h-8 mt-3 flex gap-3 items-center justify-start rounded-lg transition-colors overflow-hidden"
                     style={{
                       color: colors.gray[300],
                       ...typography.body.BodyB,
                     }}
                   >
                     <div
-                      className="rounded-full w-5 h-5"
+                      className="rounded-full w-5 h-5 shrink-0"
                       style={{ backgroundColor: colors.white[100] }}
                     />
 
                     <span
+                      className="truncate"
                       onContextMenu={(e) =>
                         onContextMenu(e, currentUserId as any)
                       }

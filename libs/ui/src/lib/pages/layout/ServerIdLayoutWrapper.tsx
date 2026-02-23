@@ -17,8 +17,13 @@ export function ServerIdLayoutWrapper({
 }: {
   children: React.ReactNode;
 }) {
-  const { setChatRoom, setServerProfile, setTeamMembers, updateTeamMembers } =
-    useServerState();
+  const {
+    teamMembers,
+    setChatRoom,
+    setServerProfile,
+    setTeamMembers,
+    updateTeamMembers,
+  } = useServerState();
   const { joined, setSelectedRoomId } = useServerJoinedTeam();
   const { setServerId } = useServerIdStore();
   const { profile } = useProfile();

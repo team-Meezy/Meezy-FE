@@ -92,10 +92,6 @@ export function JoinedSidebar({
   };
 
   const onClickServerProfile = () => {
-    console.log('--- Permission Check Start ---');
-    console.log('Current Profile:', profile);
-    console.log('Team Members:', teamMembers);
-
     const myMemberInfo = teamMembers?.find((m) => {
       const profileId =
         profile?.id || profile?.userId || (profile as any)?.user_id;
@@ -118,9 +114,6 @@ export function JoinedSidebar({
 
       return false;
     });
-
-    console.log('Matched Member Info:', myMemberInfo);
-    console.log('--- Permission Check End ---');
 
     if (myMemberInfo?.role.includes('LEADER')) {
       router.push(`/main/${serverId}/ServerProfile`);

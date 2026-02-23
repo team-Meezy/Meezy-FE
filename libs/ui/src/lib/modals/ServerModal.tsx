@@ -35,7 +35,7 @@ export function ServerModal({ isOpen, onClose }: ServerModalProps) {
     useImg();
   const { imageFile } = useServerCreate();
   const { setJoined } = useServerJoinedTeam();
-  const { updateTeams } = useServerState();
+  const { updateTeams, updateTeamMembers } = useServerState();
   const router = useRouter();
   const { serverId } = useServerIdStore();
   const { setServerId } = useServerIdStore();

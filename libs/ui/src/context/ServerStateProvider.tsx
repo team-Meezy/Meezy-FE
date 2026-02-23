@@ -1,7 +1,13 @@
 'use client';
 
-import { createContext, useContext, useState, type ReactNode } from 'react';
-import { useGetTeams } from '@org/shop-data';
+import {
+  createContext,
+  useContext,
+  useState,
+  useCallback,
+  type ReactNode,
+} from 'react';
+import { useGetTeams, useGetTeamMembers } from '@org/shop-data';
 
 const ServerStateContext = createContext<{
   chatRoom: boolean;
@@ -18,7 +24,10 @@ const ServerStateContext = createContext<{
   >;
   inviteCode: InviteCode;
   setInviteCode: React.Dispatch<React.SetStateAction<InviteCode>>;
+  contextMenuUserId: string | null;
+  setContextMenuUserId: React.Dispatch<React.SetStateAction<string | null>>;
   updateTeams: () => Promise<void>;
+  updateTeamMembers: (id: string) => Promise<void>;
 } | null>(null);
 
 interface Team {
@@ -58,15 +67,27 @@ export function ServerStateProvider({ children }: { children: ReactNode }) {
     inviteCode: '',
     expiresAt: '',
   });
+  const [contextMenuUserId, setContextMenuUserId] = useState<string | null>(
+    null
+  );
 
-  const updateTeams = async () => {
+  const updateTeams = useCallback(async () => {
     try {
       const data = await useGetTeams();
       setTeams(data);
     } catch (error) {
       console.error('Failed to update teams:', error);
     }
-  };
+  }, []);
+
+  const updateTeamMembers = useCallback(async (id: string) => {
+    try {
+      const data = await useGetTeamMembers(id);
+      setTeamMembers(data);
+    } catch (error) {
+      console.error('Failed to update team members:', error);
+    }
+  }, []);
 
   return (
     <ServerStateContext.Provider
@@ -84,6 +105,9 @@ export function ServerStateProvider({ children }: { children: ReactNode }) {
         setProjectSidebarList,
         inviteCode,
         setInviteCode,
+        contextMenuUserId,
+        setContextMenuUserId,
+        updateTeamMembers,
       }}
     >
       {children}

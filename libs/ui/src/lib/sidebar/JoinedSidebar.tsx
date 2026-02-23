@@ -8,6 +8,7 @@ import { JoinedModal, UserKickModal } from '../modals';
 import { useRouter } from 'next/navigation';
 import { useServerIdStore } from '@org/shop-data';
 import { useServerState, useProfile } from '../../context';
+import { useExpelTeamMember } from '@org/shop-data';
 
 interface JoinedSidebarProps {
   setChatRoom: (chatRoom: boolean) => void;
@@ -36,12 +37,14 @@ export function JoinedSidebar({
 }: JoinedSidebarProps) {
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [modalType, setModalType] = useState<'ROOM' | 'MEMBER' | null>(null);
-  const [contextMenuUserId, setContextMenuUserId] = useState<number | null>(
-    null
-  );
   const router = useRouter();
   const { serverId } = useServerIdStore();
-  const { teamMembers, setTeamMembers } = useServerState();
+  const {
+    teamMembers,
+    setTeamMembers,
+    contextMenuUserId,
+    setContextMenuUserId,
+  } = useServerState();
   const { profile } = useProfile();
 
   const onOpenModal = (type: 'ROOM' | 'MEMBER' | null) => {
@@ -60,9 +63,9 @@ export function JoinedSidebar({
     users: team.type === 'MEMBER' ? teamMembers : [],
   }));
 
-  const onContextMenu = (e: React.MouseEvent, userId: number) => {
+  const onContextMenu = (e: React.MouseEvent, contextMenuUserId: string) => {
     e.preventDefault();
-    setContextMenuUserId(userId);
+    setContextMenuUserId(contextMenuUserId);
   };
 
   const handleClickOutside = () => setContextMenuUserId(null);
@@ -72,11 +75,20 @@ export function JoinedSidebar({
     return () => document.removeEventListener('click', handleClickOutside);
   }, []);
 
-  const onKickUser = () => {
-    setTeamMembers((prev) =>
-      prev.filter((user) => user.team_id !== contextMenuUserId)
-    );
-    setContextMenuUserId(null);
+  const onKickUser = async () => {
+    if (!serverId || !contextMenuUserId) return;
+
+    try {
+      await useExpelTeamMember(serverId, contextMenuUserId);
+      setTeamMembers((prev) =>
+        prev.filter((user) => user.teamMemberId !== contextMenuUserId)
+      );
+      setContextMenuUserId(null);
+      alert('멤버가 제외되었습니다.');
+    } catch (error) {
+      console.error('멤버 제외 실패:', error);
+      alert('멤버 제외에 실패했습니다.');
+    }
   };
 
   const onClickServerProfile = () => {

@@ -9,16 +9,27 @@ import { KickMember } from '../../assets/index.client';
 import { useDeleteTeam } from '@org/shop-data';
 import { useRouter } from 'next/navigation';
 import { useServerIdStore } from '@org/shop-data';
-import { useUpdateTeamName, useUpdateTeamImage } from '@org/shop-data';
+import {
+  useUpdateTeamName,
+  useUpdateTeamImage,
+  useExpelTeamMember,
+} from '@org/shop-data';
 
 export function ServerProfilePage() {
   const router = useRouter();
 
   const [tab, setTab] = useState(true);
-  const { setTeams, updateTeams, teamMembers, teams } = useServerState();
+  const {
+    setTeams,
+    updateTeams,
+    teamMembers,
+    setTeamMembers, // 멤버 목록 전역 상태 업데이트를 위해 추가
+    teams,
+    contextMenuUserId,
+    setContextMenuUserId,
+  } = useServerState();
   const { setJoined } = useServerJoinedTeam();
   const { serverId, setServerId } = useServerIdStore();
-
   const [serverName, setServerName] = useState('');
   const [users, setUsers] = useState(teamMembers);
   const {
@@ -40,15 +51,29 @@ export function ServerProfilePage() {
 
   useEffect(() => {
     setUsers(teamMembers);
-  }, [teamMembers]);
+  }, []);
 
   const onTabProfile = () => setTab(true);
   const onTabSettings = () => setTab(false);
 
-  const onKickUser = (teamMemberId: string) => {
-    setUsers((prev) =>
-      prev.filter((user) => user.teamMemberId !== teamMemberId)
-    );
+  const onKickUser = async (id: string) => {
+    if (!serverId || !id) return;
+
+    try {
+      await useExpelTeamMember(serverId, id);
+
+      // 로컬 상태(현재 페이지) 업데이트
+      setUsers((prev) => prev.filter((user) => user.teamMemberId !== id));
+
+      // 전역 상태(사이드바 등) 업데이트
+      setTeamMembers((prev) => prev.filter((user) => user.teamMemberId !== id));
+
+      setContextMenuUserId(null);
+      alert('멤버가 제외되었습니다.');
+    } catch (error) {
+      console.error('멤버 제외 실패:', error);
+      alert('멤버 제외에 실패했습니다.');
+    }
   };
 
   const tapStyle = (tab: boolean) => {
@@ -210,7 +235,11 @@ export function ServerProfilePage() {
                   <div>{user.name}</div>
                 </div>
                 <button
-                  onClick={() => onKickUser(user.teamMemberId)}
+                  onClick={() => {
+                    console.log(user.teamMemberId);
+                    setContextMenuUserId(user.teamMemberId);
+                    onKickUser(user.teamMemberId);
+                  }}
                   className="w-7 h-7"
                 >
                   <Image

@@ -115,7 +115,7 @@ export function JoinedSidebar({
       return false;
     });
 
-    if (myMemberInfo?.role.includes('LEADER')) {
+    if (myMemberInfo?.role === 'LEADER') {
       router.push(`/main/${serverId}/ServerProfile`);
     } else {
       const myRole = myMemberInfo?.role || 'NONE';

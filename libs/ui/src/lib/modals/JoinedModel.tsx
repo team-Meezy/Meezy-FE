@@ -6,7 +6,7 @@ import { colors, typography } from '../../design';
 import { useServerJoinedTeam } from '../../context';
 import { useModalStore, useErrorStore } from '@org/shop-data';
 import { useServerIdStore } from '@org/shop-data';
-import { useCreateInviteCode } from '@org/shop-data';
+import { createInviteCode } from '@org/shop-data';
 import { useServerState } from '../../context';
 
 interface JoinedModalProps {
@@ -38,9 +38,9 @@ export function JoinedModal({ isOpen, type, onClose }: JoinedModalProps) {
 
   useEffect(() => {
     if (isOpen && type === 'MEMBER' && serverId) {
-      const createInviteCode = async () => {
+      const createCode = async () => {
         try {
-          const res = await useCreateInviteCode(serverId);
+          const res = await createInviteCode(serverId);
           console.log(res, '초대 코드 생성 결과');
           if (res && res.inviteCode) {
             setInviteCode({
@@ -53,7 +53,7 @@ export function JoinedModal({ isOpen, type, onClose }: JoinedModalProps) {
           console.error('초대 코드 생성 실패:', error);
         }
       };
-      createInviteCode();
+      createCode();
     }
   }, [isOpen, type, serverId, setServerName]);
 

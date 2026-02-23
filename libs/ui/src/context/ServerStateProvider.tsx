@@ -7,7 +7,7 @@ import {
   useCallback,
   type ReactNode,
 } from 'react';
-import { useGetTeams, useGetTeamMembers } from '@org/shop-data';
+import { getTeams, getTeamMembers } from '@org/shop-data';
 
 const ServerStateContext = createContext<{
   chatRoom: boolean;
@@ -73,7 +73,7 @@ export function ServerStateProvider({ children }: { children: ReactNode }) {
 
   const updateTeams = useCallback(async () => {
     try {
-      const data = await useGetTeams();
+      const data = await getTeams();
       setTeams(data);
     } catch (error) {
       console.error('Failed to update teams:', error);
@@ -82,7 +82,7 @@ export function ServerStateProvider({ children }: { children: ReactNode }) {
 
   const updateTeamMembers = useCallback(async (id: string) => {
     try {
-      const data = await useGetTeamMembers(id);
+      const data = await getTeamMembers(id);
       setTeamMembers(data);
     } catch (error) {
       console.error('Failed to update team members:', error);

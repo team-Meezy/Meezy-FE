@@ -1,7 +1,7 @@
 'use client';
 
 import { useRouter } from 'next/navigation';
-import { useLocalLogin, useLoadingStore } from '@org/shop-data';
+import { localLogin, useLoadingStore } from '@org/shop-data';
 
 interface LoginFlowParams {
   accountId: string;
@@ -58,7 +58,7 @@ export function useLoginFlow({
     try {
       setLoading(true);
       setLoadingState('로그인 중...');
-      const loginPromise = useLocalLogin(accountId, password);
+      const loginPromise = localLogin(accountId, password);
       const delayPromise = new Promise((resolve) => setTimeout(resolve, 3000));
 
       const [res] = await Promise.all([loginPromise, delayPromise]);

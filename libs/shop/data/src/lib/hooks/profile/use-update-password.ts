@@ -6,7 +6,6 @@ export const updatePassword = async (currentPassword: string, newPassword: strin
       currentPassword,
       newPassword,
     });
-    console.log('변경 성공', response);
     return response.data;
   } catch (error) {
     throw error;

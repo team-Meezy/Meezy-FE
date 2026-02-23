@@ -1,4 +1,4 @@
-export { useLocalLogin } from './use-local-login';
-export { useLocalSignup } from './use-local-signup';
-export { useRequestEmailVerification } from './use-request-email-verification';
-export { useVerifyEmailCode } from './use-verify-email-code';
+export { localLogin } from './use-local-login';
+export { localSignup } from './use-local-signup';
+export { requestEmailVerification } from './use-request-email-verification';
+export { verifyEmailCode } from './use-verify-email-code';

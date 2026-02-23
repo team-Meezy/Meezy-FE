@@ -29,7 +29,10 @@ export const useImg = () => {
     }
   };
 
-  const handleImageChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
+  const handleImageChange = async (
+    e: React.ChangeEvent<HTMLInputElement>,
+    skipAutoUpload?: boolean
+  ) => {
     const file = e.target.files?.[0];
     if (!file) return;
 
@@ -49,11 +52,13 @@ export const useImg = () => {
     }
     setPreviewUrl(URL.createObjectURL(file));
 
-    // 파일 선택 후 서버에 업로드
+    // skipAutoUpload가 true면 여기서 멈춤 (개인 프로필 자동 업로드 방지)
+    if (skipAutoUpload) return;
+
+    // 파일 선택 후 서버에 업로드 (기본적으로 개인 프로필 업로드로 동작)
     try {
       await uploadProfileImage(file);
       console.log('프로필 이미지 업로드 성공');
-      // 프로필 데이터 조용히 다시 불러오기 (로딩 없이 헤더 이미지만 업데이트)
       await silentRefetchProfile();
     } catch (error) {
       console.error('프로필 이미지 업로드 실패:', error);

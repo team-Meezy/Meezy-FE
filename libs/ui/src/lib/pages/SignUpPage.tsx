@@ -12,13 +12,20 @@ import {
 import { useSignupFlow, useTime, useTokenCheck } from '../../hooks';
 import { SignupHeader, SignupGuideText, SignupNavigation } from '../components';
 import { useSignupStore, useTimeStore } from '@org/shop-data';
+import { useLoadingStore } from '@org/shop-data';
+import { useEffect } from 'react';
 
 export function SignUpPage() {
   const { step } = useSignupStore();
   const { remainingTime } = useTimeStore();
   const { formattedTime } = useTime();
+  const { setLoading } = useLoadingStore();
 
   useTokenCheck();
+
+  useEffect(() => {
+    setLoading(false);
+  }, []);
 
   const {
     handleNext,

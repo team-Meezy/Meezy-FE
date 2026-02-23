@@ -3,7 +3,7 @@
 import { Header, CalendarMockup } from '../../components';
 import { TeamSidebar } from '../../sidebar';
 import { ServerModal } from '../../modals';
-import { projectSidebarList, useServerJoinedTeam } from '../../../context';
+import { useServerJoinedTeam } from '../../../context';
 import { useEffect } from 'react';
 import { useModalStore } from '@org/shop-data';
 import { useLoadingStore } from '@org/shop-data';
@@ -19,10 +19,7 @@ export function MainLayoutWrapper({ children }: { children: React.ReactNode }) {
 
   return (
     <div className="flex h-screen w-full bg-[#0c0c0c] text-white overflow-hidden">
-      <TeamSidebar
-        onOpenModal={() => setIsModalOpen(true)}
-        projectSidebarList={projectSidebarList}
-      />
+      <TeamSidebar onOpenModal={() => setIsModalOpen(true)} />
 
       <div className="flex-1 flex flex-col overflow-hidden">
         {!joined && <Header />}

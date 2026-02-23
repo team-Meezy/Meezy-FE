@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { useLoginFlow } from '../../hooks';
 import { colors, typography } from '../../design';
 import Image from 'next/image';
@@ -13,14 +13,20 @@ import {
   LoginOptions,
 } from '../components';
 import { useLoginStore } from '@org/shop-data';
+import { useLoadingStore } from '@org/shop-data';
 
 export function LoginPage() {
   const [accountId, setAccountId] = useState('');
   const [password, setPassword] = useState('');
   const [generalError, setGeneralError] = useState('');
   const { rememberMe, setRememberMe } = useLoginStore();
+  const { setLoading } = useLoadingStore();
 
   useTokenCheck();
+
+  useEffect(() => {
+    setLoading(false);
+  }, []);
 
   const { handleLogin, handleSignUpClick } = useLoginFlow({
     accountId,

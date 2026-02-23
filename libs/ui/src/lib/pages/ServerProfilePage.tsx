@@ -1,37 +1,36 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { colors, typography } from '../../design';
 import { useImg } from '../../hooks';
 import Image from 'next/image';
+import { useServerState, useServerJoinedTeam } from '../../context';
 import { KickMember } from '../../assets/index.client';
+import { useRouter } from 'next/navigation';
+import { useServerIdStore } from '@org/shop-data';
+import {
+  updateTeamName,
+  updateTeamImage,
+  expelTeamMember,
+  deleteTeam,
+} from '@org/shop-data';
 
-interface ServerProfilePageProps {
-  userList: {
-    user_id: number;
-    team_id: number;
-    user_name: string;
-    create_at: null;
-    img: null;
-  }[];
-  projectSidebarList: {
-    team_id: number;
-    team_name: string;
-    create_at: null;
-    invite_link: string;
-  }[];
-}
-
-export function ServerProfilePage({
-  userList,
-  projectSidebarList,
-}: ServerProfilePageProps) {
-  const [serverName, setServerName] = useState(
-    projectSidebarList?.[0]?.team_name || ''
-  );
+export function ServerProfilePage() {
+  const router = useRouter();
 
   const [tab, setTab] = useState(true);
-  const [users, setUsers] = useState(userList);
+  const {
+    setTeams,
+    updateTeams,
+    teamMembers,
+    setTeamMembers, // 멤버 목록 전역 상태 업데이트를 위해 추가
+    teams,
+    setContextMenuUserId,
+  } = useServerState();
+  const { setJoined } = useServerJoinedTeam();
+  const { serverId, setServerId } = useServerIdStore();
+  const [serverName, setServerName] = useState('');
+  const [users, setUsers] = useState(teamMembers);
   const {
     previewUrl,
     fileInputRef,
@@ -40,11 +39,40 @@ export function ServerProfilePage({
     handleDeleteImg,
   } = useImg();
 
+  useEffect(() => {
+    if (serverId && teams.length > 0) {
+      const currentTeam = teams.find((t) => t.teamId === serverId);
+      if (currentTeam) {
+        setServerName(currentTeam.teamName);
+      }
+    }
+  }, [serverId, teams]);
+
+  useEffect(() => {
+    setUsers(teamMembers);
+  }, [teamMembers]);
+
   const onTabProfile = () => setTab(true);
   const onTabSettings = () => setTab(false);
 
-  const onKickUser = (userId: number) => {
-    setUsers((prev) => prev.filter((user) => user.user_id !== userId));
+  const onKickUser = async (id: string) => {
+    if (!serverId || !id) return;
+
+    try {
+      await expelTeamMember(serverId, id);
+
+      // 로컬 상태(현재 페이지) 업데이트
+      setUsers((prev) => prev.filter((user) => user.teamMemberId !== id));
+
+      // 전역 상태(사이드바 등) 업데이트
+      setTeamMembers((prev) => prev.filter((user) => user.teamMemberId !== id));
+
+      setContextMenuUserId(null);
+      alert('멤버가 제외되었습니다.');
+    } catch (error) {
+      console.error('멤버 제외 실패:', error);
+      alert('멤버 제외에 실패했습니다.');
+    }
   };
 
   const tapStyle = (tab: boolean) => {
@@ -60,6 +88,62 @@ export function ServerProfilePage({
         color: colors.gray[400],
         backgroundColor: 'transparent',
       };
+    }
+  };
+
+  const handleDeleteServer = async () => {
+    setTeams((prev) => prev.filter((team) => team.teamId !== serverId));
+
+    // 즉시 페이지 이동 및 상태 초기화
+    setServerId('');
+    setJoined(false);
+    router.push('/main');
+
+    try {
+      await deleteTeam(serverId);
+      // API 완료 후 최신 목록으로 다시 동기화
+      await updateTeams();
+    } catch (error) {
+      console.error('서버 삭제 실패:', error);
+      // 실패 시 원래 데이터를 복구하기 위해 다시 불러옴
+      await updateTeams();
+    }
+  };
+
+  const handleUpdateServerName = async () => {
+    if (!serverId) {
+      alert('서버 정보를 찾을 수 없습니다.');
+      return;
+    }
+    if (!serverName.trim()) {
+      alert('서버 이름을 입력해주세요.');
+      return;
+    }
+    try {
+      await updateTeamName(serverId, serverName);
+      alert('서버 이름이 변경되었습니다.');
+      // 사이드바 목록 갱신
+      await updateTeams();
+    } catch (error) {
+      console.error('서버 이름 변경 실패:', error);
+      alert('서버 이름 변경에 실패했습니다.');
+    }
+  };
+
+  const onServerImageChange = async (
+    e: React.ChangeEvent<HTMLInputElement>
+  ) => {
+    const file = e.target.files?.[0];
+    if (!file || !serverId) return;
+
+    try {
+      await updateTeamImage(serverId, file);
+      alert('서버 이미지가 변경되었습니다.');
+      // 파일 상태 업데이트 및 미리보기는 handleImageChange에서 처리됨 (훅 연동 필요 시)
+      await updateTeams();
+    } catch (error) {
+      console.error('서버 이미지 변경 실패:', error);
+      alert('서버 이미지 변경에 실패했습니다.');
     }
   };
 
@@ -113,7 +197,7 @@ export function ServerProfilePage({
           )}
         </div>
         {tab ? (
-          <>
+          <div className="flex gap-3 items-center">
             <input
               type="text"
               value={serverName}
@@ -125,7 +209,14 @@ export function ServerProfilePage({
                 ...typography.body.BodyM,
               }}
             />
-          </>
+            <button
+              onClick={handleUpdateServerName}
+              className="h-12 px-6 rounded-lg bg-[#FF5C00] hover:bg-[#E55200] transition-colors shrink-0"
+              style={{ ...typography.body.BodyB, color: '#FFFFFF' }}
+            >
+              저장
+            </button>
+          </div>
         ) : (
           <div
             className="w-full max-h-[30vh] overflow-y-scroll flex flex-col gap-4 no-scrollbar"
@@ -135,15 +226,19 @@ export function ServerProfilePage({
           >
             {users.map((user) => (
               <div
-                key={user.user_id}
+                key={user.teamMemberId}
                 className="flex gap-2 items-center justify-between px-4"
               >
                 <div className="flex gap-4 items-center">
                   <div className="w-9 h-9 rounded-full bg-gray-800" />
-                  <div>{user.user_name}</div>
+                  <div>{user.name}</div>
                 </div>
                 <button
-                  onClick={() => onKickUser(user.user_id)}
+                  onClick={() => {
+                    console.log(user.teamMemberId);
+                    setContextMenuUserId(user.teamMemberId);
+                    onKickUser(user.teamMemberId);
+                  }}
                   className="w-7 h-7"
                 >
                   <Image
@@ -187,7 +282,10 @@ export function ServerProfilePage({
                     type="file"
                     accept="image/*"
                     className="hidden"
-                    onChange={handleImageChange}
+                    onChange={(e) => {
+                      handleImageChange(e, true); // 미리보기만 처리 (개인 프로필 업로드 건너뜀)
+                      onServerImageChange(e); // 서버 이미지 전용 API 호출
+                    }}
                   />
 
                   <button
@@ -217,7 +315,7 @@ export function ServerProfilePage({
                   backgroundColor: colors.gray[600],
                 }}
               >
-                <button>서버 삭제</button>
+                <button onClick={handleDeleteServer}>서버 삭제</button>
               </div>
             )}
           </div>

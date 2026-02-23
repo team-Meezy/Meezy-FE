@@ -1,6 +1,6 @@
 import { publicApi } from '../axios';
 
-export const useLocalSignup = async (
+export const localSignup = async (
   email: string,
   accountId: string,
   name: string,
@@ -16,7 +16,6 @@ export const useLocalSignup = async (
     const response = await publicApi.post('auth/signup', body);
     return response.data;
   } catch (error) {
-    console.log(error);
     throw error;
   }
 };

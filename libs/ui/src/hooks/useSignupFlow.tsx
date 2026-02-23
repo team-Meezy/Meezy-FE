@@ -3,9 +3,9 @@
 import { useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import {
-  useRequestEmailVerification,
-  useVerifyEmailCode,
-  useLocalSignup,
+  requestEmailVerification,
+  verifyEmailCode,
+  localSignup,
   useSignupStore,
   useLoadingStore,
   useErrorStore,
@@ -40,7 +40,7 @@ export function useSignupFlow() {
 
     try {
       setLoading(true);
-      await useRequestEmailVerification(email);
+      await requestEmailVerification(email);
 
       return true;
     } catch (error: any) {
@@ -92,7 +92,7 @@ export function useSignupFlow() {
       setLoadingState('회원가입 중...');
 
       await Promise.all([
-        useLocalSignup(email, id, name, password),
+        localSignup(email, id, name, password),
         new Promise((resolve) => setTimeout(resolve, 3000)),
       ]);
       setLoading(false);
@@ -139,7 +139,7 @@ export function useSignupFlow() {
     try {
       setLoading(true);
       setLoadingState('인증번호 확인 중...');
-      await useVerifyEmailCode(email, authCode);
+      await verifyEmailCode(email, authCode);
       return true;
     } catch (error: any) {
       const statusCode = error.response?.status || error.statusCode;
@@ -179,7 +179,7 @@ export function useSignupFlow() {
   const handleResendCode = async () => {
     try {
       setLoading(true);
-      await useRequestEmailVerification(email);
+      await requestEmailVerification(email);
       setRemainingTime(180);
     } catch (error: any) {
       const statusCode = error.response?.status || error.statusCode;

@@ -3,40 +3,39 @@
 import { colors } from '../../design';
 import Image from 'next/image';
 import Plus from '../../assets/Plus.svg';
-import { useServerCreate } from '../../context';
 import { useServerJoinedTeam } from '../../context';
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
+import { useEffect } from 'react';
+import { useServerState } from '../../context';
 
 interface SidebarProps {
   onOpenModal?: () => void;
-  projectSidebarList?: {
-    team_id: number;
-    team_name: string;
-    create_at: null;
-    invite_link: string;
-  }[];
 }
 
-export function TeamSidebar({ onOpenModal, projectSidebarList }: SidebarProps) {
-  const { imageFile } = useServerCreate();
+export function TeamSidebar({ onOpenModal }: SidebarProps) {
   const { setJoined } = useServerJoinedTeam();
   const [alarm, setAlarm] = useState(false);
   const router = useRouter();
+  const { teams, updateTeams } = useServerState();
 
-  const handleTeamClick = (teamId: number) => {
+  useEffect(() => {
+    updateTeams();
+  }, []);
+
+  const handleTeamClick = (teamId: string) => {
     setJoined(true);
     router.push(`/main/${teamId}`);
   };
 
   return (
     <nav
-      className="w-[100px] h-screen flex flex-col items-center"
+      className="w-[100px] max-w-[80px] h-screen flex flex-col items-center"
       style={{
         backgroundColor: colors.gray[900],
       }}
     >
-      <div className="mt-12 flex flex-col items-center gap-4 flex-1 overflow-y-auto no-scrollbar w-full">
+      <div className="mt-12 flex flex-col items-center gap-4 flex-1 overflow-y-auto no-scrollbar w-full border-r border-[#262626]">
         <button
           className="min-w-14 min-h-14 flex items-center justify-center rounded-lg border border-gray-800 bg-[#262626] hover:bg-[#252525] transition-colors group"
           aria-label="팀 추가"
@@ -44,13 +43,13 @@ export function TeamSidebar({ onOpenModal, projectSidebarList }: SidebarProps) {
         >
           <Image src={Plus} alt="plus" className="w-5" />
         </button>
-        {projectSidebarList?.map((team) => (
+        {teams?.map((team) => (
           <div
-            key={team.team_id}
+            key={team?.teamId}
             className="flex justify-center items-center mr-4"
           >
             <div
-              className="w-2 h-2 rounded-full mr-2"
+              className="h-2 rounded-full mr-4"
               style={{
                 backgroundColor: alarm ? colors.primary[500] : 'transparent',
               }}
@@ -58,12 +57,21 @@ export function TeamSidebar({ onOpenModal, projectSidebarList }: SidebarProps) {
 
             <button
               type="button"
-              key={team.team_id}
-              aria-label={team.team_name}
-              className="min-w-14 min-h-14 flex items-center justify-center rounded-lg border border-gray-800 bg-[`#262626`] hover:bg-[`#252525`] transition-colors"
-              onClick={() => handleTeamClick(team.team_id)}
+              aria-label={team.teamName}
+              className="relative w-14 h-14 flex items-center justify-center rounded-lg border border-gray-800 bg-[#262626] hover:bg-[#252525] transition-colors overflow-hidden"
+              onClick={() => handleTeamClick(team.teamId)}
             >
-              {!imageFile && <div>{team.team_name}</div>}
+              {team.serverImageUrl ? (
+                <Image
+                  src={team.serverImageUrl}
+                  alt={team.teamName}
+                  fill
+                  className="object-cover"
+                  unoptimized
+                />
+              ) : (
+                <div className="text-xs">{team.teamName}</div>
+              )}
             </button>
           </div>
         ))}

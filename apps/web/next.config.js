@@ -11,6 +11,19 @@ const nextConfig = {
   // See: https://nx.dev/recipes/next/next-config-setup
   nx: {},
   transpilePackages: ['@meezy/ui', '@org/shop-data'],
+  images: {
+    remotePatterns: [
+      {
+        protocol: 'https',
+        hostname: 'meezy.kr',
+      },
+      {
+        protocol: 'http',
+        hostname: 'my-bucket.web.garage.localhost',
+        port: '3902',
+      },
+    ],
+  },
 };
 
 const plugins = [

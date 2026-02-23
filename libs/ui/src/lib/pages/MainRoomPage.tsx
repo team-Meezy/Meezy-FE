@@ -5,10 +5,15 @@ import { colors, typography } from '../../design';
 import { ParticipationChart } from '../components/ParticipationChart';
 import { DashboardCard } from '../components/DashboardCard';
 import { useRouter } from 'next/navigation';
+import { getTeamDetail } from '@org/shop-data';
+import { useServerState } from '../../context';
+import { useServerIdStore } from '@org/shop-data';
 
 export function MainRoomPage() {
   const [chartSize, setChartSize] = useState(192);
+  const { serverId } = useServerIdStore();
   const router = useRouter();
+  const { setTeamMembers } = useServerState();
 
   useEffect(() => {
     const calc = () => setChartSize(Math.min(window.innerWidth * 0.1, 240));
@@ -16,6 +21,21 @@ export function MainRoomPage() {
     window.addEventListener('resize', calc);
     return () => window.removeEventListener('resize', calc);
   }, []);
+
+  useEffect(() => {
+    if (!serverId) return;
+
+    const getDetail = async () => {
+      try {
+        const data = await getTeamDetail(serverId);
+        console.log('getTeamDetail data', data);
+      } catch (error) {
+        console.error('Failed to get team detail:', error);
+      }
+    };
+
+    getDetail();
+  }, [serverId]);
 
   const onClickFeedback = (serverId: number) => {
     router.push(`/main/${serverId}/feedback`);

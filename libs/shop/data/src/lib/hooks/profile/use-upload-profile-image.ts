@@ -5,12 +5,7 @@ export const uploadProfileImage = async (image: File) => {
     const formData = new FormData();
     formData.append('profileImage', image);
 
-    const response = await privateApi.patch('profile/image', formData, {
-      headers: {
-        'Content-Type': 'multipart/form-data',
-      },
-    });
-    console.log('이미지 변경 성공', response);
+    const response = await privateApi.patch('profile/image', formData);
     return response.data;
   } catch (error) {
     throw error;

@@ -1,12 +1,18 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import { useEffect } from 'react';
 import { createPortal } from 'react-dom';
 import { colors, typography } from '../../design';
 import { useImg } from '../../hooks';
 import { useRouter } from 'next/navigation';
-import { useServerJoinedTeam } from '../../context';
+import {
+  useServerJoinedTeam,
+  useServerCreate,
+  useServerState,
+} from '../../context';
 import { useModalStore, useErrorStore } from '@org/shop-data';
+import { createTeam, joinTeamByCode } from '@org/shop-data';
+import { useServerIdStore } from '@org/shop-data';
 
 interface ServerModalProps {
   isOpen: boolean;
@@ -27,11 +33,15 @@ export function ServerModal({ isOpen, onClose }: ServerModalProps) {
   const { generalError, setGeneralError } = useErrorStore();
   const { previewUrl, fileInputRef, handleClickUpload, handleImageChange } =
     useImg();
+  const { imageFile } = useServerCreate();
   const { setJoined } = useServerJoinedTeam();
+  const { updateTeams, updateTeamMembers } = useServerState();
   const router = useRouter();
+  const { serverId } = useServerIdStore();
+  const { setServerId } = useServerIdStore();
 
-  const handleTeamClick = (teamId: number) => {
-    router.push(`/main/${teamId}`);
+  const handleTeamClick = (id?: string) => {
+    router.push(`/main/${id || serverId}`);
   };
 
   useEffect(() => {
@@ -48,7 +58,7 @@ export function ServerModal({ isOpen, onClose }: ServerModalProps) {
     }
   }, [generalError]);
 
-  const createServer = () => {
+  const createServer = async () => {
     const valueToValidate = createModal ? serverName : serverLink;
     if (!valueToValidate) {
       setGeneralError(
@@ -57,7 +67,58 @@ export function ServerModal({ isOpen, onClose }: ServerModalProps) {
       return false;
     }
 
-    handleTeamClick(1);
+    if (createModal) {
+      if (!imageFile) {
+        setGeneralError('서버 대표 이미지를 업로드해주세요.');
+        return false;
+      }
+      try {
+        const res = await createTeam(serverName, imageFile);
+        console.log(res);
+        await updateTeams();
+        if (res && (res.teamId || res.id)) {
+          const newTeamId = res.teamId || res.id;
+
+          // 상태 업데이트 및 즉시 이동
+          setServerId(newTeamId);
+          setJoined(true);
+          router.push(`/main/${newTeamId}`);
+          onClose();
+
+          // 백그라운드에서 목록 동기화
+          updateTeams();
+          return;
+        }
+      } catch (e: any) {
+        console.log(e.response?.data?.message || '팀 생성 실패');
+      }
+    } else if (!createModal) {
+      try {
+        // 전체 URL이 입력되었을 경우 코드만 추출 (예: https://.../5a87eb01 -> 5a87eb01)
+        const extractedCode = serverLink.split('/').pop() || serverLink;
+
+        const res = await joinTeamByCode(extractedCode);
+        console.log(res, '팀 가입 시도 결과');
+        await updateTeams();
+        if (res && (res.teamId || res.id)) {
+          const newTeamId = res.teamId || res.id;
+
+          // 상태 업데이트 및 즉시 이동
+          setServerId(newTeamId);
+          setJoined(true);
+          router.push(`/main/${newTeamId}`);
+          onClose();
+
+          // 백그라운드에서 목록 동기화
+          updateTeams();
+          return;
+        }
+      } catch (e: any) {
+        console.log(e.response?.data?.message || '팀 가입 실패');
+      }
+    }
+
+    handleTeamClick();
     setJoined(true);
 
     onClose();
@@ -67,9 +128,9 @@ export function ServerModal({ isOpen, onClose }: ServerModalProps) {
 
   // Portal을 사용하여 document.body에 직접 렌더링
   return createPortal(
-    // 1. 배경 Overlay
+    // 배경 Overlay
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/30 backdrop-blur-[2px]">
-      {/* 2. 모달 컨테이너 */}
+      {/*   모달 컨테이너 */}
       <div className="w-[480px] bg-[#2b2d31] rounded-xl shadow-2xl border border-white/5 overflow-hidden">
         {/* 상단 탭 및 닫기 버튼 */}
         <div className="flex justify-between items-center px-4 pt-4">

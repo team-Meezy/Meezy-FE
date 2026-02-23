@@ -6,13 +6,13 @@ import { useImg } from '../../hooks';
 import Image from 'next/image';
 import { useServerState, useServerJoinedTeam } from '../../context';
 import { KickMember } from '../../assets/index.client';
-import { useDeleteTeam } from '@org/shop-data';
 import { useRouter } from 'next/navigation';
 import { useServerIdStore } from '@org/shop-data';
 import {
-  useUpdateTeamName,
-  useUpdateTeamImage,
-  useExpelTeamMember,
+  updateTeamName,
+  updateTeamImage,
+  expelTeamMember,
+  deleteTeam,
 } from '@org/shop-data';
 
 export function ServerProfilePage() {
@@ -25,7 +25,6 @@ export function ServerProfilePage() {
     teamMembers,
     setTeamMembers, // 멤버 목록 전역 상태 업데이트를 위해 추가
     teams,
-    contextMenuUserId,
     setContextMenuUserId,
   } = useServerState();
   const { setJoined } = useServerJoinedTeam();
@@ -51,7 +50,7 @@ export function ServerProfilePage() {
 
   useEffect(() => {
     setUsers(teamMembers);
-  }, []);
+  }, [teamMembers]);
 
   const onTabProfile = () => setTab(true);
   const onTabSettings = () => setTab(false);
@@ -60,7 +59,7 @@ export function ServerProfilePage() {
     if (!serverId || !id) return;
 
     try {
-      await useExpelTeamMember(serverId, id);
+      await expelTeamMember(serverId, id);
 
       // 로컬 상태(현재 페이지) 업데이트
       setUsers((prev) => prev.filter((user) => user.teamMemberId !== id));
@@ -101,7 +100,7 @@ export function ServerProfilePage() {
     router.push('/main');
 
     try {
-      await useDeleteTeam(serverId);
+      await deleteTeam(serverId);
       // API 완료 후 최신 목록으로 다시 동기화
       await updateTeams();
     } catch (error) {
@@ -121,7 +120,7 @@ export function ServerProfilePage() {
       return;
     }
     try {
-      await useUpdateTeamName(serverId, serverName);
+      await updateTeamName(serverId, serverName);
       alert('서버 이름이 변경되었습니다.');
       // 사이드바 목록 갱신
       await updateTeams();
@@ -138,7 +137,7 @@ export function ServerProfilePage() {
     if (!file || !serverId) return;
 
     try {
-      await useUpdateTeamImage(serverId, file);
+      await updateTeamImage(serverId, file);
       alert('서버 이미지가 변경되었습니다.');
       // 파일 상태 업데이트 및 미리보기는 handleImageChange에서 처리됨 (훅 연동 필요 시)
       await updateTeams();

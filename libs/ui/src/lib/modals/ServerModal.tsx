@@ -11,7 +11,7 @@ import {
   useServerState,
 } from '../../context';
 import { useModalStore, useErrorStore } from '@org/shop-data';
-import { useCreateTeam, useJoinTeamByCode } from '@org/shop-data';
+import { createTeam, joinTeamByCode } from '@org/shop-data';
 import { useServerIdStore } from '@org/shop-data';
 
 interface ServerModalProps {
@@ -73,7 +73,7 @@ export function ServerModal({ isOpen, onClose }: ServerModalProps) {
         return false;
       }
       try {
-        const res = await useCreateTeam(serverName, imageFile);
+        const res = await createTeam(serverName, imageFile);
         console.log(res);
         await updateTeams();
         if (res && (res.teamId || res.id)) {
@@ -97,7 +97,7 @@ export function ServerModal({ isOpen, onClose }: ServerModalProps) {
         // 전체 URL이 입력되었을 경우 코드만 추출 (예: https://.../5a87eb01 -> 5a87eb01)
         const extractedCode = serverLink.split('/').pop() || serverLink;
 
-        const res = await useJoinTeamByCode(extractedCode);
+        const res = await joinTeamByCode(extractedCode);
         console.log(res, '팀 가입 시도 결과');
         await updateTeams();
         if (res && (res.teamId || res.id)) {

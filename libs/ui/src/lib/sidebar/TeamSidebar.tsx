@@ -3,13 +3,10 @@
 import { colors } from '../../design';
 import Image from 'next/image';
 import Plus from '../../assets/Plus.svg';
-import { useServerCreate } from '../../context';
 import { useServerJoinedTeam } from '../../context';
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
-import { useGetTeams } from '@org/shop-data';
 import { useEffect } from 'react';
-import { useServerIdStore } from '@org/shop-data';
 import { useServerState } from '../../context';
 
 interface SidebarProps {
@@ -17,12 +14,10 @@ interface SidebarProps {
 }
 
 export function TeamSidebar({ onOpenModal }: SidebarProps) {
-  const { imageFile } = useServerCreate();
   const { setJoined } = useServerJoinedTeam();
   const [alarm, setAlarm] = useState(false);
   const router = useRouter();
   const { teams, updateTeams } = useServerState();
-  const { serverId } = useServerIdStore();
 
   useEffect(() => {
     updateTeams();

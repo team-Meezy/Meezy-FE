@@ -8,7 +8,7 @@ import { JoinedModal, UserKickModal } from '../modals';
 import { useRouter } from 'next/navigation';
 import { useServerIdStore } from '@org/shop-data';
 import { useServerState, useProfile } from '../../context';
-import { useExpelTeamMember } from '@org/shop-data';
+import { expelTeamMember } from '@org/shop-data';
 
 interface JoinedSidebarProps {
   setChatRoom: (chatRoom: boolean) => void;
@@ -79,7 +79,7 @@ export function JoinedSidebar({
     if (!serverId || !contextMenuUserId) return;
 
     try {
-      await useExpelTeamMember(serverId, contextMenuUserId);
+      await expelTeamMember(serverId, contextMenuUserId);
       setTeamMembers((prev) =>
         prev.filter((user) => user.teamMemberId !== contextMenuUserId)
       );

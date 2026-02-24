@@ -8,6 +8,8 @@ import { useModalStore, useErrorStore } from '@org/shop-data';
 import { useServerIdStore } from '@org/shop-data';
 import { createInviteCode } from '@org/shop-data';
 import { useServerState } from '../../context';
+import { createChatRoom, getChatRooms } from '@org/shop-data';
+import { useChatStore } from '@org/shop-data';
 
 interface JoinedModalProps {
   isOpen: boolean;
@@ -21,6 +23,7 @@ export function JoinedModal({ isOpen, type, onClose }: JoinedModalProps) {
   const { setJoined } = useServerJoinedTeam();
   const { serverId } = useServerIdStore();
   const { inviteCode, setInviteCode } = useServerState();
+  const { chatRooms, setChatRooms } = useChatStore();
 
   useEffect(() => {
     setMounted(true);
@@ -57,11 +60,25 @@ export function JoinedModal({ isOpen, type, onClose }: JoinedModalProps) {
     }
   }, [isOpen, type, serverId, setServerName]);
 
-  const createServer = () => {
+  const createServer = async () => {
     const valueToValidate = serverName;
+    console.log(valueToValidate, '값');
     if (!valueToValidate) {
       setGeneralError('채널 이름을 입력해주세요.');
       return false;
+    }
+
+    try {
+      await createChatRoom(serverId, valueToValidate);
+      // 생성 성공 후, 서버에서 최신 목록을 다시 가져와서 스토어 업데이트 (무한 렌더링 방지 및 데이터 정확도 확보)
+      const freshRooms = await getChatRooms(serverId);
+      setChatRooms(freshRooms);
+      console.log('Channels updated from server after creation');
+    } catch (e: any) {
+      console.error('Channel creation failed:', e);
+      if (e.response?.data?.message) {
+        setGeneralError(e.response.data.message);
+      }
     }
 
     setJoined(true);
@@ -73,9 +90,9 @@ export function JoinedModal({ isOpen, type, onClose }: JoinedModalProps) {
 
   // Portal을 사용하여 document.body에 직접 렌더링
   return createPortal(
-    // 1. 배경 Overlay
+    // 배경 Overlay
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/30 backdrop-blur-[2px]">
-      {/* 2. 모달 컨테이너 */}
+      {/* 모달 컨테이너 */}
       <div className="w-[480px] bg-[#2b2d31] rounded-xl shadow-2xl border border-white/5 overflow-hidden">
         <div className="p-6 pt-4 flex flex-col gap-6">
           {/* 서버 이름 입력 */}

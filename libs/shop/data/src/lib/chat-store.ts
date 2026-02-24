@@ -27,5 +27,5 @@ export const useChatStore = create<ChatState>()((set) => ({
   setMessages: (value: string[]) => set({ messages: value }),
   addMessage: (msg: string) =>
     set((state) => ({ messages: [...state.messages, msg] })),
-  setChatRooms: (chatRooms: ChatRoom[]) => set({ chatRooms }),
+  setChatRooms: (chatRooms: ChatRoom[]) => set({ chatRooms: [...chatRooms] }),
 }));

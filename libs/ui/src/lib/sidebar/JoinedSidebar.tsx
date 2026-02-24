@@ -193,14 +193,14 @@ export function JoinedSidebar({
                 className="flex justify-center items-center gap-4"
               >
                 <div
-                  className="min-w-24 min-h-8 mt-3 flex gap-5 items-center justify-center rounded-lg transition-colors hover:bg-white/5 cursor-pointer"
+                  className="w-full px-4 min-h-8 mt-3 flex gap-5 items-center justify-start rounded-lg transition-colors hover:bg-white/5 cursor-pointer overflow-hidden"
                   style={{ color: colors.gray[300], ...typography.body.BodyB }}
                   onClick={() => {
                     onClickChatRoom(room.room_id);
                   }}
                 >
-                  <Image src={Shrap} alt="shrap" className="w-4" />
-                  <span>{room.name}</span>
+                  <Image src={Shrap} alt="shrap" className="w-4 shrink-0" />
+                  <span className="truncate">{room.name}</span>
                 </div>
               </div>
             ))}
@@ -256,11 +256,6 @@ export function JoinedSidebar({
         ))}
       </div>
       <JoinedModal
-        isOpen={isModalOpen}
-        type={modalType}
-        onClose={onCloseModal}
-      />
-      <UserKickModal
         isOpen={isModalOpen}
         type={modalType}
         onClose={onCloseModal}

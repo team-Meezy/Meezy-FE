@@ -1,10 +1,11 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { colors, typography } from '../../design';
 import Image from 'next/image';
 import { Shrap } from '../../assets/index.client';
 import { useChatScroll } from '../../hooks';
+import { getChatMessages } from '@org/shop-data';
 
 interface Message {
   id: number;
@@ -42,6 +43,14 @@ export function ChatRoomPage({ roomId, roomName }: ChatRoomPageProps) {
 
   const { containerRef, handleScroll, scrollToBottom, showNewMessageNotice } =
     useChatScroll(roomMessages);
+
+  useEffect(() => {
+    const apiChatMessages = async () => {
+      const res = await getChatMessages(roomId, chatRoomId);
+      setMessages(res);
+    };
+    apiChatMessages();
+  }, [roomId]);
 
   const sendMessage = () => {
     if (input.trim() && roomId !== null) {

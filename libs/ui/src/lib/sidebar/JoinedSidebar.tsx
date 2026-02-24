@@ -79,6 +79,7 @@ export function JoinedSidebar({
     const apiChatRooms = async () => {
       const res = await getChatRooms(serverId);
       setChatRooms(res);
+      console.log(chatRooms, 'adssdfadf');
     };
     apiChatRooms();
   }, [serverId]);

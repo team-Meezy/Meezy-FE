@@ -49,7 +49,11 @@ export function ServerIdLayoutWrapper({
   useEffect(() => {
     if (!currentServerId || !profile || teamMembers.length === 0) return;
 
-    const profileId = profile.id || (profile as any).user_id || profile.userId;
+    const profileId =
+      profile.id ||
+      (profile as any).user_id ||
+      profile.userId ||
+      (profile as any).accountId;
 
     const isMember = teamMembers.some((m) => {
       const memberUserId =
@@ -57,7 +61,15 @@ export function ServerIdLayoutWrapper({
         (m as any).user_id ||
         (m as any).user?.id ||
         m.teamMemberId;
-      return profileId === memberUserId;
+
+      // ID 매칭
+      if (profileId && memberUserId && profileId === memberUserId) return true;
+
+      // 이름 매칭 (ID 불일치 대비 Fallback)
+      if (m.name === profile.name || m.name === (profile as any).userName)
+        return true;
+
+      return false;
     });
 
     if (!isMember) {

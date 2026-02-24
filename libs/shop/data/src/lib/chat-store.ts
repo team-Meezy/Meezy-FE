@@ -7,14 +7,22 @@ interface ChatRoom {
   create_at: string | null;
 }
 
+export interface Message {
+  id: number;
+  chatRoomId: number;
+  userName: string;
+  time: string;
+  content: string[];
+}
+
 interface ChatState {
   // 상태 (state)
-  messages: string[];
+  messages: Message[];
   chatRooms: ChatRoom[];
 
   // 액션 (action)
-  setMessages: (value: string[]) => void;
-  addMessage: (msg: string) => void;
+  setMessages: (messages: Message[]) => void;
+  addMessage: (msg: Message) => void;
   setChatRooms: (chatRooms: ChatRoom[]) => void;
 }
 
@@ -24,8 +32,8 @@ export const useChatStore = create<ChatState>()((set) => ({
   chatRooms: [],
 
   // 액션
-  setMessages: (value: string[]) => set({ messages: value }),
-  addMessage: (msg: string) =>
+  setMessages: (messages: Message[]) => set({ messages: [...messages] }),
+  addMessage: (msg: Message) =>
     set((state) => ({ messages: [...state.messages, msg] })),
   setChatRooms: (chatRooms: ChatRoom[]) => set({ chatRooms: [...chatRooms] }),
 }));

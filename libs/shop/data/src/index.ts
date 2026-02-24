@@ -12,3 +12,4 @@ export * from './lib/time-store';
 export * from './lib/modal-store';
 export * from './lib/serverId-store';
 export * from './lib/chat-store';
+export * from './lib/team-store';

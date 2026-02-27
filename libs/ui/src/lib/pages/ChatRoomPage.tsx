@@ -8,23 +8,31 @@ import { useChatScroll } from '../../hooks';
 import {
   getChatMessages,
   useChatStore,
-  useServerIdStore,
   Message,
+  deleteChatRoom,
+  getChatRooms,
+  updateChatRoomName,
 } from '@org/shop-data';
-import { useParams } from 'next/navigation';
+import { useParams, useRouter } from 'next/navigation';
+import { DeleteRoomModal, RenameRoomModal } from '../modals';
 
 export function ChatRoomPage() {
   const [input, setInput] = useState('');
-  const { messages, setMessages, addMessage, chatRooms } = useChatStore();
-  const { serverId: teamId } = useServerIdStore();
+  const [isDeleteModalOpen, setIsDeleteModalOpen] = useState(false);
+  const [isRenameModalOpen, setIsRenameModalOpen] = useState(false);
+  const { messages, setMessages, addMessage, chatRooms, setChatRooms } =
+    useChatStore();
   const params = useParams();
+  const router = useRouter();
 
-  // URL에서 roomId 가져오기
-  const currentRoomId = params.serverId as string;
+  // URL에서 teamId 및 chatRoomId 가져오기
+  const currentTeamId = params.serverId as string;
+  const currentRoomId = params.chatRoomId as string;
+  console.log(currentRoomId, 'currentRoomId');
 
   // 현재 방 이름 찾기
   const currentRoom = chatRooms.find(
-    (room) => room.room_id.toString() === currentRoomId
+    (room) => room.chatRoomId === currentRoomId
   );
   const roomName = currentRoom?.name || '채널';
 
@@ -32,24 +40,24 @@ export function ChatRoomPage() {
     useChatScroll(messages);
 
   useEffect(() => {
-    if (!currentRoomId || !teamId) return;
+    if (!currentTeamId || !currentRoomId) return;
 
     const apiChatMessages = async () => {
       try {
-        const res = await getChatMessages(teamId, currentRoomId);
+        const res = await getChatMessages(currentTeamId, currentRoomId);
         setMessages(res);
       } catch (error) {
         console.error('채팅 메시지 로드 실패:', error);
       }
     };
     apiChatMessages();
-  }, [currentRoomId, teamId, setMessages]);
+  }, [currentTeamId, currentRoomId, setMessages]);
 
   const sendMessage = () => {
     if (input.trim() && currentRoomId) {
       const newMessage: Message = {
         id: Date.now(),
-        chatRoomId: Number(currentRoomId),
+        chatRoomId: currentRoomId,
         userName: '나',
         time: new Date().toLocaleTimeString([], {
           hour: '2-digit',
@@ -59,7 +67,38 @@ export function ChatRoomPage() {
       };
       addMessage(newMessage);
       setInput('');
-      // 전송 후 스크롤 하단 이동 보장 (scroll-to-bottom logic is inside useChatScroll usually)
+    }
+  };
+
+  const handleDeleteRoom = async () => {
+    try {
+      await deleteChatRoom(currentTeamId, currentRoomId);
+      // 삭제 후 목록 갱신
+      const freshRooms = await getChatRooms(currentTeamId);
+      setChatRooms(freshRooms);
+      setIsDeleteModalOpen(false);
+      // 삭제 후 첫 번째 방으로 이동하거나 메인으로 이동
+      if (freshRooms.length > 0) {
+        router.push(`/main/${currentTeamId}/${freshRooms[0].chatRoomId}`);
+      } else {
+        router.push(`/main/${currentTeamId}`);
+      }
+    } catch (error) {
+      console.error('채널 삭제 실패:', error);
+      alert('채널 삭제에 실패했습니다.');
+    }
+  };
+
+  const handleRenameRoom = async (newName: string) => {
+    try {
+      await updateChatRoomName(currentTeamId, currentRoomId, newName);
+      // 목록 갱신
+      const freshRooms = await getChatRooms(currentTeamId);
+      setChatRooms(freshRooms);
+      setIsRenameModalOpen(false);
+    } catch (error) {
+      console.error('채널 이름 변경 실패:', error);
+      alert('채널 이름 변경에 실패했습니다.');
     }
   };
 
@@ -70,15 +109,33 @@ export function ChatRoomPage() {
     >
       {/* 방 이름 */}
       <div
-        className="w-full flex items-center gap-3 px-4 py-5 shrink-0"
+        className="w-full flex items-center justify-between px-4 py-5 shrink-0"
         style={{
           ...typography.body.BodyB,
           backgroundColor: colors.gray[800],
           color: colors.gray[400],
         }}
       >
-        <Image src={Shrap} alt="shrap" className="w-4" />
-        <span className="text-white">{roomName}</span>
+        <div className="flex items-center gap-3">
+          <Image src={Shrap} alt="shrap" className="w-4" />
+          <span className="text-white">{roomName}</span>
+        </div>
+        <div className="flex items-center gap-2">
+          <button
+            onClick={() => setIsRenameModalOpen(true)}
+            className="text-xs px-2 py-1 rounded hover:bg-white/10 transition-colors"
+            style={{ color: colors.gray[400] }}
+          >
+            변경
+          </button>
+          <button
+            onClick={() => setIsDeleteModalOpen(true)}
+            className="text-xs px-2 py-1 rounded hover:bg-white/10 transition-colors"
+            style={{ color: colors.system.error[500] }}
+          >
+            삭제
+          </button>
+        </div>
       </div>
 
       {/* 채팅 영역 */}
@@ -167,6 +224,19 @@ export function ChatRoomPage() {
           </div>
         </div>
       </div>
+
+      <DeleteRoomModal
+        isOpen={isDeleteModalOpen}
+        roomName={roomName}
+        onClose={() => setIsDeleteModalOpen(false)}
+        onDelete={handleDeleteRoom}
+      />
+      <RenameRoomModal
+        isOpen={isRenameModalOpen}
+        currentName={roomName}
+        onClose={() => setIsRenameModalOpen(false)}
+        onRename={handleRenameRoom}
+      />
     </main>
   );
 }

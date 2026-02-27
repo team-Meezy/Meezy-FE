@@ -32,10 +32,7 @@ interface JoinedSidebarProps {
 
 export function JoinedSidebar({
   setChatRoom,
-  setSelectedRoomId,
-  setServerProfile,
   sidebarList,
-  roomsrcList,
 }: JoinedSidebarProps) {
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [modalType, setModalType] = useState<'ROOM' | 'MEMBER' | null>(null);
@@ -65,6 +62,7 @@ export function JoinedSidebar({
     rooms: team.type === 'ROOM' ? chatRooms : [],
     users: team.type === 'MEMBER' ? teamMembers : [],
   }));
+  console.log(teamRoomMap, 'safdghsaz');
 
   const onContextMenu = (e: React.MouseEvent, contextMenuUserId: string) => {
     e.preventDefault();
@@ -78,8 +76,8 @@ export function JoinedSidebar({
 
     const apiChatRooms = async () => {
       const res = await getChatRooms(serverId);
+      console.log('chatRooms', chatRooms);
       setChatRooms(res);
-      console.log(chatRooms, 'adssdfadf');
     };
     apiChatRooms();
   }, [serverId]);
@@ -141,10 +139,10 @@ export function JoinedSidebar({
     }
   };
 
-  const onClickChatRoom = (room_id: number) => {
-    setSelectedRoomId(room_id);
+  const onClickChatRoom = (roomId: string) => {
     setChatRoom(true);
-    router.push(`/main/${room_id}/chat`);
+    // roomId가 바로 API에서 받아온 그 chatRoomId입니다.
+    router.push(`/main/${serverId}/${roomId}`);
   };
 
   return (
@@ -188,16 +186,16 @@ export function JoinedSidebar({
             </div>
 
             {/* 팀의 룸 */}
-            {team.rooms.map((room, roomIdx) => (
+            {team.rooms.map((room) => (
               <div
-                key={`room-${room.room_id || roomIdx}`}
+                key={`room-${room.chatRoomId}`}
                 className="flex justify-center items-center gap-4"
               >
                 <div
                   className="w-full px-4 min-h-8 mt-3 flex gap-5 items-center justify-start rounded-lg transition-colors hover:bg-white/5 cursor-pointer overflow-hidden"
                   style={{ color: colors.gray[300], ...typography.body.BodyB }}
                   onClick={() => {
-                    onClickChatRoom(room.room_id);
+                    onClickChatRoom(room.chatRoomId);
                   }}
                 >
                   <Image src={Shrap} alt="shrap" className="w-4 shrink-0" />

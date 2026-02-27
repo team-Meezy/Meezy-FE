@@ -22,9 +22,18 @@ export function DeleteRoomModal({
 
   return createPortal(
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/30 backdrop-blur-[2px]">
-      <div className="w-[400px] bg-[#2b2d31] rounded-xl shadow-2xl border border-white/5 overflow-hidden">
+      <div
+        role="dialog"
+        aria-modal="true"
+        aria-labelledby="delete-room-title"
+        className="w-[400px] bg-[#2b2d31] rounded-xl shadow-2xl border border-white/5 overflow-hidden"
+      >
         <div className="p-6 flex flex-col gap-4">
-          <h2 className="text-white" style={{ ...typography.title.sTitleB }}>
+          <h2
+            id="delete-room-title"
+            className="text-white"
+            style={{ ...typography.title.sTitleB }}
+          >
             채널 삭제
           </h2>
           <p style={{ ...typography.body.BodyM, color: colors.gray[300] }}>

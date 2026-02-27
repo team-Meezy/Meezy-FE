@@ -1,65 +1,71 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { colors, typography } from '../../design';
 import Image from 'next/image';
 import { Shrap } from '../../assets/index.client';
 import { useChatScroll } from '../../hooks';
+import {
+  getChatMessages,
+  useChatStore,
+  useServerIdStore,
+  Message,
+} from '@org/shop-data';
+import { useParams } from 'next/navigation';
 
-interface Message {
-  id: number;
-  chatRoomId: number | null;
-  userName: string;
-  time: string;
-  content: string[];
-}
-
-interface ChatRoomPageProps {
-  roomId: number | null;
-  roomName: string | null;
-}
-
-export function ChatRoomPage({ roomId, roomName }: ChatRoomPageProps) {
-  const [messages, setMessages] = useState<Message[]>([
-    {
-      id: 1,
-      chatRoomId: 1,
-      userName: '손희찬',
-      time: '2025. 9. 30. 오후 2:30',
-      content: ['hello, my name is hyohyun'],
-    },
-    {
-      id: 2,
-      chatRoomId: 1,
-      userName: '김효현',
-      time: '2025. 9. 30. 오후 2:30',
-      content: ['hello, my name is hyohyun'],
-    },
-  ]);
+export function ChatRoomPage() {
   const [input, setInput] = useState('');
+  const { messages, setMessages, addMessage, chatRooms } = useChatStore();
+  const { serverId: teamId } = useServerIdStore();
+  const params = useParams();
 
-  const roomMessages = messages.filter((msg) => msg.chatRoomId === roomId);
+  // URL에서 roomId 가져오기
+  const currentRoomId = params.serverId as string;
+
+  // 현재 방 이름 찾기
+  const currentRoom = chatRooms.find(
+    (room) => room.room_id.toString() === currentRoomId
+  );
+  const roomName = currentRoom?.name || '채널';
 
   const { containerRef, handleScroll, scrollToBottom, showNewMessageNotice } =
-    useChatScroll(roomMessages);
+    useChatScroll(messages);
+
+  useEffect(() => {
+    if (!currentRoomId || !teamId) return;
+
+    const apiChatMessages = async () => {
+      try {
+        const res = await getChatMessages(teamId, currentRoomId);
+        setMessages(res);
+      } catch (error) {
+        console.error('채팅 메시지 로드 실패:', error);
+      }
+    };
+    apiChatMessages();
+  }, [currentRoomId, teamId, setMessages]);
 
   const sendMessage = () => {
-    if (input.trim() && roomId !== null) {
+    if (input.trim() && currentRoomId) {
       const newMessage: Message = {
         id: Date.now(),
-        chatRoomId: roomId,
+        chatRoomId: Number(currentRoomId),
         userName: '나',
-        time: new Date().toLocaleString(),
-        content: [input],
+        time: new Date().toLocaleTimeString([], {
+          hour: '2-digit',
+          minute: '2-digit',
+        }),
+        content: [input.trim()],
       };
-      setMessages((prev) => [...prev, newMessage]);
+      addMessage(newMessage);
       setInput('');
+      // 전송 후 스크롤 하단 이동 보장 (scroll-to-bottom logic is inside useChatScroll usually)
     }
   };
 
   return (
     <main
-      className="flex-[3] border border-white/5 flex flex-col h-full"
+      className="flex-[3] border-l border-white/5 flex flex-col h-full overflow-hidden"
       style={{ backgroundColor: colors.black[100] }}
     >
       {/* 방 이름 */}
@@ -72,7 +78,7 @@ export function ChatRoomPage({ roomId, roomName }: ChatRoomPageProps) {
         }}
       >
         <Image src={Shrap} alt="shrap" className="w-4" />
-        <span>{roomName}</span>
+        <span className="text-white">{roomName}</span>
       </div>
 
       {/* 채팅 영역 */}
@@ -83,10 +89,10 @@ export function ChatRoomPage({ roomId, roomName }: ChatRoomPageProps) {
           style={{ backgroundColor: colors.black[100] }}
           onScroll={handleScroll}
         >
-          {roomMessages.map((msg) => (
+          {messages.map((msg) => (
             <div key={msg.id} className="flex gap-3">
-              <div className="w-8 h-8 rounded-full bg-[#D9D9D9] shrink-0" />
-              <div className="flex flex-col gap-1.5">
+              <div className="w-10 h-10 rounded-full bg-[#D9D9D9] shrink-0" />
+              <div className="flex flex-col gap-1.5 flex-1">
                 <div className="flex items-center gap-2">
                   <span style={{ ...typography.body.BodyB, color: '#FFFFFF' }}>
                     {msg.userName}
@@ -103,7 +109,7 @@ export function ChatRoomPage({ roomId, roomName }: ChatRoomPageProps) {
                 <div className="flex flex-col gap-1">
                   {msg.content.map((line, idx) => (
                     <p
-                      key={idx}
+                      key={`${msg.id}-line-${idx}`}
                       style={{
                         ...typography.body.BodyM,
                         color: '#FFFFFF',
@@ -122,37 +128,39 @@ export function ChatRoomPage({ roomId, roomName }: ChatRoomPageProps) {
         {/* 새 메시지 알림 */}
         {showNewMessageNotice && (
           <div
-            className="absolute bottom-20 left-1/2 -translate-x-2/3 px-4 py-2 rounded-full text-white cursor-pointer"
+            className="absolute bottom-20 left-1/2 -translate-x-1/2 px-4 py-2 rounded-full text-white cursor-pointer shadow-lg transition-transform hover:scale-105 active:scale-95"
             style={{
               backgroundColor: colors.primary[500],
               ...typography.body.BodyB,
+              zIndex: 10,
             }}
             onClick={scrollToBottom}
           >
-            새 메시지
+            새 메시지 보기
           </div>
         )}
 
         {/* 입력창 */}
-        <div className="shrink-0 px-4 py-3 bg-[#121212]">
+        <div className="shrink-0 px-4 py-4 bg-[#121212]">
           <div className="relative flex items-center">
             <input
               type="text"
-              className="w-full h-14 rounded-lg px-4 pr-16 outline-none"
-              placeholder="메시지를 입력하세요"
+              className="w-full h-12 rounded-lg pl-4 pr-16 outline-none transition-all focus:ring-1 focus:ring-white/20"
+              placeholder={`# ${roomName}에 메시지 보내기`}
               value={input}
               onChange={(e) => setInput(e.target.value)}
               onKeyDown={(e) => e.key === 'Enter' && sendMessage()}
               style={{
-                ...typography.body.BodyB,
+                ...typography.body.BodyM,
                 backgroundColor: colors.gray[800],
-                color: colors.gray[400],
+                color: colors.white[100],
               }}
             />
             <button
               onClick={sendMessage}
-              className="absolute right-4 text-sm font-bold"
-              style={{ color: colors.gray[400] }}
+              disabled={!input.trim()}
+              className="absolute right-4 text-sm font-bold transition-opacity hover:opacity-80 active:opacity-60 disabled:opacity-30"
+              style={{ color: colors.primary[500] }}
             >
               전송
             </button>

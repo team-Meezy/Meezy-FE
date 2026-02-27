@@ -20,7 +20,7 @@ const BASE_URL = getBaseUrl();
 export const privateApi = axios.create({
   baseURL: BASE_URL,
   timeout: 10000,
-  headers: { 'Content-Type': 'application/json' },
+  headers: { 'Content-Type': undefined },
   withCredentials: true, // 쿠키에 리프레시 토큰이 있다면 필수
 });
 

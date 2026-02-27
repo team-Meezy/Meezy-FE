@@ -14,17 +14,17 @@ import {
   expelTeamMember,
   deleteTeam,
 } from '@org/shop-data';
+import { useTeamStore } from '@org/shop-data';
 
 export function ServerProfilePage() {
   const router = useRouter();
 
   const [tab, setTab] = useState(true);
+  const { teams, setTeams } = useTeamStore();
   const {
-    setTeams,
     updateTeams,
     teamMembers,
     setTeamMembers, // 멤버 목록 전역 상태 업데이트를 위해 추가
-    teams,
     setContextMenuUserId,
   } = useServerState();
   const { setJoined } = useServerJoinedTeam();
@@ -33,11 +33,27 @@ export function ServerProfilePage() {
   const [users, setUsers] = useState(teamMembers);
   const {
     previewUrl,
+    localImageFile,
     fileInputRef,
     handleClickUpload,
     handleImageChange,
     handleDeleteImg,
   } = useImg();
+
+  // 선택된 이미지 파일이 있으면 서버 이미지 업데이트 API 자동 호출
+  useEffect(() => {
+    if (localImageFile && serverId) {
+      updateTeamImage(serverId, localImageFile)
+        .then(() => {
+          alert('서버 이미지가 변경되었습니다.');
+          updateTeams();
+        })
+        .catch((err) => {
+          console.error('서버 이미지 변경 실패:', err);
+          alert('서버 이미지 변경에 실패했습니다.');
+        });
+    }
+  }, [localImageFile, serverId, updateTeams]);
 
   useEffect(() => {
     if (serverId && teams.length > 0) {
@@ -92,7 +108,7 @@ export function ServerProfilePage() {
   };
 
   const handleDeleteServer = async () => {
-    setTeams((prev) => prev.filter((team) => team.teamId !== serverId));
+    // setTeams((prev) => prev.filter((team) => team.teamId !== serverId));
 
     // 즉시 페이지 이동 및 상태 초기화
     setServerId('');
@@ -127,23 +143,6 @@ export function ServerProfilePage() {
     } catch (error) {
       console.error('서버 이름 변경 실패:', error);
       alert('서버 이름 변경에 실패했습니다.');
-    }
-  };
-
-  const onServerImageChange = async (
-    e: React.ChangeEvent<HTMLInputElement>
-  ) => {
-    const file = e.target.files?.[0];
-    if (!file || !serverId) return;
-
-    try {
-      await updateTeamImage(serverId, file);
-      alert('서버 이미지가 변경되었습니다.');
-      // 파일 상태 업데이트 및 미리보기는 handleImageChange에서 처리됨 (훅 연동 필요 시)
-      await updateTeams();
-    } catch (error) {
-      console.error('서버 이미지 변경 실패:', error);
-      alert('서버 이미지 변경에 실패했습니다.');
     }
   };
 
@@ -282,10 +281,7 @@ export function ServerProfilePage() {
                     type="file"
                     accept="image/*"
                     className="hidden"
-                    onChange={(e) => {
-                      handleImageChange(e, true); // 미리보기만 처리 (개인 프로필 업로드 건너뜀)
-                      onServerImageChange(e); // 서버 이미지 전용 API 호출
-                    }}
+                    onChange={handleImageChange}
                   />
 
                   <button

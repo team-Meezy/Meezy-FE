@@ -3,14 +3,13 @@ import {
   sidebarList,
   useServerJoinedTeam,
   useServerState,
-  useProfile, // 프로필 정보 확인을 위해 추가
 } from '../../../context';
 import { JoinedSidebar } from '../../sidebar';
 import { CalendarMockup, Header } from '../../components';
 import { ReceiveAiAssistant } from '../../components';
 import { useEffect } from 'react';
 import { useServerIdStore } from '@org/shop-data';
-import { useParams, useRouter } from 'next/navigation';
+import { useParams } from 'next/navigation';
 
 export function ServerIdLayoutWrapper({
   children,
@@ -26,8 +25,6 @@ export function ServerIdLayoutWrapper({
   } = useServerState();
   const { joined, setSelectedRoomId } = useServerJoinedTeam();
   const { setServerId } = useServerIdStore();
-  const { profile } = useProfile();
-  const router = useRouter();
   const params = useParams();
   const currentServerId = params.serverId as string;
 
@@ -44,30 +41,6 @@ export function ServerIdLayoutWrapper({
 
     fetchMembers();
   }, [currentServerId, setServerId, setTeamMembers, updateTeamMembers]);
-
-  // 방출 감지 및 리다이렉트 로직
-  useEffect(() => {
-    if (!currentServerId || !profile || teamMembers.length === 0) return;
-
-    const profileId = profile.id || (profile as any).user_id || profile.userId;
-
-    const isMember = teamMembers.some((m) => {
-      const memberUserId =
-        (m as any).userId ||
-        (m as any).user_id ||
-        (m as any).user?.id ||
-        m.teamMemberId;
-      return profileId === memberUserId;
-    });
-
-    if (!isMember) {
-      console.warn(
-        'Current user is not a member of this server. Redirecting...'
-      );
-      alert('접근 권한이 없거나 서버에서 제외되었습니다.');
-      router.push('/main');
-    }
-  }, [currentServerId, profile, teamMembers, router]);
 
   return (
     <div className="flex flex-1 overflow-hidden">

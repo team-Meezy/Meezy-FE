@@ -3,16 +3,34 @@
 import { colors, typography } from '../../../design';
 import { useImg } from '../../../hooks';
 import { useProfile } from '../../../context';
+import { useEffect } from 'react';
+import { uploadProfileImage } from '@org/shop-data';
 
 export function ProfileImg() {
   const {
     fileInputRef,
     previewUrl,
+    localImageFile,
     handleClickUpload,
     handleImageChange,
     handleDeleteImg,
   } = useImg();
-  const { profile } = useProfile();
+  const { profile, silentRefetchProfile } = useProfile();
+
+  // 프로필 이미지 선택 시 즉시 업로드
+  useEffect(() => {
+    if (localImageFile) {
+      const upload = async () => {
+        try {
+          await uploadProfileImage(localImageFile);
+          await silentRefetchProfile();
+        } catch (e) {
+          console.error('프로필 이미지 업로드 실패', e);
+        }
+      };
+      upload();
+    }
+  }, [localImageFile, silentRefetchProfile]);
 
   // 새로 업로드한 이미지가 있으면 previewUrl, 없으면 서버의 profileImage 사용
   const displayImage = previewUrl || profile?.profileImage;

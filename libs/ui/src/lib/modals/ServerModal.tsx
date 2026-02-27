@@ -31,9 +31,19 @@ export function ServerModal({ isOpen, onClose }: ServerModalProps) {
     setCreateModal,
   } = useModalStore();
   const { generalError, setGeneralError } = useErrorStore();
-  const { previewUrl, fileInputRef, handleClickUpload, handleImageChange } =
-    useImg();
-  const { imageFile } = useServerCreate();
+  const {
+    localImageFile,
+    previewUrl,
+    fileInputRef,
+    handleClickUpload,
+    handleImageChange,
+  } = useImg();
+  const { setImageFile } = useServerCreate();
+
+  // useImg에서 선택된 파일을 서버 생성 컨텍스트에 동기화
+  useEffect(() => {
+    setImageFile(localImageFile);
+  }, [localImageFile, setImageFile]);
   const { setJoined } = useServerJoinedTeam();
   const { updateTeams, updateTeamMembers } = useServerState();
   const router = useRouter();
@@ -66,14 +76,14 @@ export function ServerModal({ isOpen, onClose }: ServerModalProps) {
       );
       return false;
     }
-
     if (createModal) {
-      if (!imageFile) {
+      if (!localImageFile) {
         setGeneralError('서버 대표 이미지를 업로드해주세요.');
         return false;
       }
+      
       try {
-        const res = await createTeam(serverName, imageFile);
+        const res = await createTeam(serverName, localImageFile);
         console.log(res);
         await updateTeams();
         if (res && (res.teamId || res.id)) {

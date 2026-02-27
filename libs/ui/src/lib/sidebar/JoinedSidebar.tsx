@@ -9,6 +9,8 @@ import { useRouter } from 'next/navigation';
 import { useServerIdStore } from '@org/shop-data';
 import { useServerState, useProfile } from '../../context';
 import { expelTeamMember } from '@org/shop-data';
+import { getChatRooms } from '@org/shop-data';
+import { useChatStore } from '@org/shop-data';
 
 interface JoinedSidebarProps {
   setChatRoom: (chatRoom: boolean) => void;
@@ -46,6 +48,7 @@ export function JoinedSidebar({
     setContextMenuUserId,
   } = useServerState();
   const { profile } = useProfile();
+  const { chatRooms, setChatRooms } = useChatStore();
 
   const onOpenModal = (type: 'ROOM' | 'MEMBER' | null) => {
     setModalType(type);
@@ -59,7 +62,7 @@ export function JoinedSidebar({
 
   const teamRoomMap = sidebarList.map((team) => ({
     ...team,
-    rooms: team.type === 'ROOM' ? roomsrcList : [],
+    rooms: team.type === 'ROOM' ? chatRooms : [],
     users: team.type === 'MEMBER' ? teamMembers : [],
   }));
 
@@ -69,6 +72,17 @@ export function JoinedSidebar({
   };
 
   const handleClickOutside = () => setContextMenuUserId(null);
+
+  useEffect(() => {
+    if (!serverId) return;
+
+    const apiChatRooms = async () => {
+      const res = await getChatRooms(serverId);
+      setChatRooms(res);
+      console.log(chatRooms, 'adssdfadf');
+    };
+    apiChatRooms();
+  }, [serverId]);
 
   useEffect(() => {
     document.addEventListener('click', handleClickOutside);
@@ -94,12 +108,16 @@ export function JoinedSidebar({
   const onClickServerProfile = () => {
     const myMemberInfo = teamMembers?.find((m) => {
       const profileId =
-        profile?.id || profile?.userId || (profile as any)?.user_id;
+        profile?.id ||
+        profile?.userId ||
+        (profile as any)?.user_id ||
+        (profile as any)?.accountId;
       const memberUserId =
         (m as any).userId ||
         (m as any).user_id ||
         (m as any).user?.id ||
-        (m as any).user?.userId;
+        (m as any).user?.userId ||
+        m.teamMemberId;
 
       // 1. 유저 ID로 직접 비교
       if (profileId && memberUserId && profileId === memberUserId) return true;
@@ -176,14 +194,14 @@ export function JoinedSidebar({
                 className="flex justify-center items-center gap-4"
               >
                 <div
-                  className="min-w-24 min-h-8 mt-3 flex gap-5 items-center justify-center rounded-lg transition-colors hover:bg-white/5 cursor-pointer"
+                  className="w-full px-4 min-h-8 mt-3 flex gap-5 items-center justify-start rounded-lg transition-colors hover:bg-white/5 cursor-pointer overflow-hidden"
                   style={{ color: colors.gray[300], ...typography.body.BodyB }}
                   onClick={() => {
                     onClickChatRoom(room.room_id);
                   }}
                 >
-                  <Image src={Shrap} alt="shrap" className="w-4" />
-                  <span>{room.room_name}</span>
+                  <Image src={Shrap} alt="shrap" className="w-4 shrink-0" />
+                  <span className="truncate">{room.name}</span>
                 </div>
               </div>
             ))}
@@ -239,11 +257,6 @@ export function JoinedSidebar({
         ))}
       </div>
       <JoinedModal
-        isOpen={isModalOpen}
-        type={modalType}
-        onClose={onCloseModal}
-      />
-      <UserKickModal
         isOpen={isModalOpen}
         type={modalType}
         onClose={onCloseModal}

@@ -8,14 +8,13 @@ import {
   type ReactNode,
 } from 'react';
 import { getTeams, getTeamMembers } from '@org/shop-data';
+import { useTeamStore } from '@org/shop-data';
 
 const ServerStateContext = createContext<{
   chatRoom: boolean;
   setChatRoom: (open: boolean) => void;
   serverProfile: boolean;
   setServerProfile: (open: boolean) => void;
-  teams: Team[];
-  setTeams: React.Dispatch<React.SetStateAction<Team[]>>;
   teamMembers: TeamMember[];
   setTeamMembers: React.Dispatch<React.SetStateAction<TeamMember[]>>;
   projectSidebarList: ProjectSidebarList[];
@@ -29,12 +28,6 @@ const ServerStateContext = createContext<{
   updateTeams: () => Promise<void>;
   updateTeamMembers: (id: string) => Promise<void>;
 } | null>(null);
-
-interface Team {
-  teamId: string;
-  teamName: string;
-  serverImageUrl: string | null;
-}
 
 interface TeamMember {
   teamMemberId: string;
@@ -58,7 +51,6 @@ interface InviteCode {
 export function ServerStateProvider({ children }: { children: ReactNode }) {
   const [chatRoom, setChatRoom] = useState(false);
   const [serverProfile, setServerProfile] = useState(false);
-  const [teams, setTeams] = useState<Team[]>([]);
   const [teamMembers, setTeamMembers] = useState<TeamMember[]>([]);
   const [projectSidebarList, setProjectSidebarList] = useState<
     ProjectSidebarList[]
@@ -70,6 +62,7 @@ export function ServerStateProvider({ children }: { children: ReactNode }) {
   const [contextMenuUserId, setContextMenuUserId] = useState<string | null>(
     null
   );
+  const { setTeams } = useTeamStore();
 
   const updateTeams = useCallback(async () => {
     try {
@@ -96,8 +89,6 @@ export function ServerStateProvider({ children }: { children: ReactNode }) {
         setChatRoom,
         serverProfile,
         setServerProfile,
-        teams,
-        setTeams,
         teamMembers,
         setTeamMembers,
         updateTeams,

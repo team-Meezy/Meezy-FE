@@ -1,7 +1,8 @@
+import { useEffect } from 'react';
 import { colors, typography } from '../../design';
 import { useServerJoinedTeam, useProfile } from '../../context';
 import { useRouter, useParams } from 'next/navigation';
-import { startMeeting, leaveMeeting } from '@org/shop-data';
+import { startMeeting, leaveMeeting, getActiveMeetings } from '@org/shop-data';
 
 export function Header() {
   const { joined, setJoined, meeting, setMeeting } = useServerJoinedTeam();
@@ -10,6 +11,32 @@ export function Header() {
   const router = useRouter();
 
   const currentTeamId = params.serverId as string;
+
+  useEffect(() => {
+    if (!currentTeamId) return;
+
+    const checkActiveMeeting = async () => {
+      try {
+        const activeMeetings = await getActiveMeetings(currentTeamId);
+        // 활성화된 미팅이 있으면 meeting 상태를 true로 설정
+        // API 스펙에 따라 activeMeetings가 배열이거나 객체일 수 있으므로 적절히 처리
+        if (
+          activeMeetings &&
+          (Array.isArray(activeMeetings)
+            ? activeMeetings.length > 0
+            : Object.keys(activeMeetings).length > 0)
+        ) {
+          setMeeting(true);
+        } else {
+          setMeeting(false);
+        }
+      } catch (error) {
+        console.log('getActiveMeetings error', error);
+      }
+    };
+
+    checkActiveMeeting();
+  }, [currentTeamId, setMeeting]);
 
   const onClickMain = () => {
     router.push(`/main/${currentTeamId}`);

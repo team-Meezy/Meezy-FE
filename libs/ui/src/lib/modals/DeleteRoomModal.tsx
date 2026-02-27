@@ -21,7 +21,10 @@ export function DeleteRoomModal({
   if (!isOpen || !mounted) return null;
 
   return createPortal(
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/30 backdrop-blur-[2px]">
+    <div
+      className="fixed inset-0 z-50 flex items-center justify-center bg-black/30 backdrop-blur-[2px]"
+      onKeyDown={(e) => e.key === 'Escape' && onClose()}
+    >
       <div
         role="dialog"
         aria-modal="true"

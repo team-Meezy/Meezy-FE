@@ -11,13 +11,15 @@ import {
   Message,
   deleteChatRoom,
   getChatRooms,
+  updateChatRoomName,
 } from '@org/shop-data';
 import { useParams, useRouter } from 'next/navigation';
-import { DeleteRoomModal } from '../modals/DeleteRoomModal';
+import { DeleteRoomModal, RenameRoomModal } from '../modals';
 
 export function ChatRoomPage() {
   const [input, setInput] = useState('');
   const [isDeleteModalOpen, setIsDeleteModalOpen] = useState(false);
+  const [isRenameModalOpen, setIsRenameModalOpen] = useState(false);
   const { messages, setMessages, addMessage, chatRooms, setChatRooms } =
     useChatStore();
   const params = useParams();
@@ -87,6 +89,19 @@ export function ChatRoomPage() {
     }
   };
 
+  const handleRenameRoom = async (newName: string) => {
+    try {
+      await updateChatRoomName(currentTeamId, currentRoomId, newName);
+      // 목록 갱신
+      const freshRooms = await getChatRooms(currentTeamId);
+      setChatRooms(freshRooms);
+      setIsRenameModalOpen(false);
+    } catch (error) {
+      console.error('채널 이름 변경 실패:', error);
+      alert('채널 이름 변경에 실패했습니다.');
+    }
+  };
+
   return (
     <main
       className="flex-[3] border-l border-white/5 flex flex-col h-full overflow-hidden"
@@ -105,13 +120,22 @@ export function ChatRoomPage() {
           <Image src={Shrap} alt="shrap" className="w-4" />
           <span className="text-white">{roomName}</span>
         </div>
-        <button
-          onClick={() => setIsDeleteModalOpen(true)}
-          className="text-xs px-2 py-1 rounded hover:bg-white/10 transition-colors"
-          style={{ color: colors.system.error[500] }}
-        >
-          삭제
-        </button>
+        <div className="flex items-center gap-2">
+          <button
+            onClick={() => setIsRenameModalOpen(true)}
+            className="text-xs px-2 py-1 rounded hover:bg-white/10 transition-colors"
+            style={{ color: colors.gray[400] }}
+          >
+            변경
+          </button>
+          <button
+            onClick={() => setIsDeleteModalOpen(true)}
+            className="text-xs px-2 py-1 rounded hover:bg-white/10 transition-colors"
+            style={{ color: colors.system.error[500] }}
+          >
+            삭제
+          </button>
+        </div>
       </div>
 
       {/* 채팅 영역 */}
@@ -206,6 +230,12 @@ export function ChatRoomPage() {
         roomName={roomName}
         onClose={() => setIsDeleteModalOpen(false)}
         onDelete={handleDeleteRoom}
+      />
+      <RenameRoomModal
+        isOpen={isRenameModalOpen}
+        currentName={roomName}
+        onClose={() => setIsRenameModalOpen(false)}
+        onRename={handleRenameRoom}
       />
     </main>
   );

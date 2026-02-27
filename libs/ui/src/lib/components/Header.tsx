@@ -1,15 +1,18 @@
 import { colors, typography } from '../../design';
 import { useServerJoinedTeam, useProfile } from '../../context';
-import { useRouter } from 'next/navigation';
+import { useRouter, useParams } from 'next/navigation';
+import { startMeeting } from '@org/shop-data';
 
 export function Header() {
   const { joined, setJoined, meeting, setMeeting } = useServerJoinedTeam();
   const { profile } = useProfile();
-
+  const params = useParams();
   const router = useRouter();
 
-  const onClickMain = (serverId: number) => {
-    router.push(`/main/${serverId}`);
+  const currentTeamId = params.serverId as string;
+
+  const onClickMain = () => {
+    router.push(`/main/${currentTeamId}`);
   };
 
   const onClickMypage = () => {
@@ -17,12 +20,18 @@ export function Header() {
     router.push('/main/mypage');
   };
 
-  const onClickMeeting = (serverId: number) => {
-    setMeeting(!meeting);
+  const onClickMeeting = async () => {
     if (meeting) {
-      router.push(`/main/${serverId}`);
+      router.push(`/main/${currentTeamId}`);
+      setMeeting(false);
     } else {
-      router.push(`/main/${serverId}/meeting`);
+      try {
+        await startMeeting(currentTeamId);
+        router.push(`/main/${currentTeamId}/meeting`);
+        setMeeting(true);
+      } catch (error) {
+        console.log('startMeeting error', error);
+      }
     }
   };
 
@@ -37,7 +46,7 @@ export function Header() {
       {/* 서비스 로고 */}
       <h1
         className="text-[#ff5c00] font-extrabold text-2xl tracking-tight cursor-pointer"
-        onClick={() => onClickMain(1)}
+        onClick={() => onClickMain()}
       >
         Meezy.
       </h1>
@@ -54,7 +63,7 @@ export function Header() {
                 : colors.primary[500],
               ...typography.body.BodyM,
             }}
-            onClick={() => onClickMeeting(1)}
+            onClick={() => onClickMeeting()}
           >
             {meeting ? '회의 나가기' : '회의 시작'}
           </button>

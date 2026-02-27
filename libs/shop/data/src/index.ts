@@ -4,6 +4,7 @@ export * from './lib/hooks/auth';
 export * from './lib/hooks/profile';
 export * from './lib/hooks/team';
 export * from './lib/hooks/chat';
+export * from './lib/hooks/meeting';
 export * from './lib/signup-store';
 export * from './lib/loading-store';
 export * from './lib/error-store';

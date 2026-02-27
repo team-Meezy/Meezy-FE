@@ -3,7 +3,11 @@
 import { MainRoomPage } from '../MainRoomPage';
 import { useParams } from 'next/navigation';
 import { useEffect } from 'react';
-import { getMeetingSummary, getMeetingFeedback } from '@org/shop-data';
+import {
+  getMeetingSummary,
+  getMeetingFeedback,
+  getIndividualEngagement,
+} from '@org/shop-data';
 import { useMeetingStore } from '@org/shop-data';
 
 export function MainRoomWrapper() {
@@ -35,6 +39,16 @@ export function MainRoomWrapper() {
         console.log(meetingFeedback, 'meetingFeedback');
       } catch (error) {
         console.error('getMeetingFeedback error', error);
+      }
+
+      try {
+        const individualEngagement = await getIndividualEngagement(
+          currentServerId,
+          meetingId
+        );
+        console.log(individualEngagement, 'individualEngagement');
+      } catch (error) {
+        console.error('getIndividualEngagement error', error);
       }
     };
 

@@ -1,7 +1,10 @@
-'use client';
-
 import { useEffect, useRef, useState, useCallback } from 'react';
-import { useMeetingSignal, SignalType } from '@org/shop-data';
+import {
+  useMeetingSignal,
+  useMeetingEvents,
+  SignalType,
+  MeetingEvent,
+} from '@org/shop-data';
 
 interface ParticipantStream {
   userId: string;
@@ -16,12 +19,22 @@ export function useMeetingWebRTC(teamId: string, myId: string) {
   const pcs = useRef<Map<string, RTCPeerConnection>>(new Map());
   const localStreamRef = useRef<MediaStream | null>(null);
 
+  const removeParticipant = useCallback((userId: string) => {
+    const pc = pcs.current.get(userId);
+    if (pc) {
+      pc.close();
+      pcs.current.delete(userId);
+    }
+    setRemoteStreams((prev) => prev.filter((s) => s.userId !== userId));
+  }, []);
+
   const getOrCreatePC = useCallback(
     (targetUserId: string, isOfferer: boolean) => {
       if (pcs.current.has(targetUserId)) {
         return pcs.current.get(targetUserId)!;
       }
 
+      console.log(`Creating PeerConnection for: ${targetUserId}`);
       const pc = new RTCPeerConnection({
         iceServers: [{ urls: 'stun:stun.l.google.com:19302' }],
       });
@@ -51,6 +64,16 @@ export function useMeetingWebRTC(teamId: string, myId: string) {
         });
       };
 
+      pc.onconnectionstatechange = () => {
+        if (
+          pc.connectionState === 'disconnected' ||
+          pc.connectionState === 'failed' ||
+          pc.connectionState === 'closed'
+        ) {
+          removeParticipant(targetUserId);
+        }
+      };
+
       if (localStreamRef.current) {
         localStreamRef.current.getTracks().forEach((track) => {
           pc.addTrack(track, localStreamRef.current!);
@@ -60,7 +83,7 @@ export function useMeetingWebRTC(teamId: string, myId: string) {
       pcs.current.set(targetUserId, pc);
       return pc;
     },
-    [myId]
+    [myId, removeParticipant]
   );
 
   const onSignal = useCallback(
@@ -74,11 +97,7 @@ export function useMeetingWebRTC(teamId: string, myId: string) {
         sdpMid,
         sdpMLineIndex,
       } = signal;
-
-      // 나에게 온 신호인지 확인
       if (toUserId !== myId) return;
-
-      console.log(`Received signal: ${type} from ${fromUserId}`);
 
       if (type === 'offer') {
         const pc = getOrCreatePC(fromUserId, false);
@@ -118,6 +137,37 @@ export function useMeetingWebRTC(teamId: string, myId: string) {
 
   const { sendSignal } = useMeetingSignal(teamId, myId, onSignal);
 
+  // 시그널링 외에 참가자 입장/퇴장 이벤트 처리
+  const onMeetingEvent = useCallback(
+    async (event: MeetingEvent) => {
+      switch (event.type) {
+        case 'participant-joined':
+          if (event.joinedUserId && event.joinedUserId !== myId) {
+            console.log(
+              `New participant joined: ${event.joinedUserName} (${event.joinedUserId})`
+            );
+            // 나중에 들어온 사람에게 내가 먼저 Offer를 보내서 연결 시도 (Mesh 전략)
+            // 혹은 서로 Offer를 보낼 수도 있는데, 보통 한쪽에서 시작함.
+            connectToUser(event.joinedUserId);
+          }
+          break;
+        case 'participant-left':
+          if (event.leftUserId) {
+            console.log(`Participant left: ${event.leftUserId}`);
+            removeParticipant(event.leftUserId);
+          }
+          break;
+        case 'meeting-ended':
+          alert('회의가 종료되었습니다.');
+          window.location.href = `/main/${teamId}`;
+          break;
+      }
+    },
+    [myId, teamId, removeParticipant]
+  );
+
+  useMeetingEvents(teamId, onMeetingEvent);
+
   useEffect(() => {
     const initLocalMedia = async () => {
       console.log('useMeetingWebRTC: Initializing local media for', myId);
@@ -126,7 +176,6 @@ export function useMeetingWebRTC(teamId: string, myId: string) {
           video: true,
           audio: true,
         });
-        console.log('useMeetingWebRTC: Local stream obtained:', stream.id);
         setLocalStream(stream);
         localStreamRef.current = stream;
       } catch (error) {
@@ -137,20 +186,17 @@ export function useMeetingWebRTC(teamId: string, myId: string) {
     if (myId) initLocalMedia();
 
     return () => {
-      console.log('useMeetingWebRTC: Cleaning up local media');
       localStreamRef.current?.getTracks().forEach((track) => track.stop());
       pcs.current.forEach((pc) => pc.close());
       pcs.current.clear();
     };
   }, [myId]);
 
-  // 외부(다른 참가자)에서 이 유저에게 연결을 시도하게 하려면
-  // 누군가가 먼저 Offer를 보내야 합니다.
-  // 여기서는 명시적으로 특정 유저에게 연결을 시작하는 함수를 제공합니다.
   const connectToUser = useCallback(
     async (targetUserId: string) => {
       if (targetUserId === myId) return;
 
+      console.log(`Initiating connection to: ${targetUserId}`);
       const pc = getOrCreatePC(targetUserId, true);
       const offer = await pc.createOffer();
       await pc.setLocalDescription(offer);

@@ -1,7 +1,7 @@
 import { colors, typography } from '../../design';
 import { useServerJoinedTeam, useProfile } from '../../context';
 import { useRouter, useParams } from 'next/navigation';
-import { startMeeting } from '@org/shop-data';
+import { startMeeting, leaveMeeting } from '@org/shop-data';
 
 export function Header() {
   const { joined, setJoined, meeting, setMeeting } = useServerJoinedTeam();
@@ -22,8 +22,13 @@ export function Header() {
 
   const onClickMeeting = async () => {
     if (meeting) {
-      router.push(`/main/${currentTeamId}`);
-      setMeeting(false);
+      try {
+        await leaveMeeting(currentTeamId);
+        router.push(`/main/${currentTeamId}`);
+        setMeeting(false);
+      } catch (error) {
+        console.log('leaveMeeting error', error);
+      }
     } else {
       try {
         await startMeeting(currentTeamId);

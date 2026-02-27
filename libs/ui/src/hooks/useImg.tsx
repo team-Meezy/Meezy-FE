@@ -7,6 +7,7 @@ export const useImg = () => {
   const { setImageFile } = useServerCreate();
   const { silentRefetchProfile } = useProfile();
   const [previewUrl, setPreviewUrl] = useState<string | null>(null);
+  const [localImageFile, setLocalImageFile] = useState<File | null>(null);
   const fileInputRef = useRef<HTMLInputElement | null>(null);
 
   useEffect(() => {
@@ -23,16 +24,13 @@ export const useImg = () => {
 
   const handleDeleteImg = () => {
     setPreviewUrl(null);
-    setImageFile(null);
+    setLocalImageFile(null);
     if (fileInputRef.current) {
       fileInputRef.current.value = '';
     }
   };
 
-  const handleImageChange = async (
-    e: React.ChangeEvent<HTMLInputElement>,
-    skipAutoUpload?: boolean
-  ) => {
+  const handleImageChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (!file) return;
 
@@ -46,27 +44,15 @@ export const useImg = () => {
       return;
     }
 
-    setImageFile(file);
+    setLocalImageFile(file);
     if (previewUrl) {
       URL.revokeObjectURL(previewUrl);
     }
     setPreviewUrl(URL.createObjectURL(file));
-
-    // skipAutoUpload가 true면 여기서 멈춤 (개인 프로필 자동 업로드 방지)
-    if (skipAutoUpload) return;
-
-    // 파일 선택 후 서버에 업로드 (기본적으로 개인 프로필 업로드로 동작)
-    try {
-      await uploadProfileImage(file);
-      console.log('프로필 이미지 업로드 성공');
-      await silentRefetchProfile();
-    } catch (error) {
-      console.error('프로필 이미지 업로드 실패:', error);
-      alert('이미지 업로드에 실패했습니다.');
-    }
   };
 
   return {
+    localImageFile,
     previewUrl,
     fileInputRef,
     handleClickUpload,

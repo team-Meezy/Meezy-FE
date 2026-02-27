@@ -8,6 +8,7 @@ import { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { useEffect } from 'react';
 import { useServerState } from '../../context';
+import { useTeamStore } from '@org/shop-data';
 
 interface SidebarProps {
   onOpenModal?: () => void;
@@ -17,7 +18,8 @@ export function TeamSidebar({ onOpenModal }: SidebarProps) {
   const { setJoined } = useServerJoinedTeam();
   const [alarm, setAlarm] = useState(false);
   const router = useRouter();
-  const { teams, updateTeams } = useServerState();
+  const { updateTeams } = useServerState();
+  const { teams } = useTeamStore();
 
   useEffect(() => {
     updateTeams();

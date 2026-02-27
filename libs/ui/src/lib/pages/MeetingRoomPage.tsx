@@ -1,97 +1,159 @@
 'use client';
 
 import { VideoCard } from './VideoCard';
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useRef } from 'react';
 import Image from 'next/image';
 import Nokamera from '../../assets/Nokamera.svg';
 import Mike from '../../assets/mike.svg';
 import NoMike from '../../assets/NoMike.svg';
 import Kamera from '../../assets/Kamera.svg';
-import { useWebRTC } from '../../hooks/index';
-import { useServerJoinedTeam } from '../../context';
-
-//최대 10명
-const userList = [
-  { id: 1, name: '손희찬', isSpeaking: true },
-  { id: 2, name: '김효현', isSpeaking: false },
-  { id: 3, name: '김효현', isSpeaking: false },
-  { id: 4, name: '김효현', isSpeaking: false },
-  { id: 5, name: '김효현', isSpeaking: false },
-];
+import { useMeetingWebRTC } from '../../hooks';
+import { useServerJoinedTeam, useProfile } from '../../context';
+import { useParams } from 'next/navigation';
+import { getActiveMeetings } from '@org/shop-data';
 
 export const MeetingRoomPage = () => {
-  const { meeting, setMeeting } = useServerJoinedTeam();
-  const count = userList.length;
-  const [isMike, setIsMike] = useState(false);
-  const [isKamera, setIsKamera] = useState(false);
-  const { toggleVideo, toggleAudio, videoRef, videoEnabled, audioEnabled } =
-    useWebRTC('1');
+  const { meeting } = useServerJoinedTeam();
+  const { profile } = useProfile();
+  const params = useParams();
+  const currentTeamId = params.serverId as string;
+  const myId =
+    profile?.userId || profile?.id || profile?.user_id || profile?.accountId;
 
+  const [isMike, setIsMike] = useState(true);
+  const [isKamera, setIsKamera] = useState(true);
+  const [participants, setParticipants] = useState<any[]>([]);
+
+  const { localStream, remoteStreams, connectToUser } = useMeetingWebRTC(
+    currentTeamId,
+    myId || ''
+  );
+  const localVideoRef = useRef<HTMLVideoElement | null>(null);
+
+  // 로컬 스트림 연결
   useEffect(() => {
-    if (!meeting) {
-      toggleAudio(false);
-      toggleVideo(false);
+    if (localVideoRef.current && localStream) {
+      localVideoRef.current.srcObject = localStream;
     }
-  }, [meeting, toggleAudio, toggleVideo]);
+  }, [localStream]);
+
+  // 참가자 목록 가져오기 및 초기 연결 시도
+  useEffect(() => {
+    if (!currentTeamId || !myId) return;
+
+    const fetchParticipants = async () => {
+      try {
+        const res = await getActiveMeetings(currentTeamId);
+        if (res?.participants) {
+          setParticipants(res.participants);
+
+          // 나보다 먼저 들어와 있는 사람들에게 Offer 보내기
+          res.participants.forEach((p: any) => {
+            const pId = p.userId || p.id || p.user_id;
+            if (pId !== myId) {
+              connectToUser(pId);
+            }
+          });
+        }
+      } catch (error) {
+        console.error('Failed to fetch participants:', error);
+      }
+    };
+
+    fetchParticipants();
+
+    // 주기적으로 참가자 명단 갱신 (또는 소켓 이벤트 대기)
+    const interval = setInterval(fetchParticipants, 5000);
+    return () => clearInterval(interval);
+  }, [currentTeamId, myId, connectToUser]);
 
   const onMikeClick = () => {
-    const nextState = !isMike;
-    setIsMike(nextState);
-    if (meeting) {
-      if (audioEnabled) {
-        toggleAudio(false);
-      } else {
-        toggleAudio(true);
+    if (localStream) {
+      const audioTrack = localStream.getAudioTracks()[0];
+      if (audioTrack) {
+        audioTrack.enabled = !audioTrack.enabled;
+        setIsMike(audioTrack.enabled);
       }
     }
   };
 
   const onKameraClick = () => {
-    const nextState = !isKamera;
-    setIsKamera(nextState);
-    if (meeting) {
-      if (videoEnabled) {
-        toggleVideo(false);
-      } else {
-        toggleVideo(true);
+    if (localStream) {
+      const videoTrack = localStream.getVideoTracks()[0];
+      if (videoTrack) {
+        videoTrack.enabled = !videoTrack.enabled;
+        setIsKamera(videoTrack.enabled);
       }
     }
   };
 
+  const totalParticipants = 1 + remoteStreams.length;
+
   const getGridCols = () => {
-    if (count <= 2) return 'grid-cols-1';
+    if (totalParticipants <= 2) return 'grid-cols-1';
     return 'grid-cols-2';
   };
 
-  return (
-    <div className="flex-1 flex flex-col h-full bg-[#121212] p-4 md:py-6 md:px-12 no-scrollbar">
-      <div className="flex-1 overflow-y-auto no-scrollbar mb-4 px-5 flex flex-col">
-        <div
-          className={`grid ${getGridCols()} gap-4 w-full max-w-5xl mx-auto my-auto content-center`}
-        >
-          {userList.map((user, index) => {
-            const isFirstFull = count > 2 && count % 2 !== 0 && index === 0;
+  console.log('MeetingRoomPage: profile', profile);
+  console.log('MeetingRoomPage: myId', myId);
+  console.log('MeetingRoomPage: localStream', !!localStream);
 
-            return (
-              <div
-                key={user.id}
-                className={`w-full h-full min-h-[250px] md:min-h-[220px] ${
-                  isFirstFull ? 'col-span-2' : 'col-span-1'
-                }`}
-              >
-                <VideoCard
-                  name={user.name}
-                  isSpeaking={user.isSpeaking}
-                  isMike={isMike}
-                  isKamera={isKamera}
-                  videoRef={user.id === 1 ? videoRef : undefined}
-                  onMikeClick={onMikeClick}
-                  onKameraClick={onKameraClick}
-                />
-              </div>
-            );
-          })}
-        </div>
+  return (
+    <div className="flex-1 flex flex-col h-full min-h-0 bg-[#121212] overflow-hidden">
+      <div className="flex-1 flex flex-col items-center justify-center p-4 md:p-8 min-h-0">
+        {totalParticipants === 1 ? (
+          <div className="w-full h-full flex items-center justify-center max-w-6xl mx-auto">
+            <VideoCard
+              name={`${profile?.name || '나'} (나)`}
+              isSpeaking={false}
+              isMike={isMike}
+              isKamera={isKamera}
+              videoStream={localStream}
+              onMikeClick={onMikeClick}
+              onKameraClick={onKameraClick}
+            />
+          </div>
+        ) : (
+          <div
+            className={`grid ${getGridCols()} gap-4 w-full h-full max-w-5xl mx-auto`}
+          >
+            {/* 내 비디오 */}
+            <div className="w-full h-full min-h-0 col-span-1">
+              <VideoCard
+                name={`${profile?.name || '나'} (나)`}
+                isSpeaking={false}
+                isMike={isMike}
+                isKamera={isKamera}
+                videoStream={localStream}
+                onMikeClick={onMikeClick}
+                onKameraClick={onKameraClick}
+              />
+            </div>
+
+            {/* 원격 비디오들 */}
+            {remoteStreams.map((rs) => {
+              const pInfo = participants.find(
+                (p) => (p.userId || p.id || p.user_id) === rs.userId
+              );
+              return (
+                <div
+                  key={rs.userId}
+                  className="w-full h-full min-h-0 col-span-1"
+                >
+                  <VideoCard
+                    name={pInfo?.name || rs.userId}
+                    isSpeaking={false}
+                    isMike={true}
+                    isKamera={true}
+                    videoStream={rs.stream}
+                    onMikeClick={() => {}}
+                    onKameraClick={() => {}}
+                  />
+                </div>
+              );
+            })}
+          </div>
+        )}
       </div>
 
       {/* 하단 컨트롤 바 */}

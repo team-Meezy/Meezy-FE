@@ -1,28 +1,33 @@
 'use client';
 
+import { useEffect, useRef } from 'react';
+
 interface WebRTCProps {
-  videoRef: React.RefObject<HTMLVideoElement | null>;
+  stream: MediaStream | null;
+  isLocal?: boolean;
 }
 
-export default function WebRTC({ videoRef }: WebRTCProps) {
+export default function WebRTC({ stream, isLocal }: WebRTCProps) {
+  const videoRef = useRef<HTMLVideoElement | null>(null);
+
+  useEffect(() => {
+    if (videoRef.current && stream) {
+      videoRef.current.srcObject = stream;
+    }
+  }, [stream]);
+
   return (
-    <div className="w-full h-full max-h-[150px] flex-1 flex flex-col items-center justify-center">
+    <div className="w-full h-full flex flex-col items-center justify-center overflow-hidden rounded-2xl">
       <video
         ref={videoRef}
         autoPlay
-        muted
+        muted={isLocal}
         playsInline
-        onLoadedMetadata={(e) => {
-          console.log('onLoadedMetadata fired');
-          const video = e.currentTarget;
-          console.log('Video readyState:', video.readyState);
-          video
-            .play()
-            .then(() => console.log('Video playing'))
-            .catch((err) => console.error('Play failed:', err));
+        style={{
+          transform: isLocal ? 'scaleX(-1)' : 'none',
+          objectFit: 'contain',
         }}
-        style={{ transform: 'scaleX(-1)' }}
-        className="w-[500px] h-[300px] object-cover"
+        className="w-full h-full bg-black"
       />
     </div>
   );

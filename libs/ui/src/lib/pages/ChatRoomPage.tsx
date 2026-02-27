@@ -5,26 +5,22 @@ import { colors, typography } from '../../design';
 import Image from 'next/image';
 import { Shrap } from '../../assets/index.client';
 import { useChatScroll } from '../../hooks';
-import {
-  getChatMessages,
-  useChatStore,
-  useServerIdStore,
-  Message,
-} from '@org/shop-data';
+import { getChatMessages, useChatStore, Message } from '@org/shop-data';
 import { useParams } from 'next/navigation';
 
 export function ChatRoomPage() {
   const [input, setInput] = useState('');
   const { messages, setMessages, addMessage, chatRooms } = useChatStore();
-  const { serverId: teamId } = useServerIdStore();
   const params = useParams();
 
-  // URL에서 roomId 가져오기
-  const currentRoomId = params.serverId as string;
+  // URL에서 teamId 및 chatRoomId 가져오기
+  const currentTeamId = params.serverId as string;
+  const currentRoomId = params.chatRoomId as string;
+  console.log(currentRoomId, 'currentRoomId');
 
   // 현재 방 이름 찾기
   const currentRoom = chatRooms.find(
-    (room) => room.room_id.toString() === currentRoomId
+    (room) => room.room_id === Number(currentRoomId)
   );
   const roomName = currentRoom?.name || '채널';
 
@@ -32,18 +28,18 @@ export function ChatRoomPage() {
     useChatScroll(messages);
 
   useEffect(() => {
-    if (!currentRoomId || !teamId) return;
+    if (!currentTeamId || !currentRoomId) return;
 
     const apiChatMessages = async () => {
       try {
-        const res = await getChatMessages(teamId, currentRoomId);
+        const res = await getChatMessages(currentTeamId, currentRoomId);
         setMessages(res);
       } catch (error) {
         console.error('채팅 메시지 로드 실패:', error);
       }
     };
     apiChatMessages();
-  }, [currentRoomId, teamId, setMessages]);
+  }, [currentTeamId, currentRoomId, setMessages]);
 
   const sendMessage = () => {
     if (input.trim() && currentRoomId) {
@@ -59,7 +55,6 @@ export function ChatRoomPage() {
       };
       addMessage(newMessage);
       setInput('');
-      // 전송 후 스크롤 하단 이동 보장 (scroll-to-bottom logic is inside useChatScroll usually)
     }
   };
 

@@ -1,7 +1,7 @@
 import { create } from 'zustand';
 
 interface ChatRoom {
-  room_id: number;
+  chatRoomId: string;
   team_id: number;
   name: string;
   create_at: string | null;
@@ -9,7 +9,7 @@ interface ChatRoom {
 
 export interface Message {
   id: number;
-  chatRoomId: number;
+  chatRoomId: string;
   userName: string;
   time: string;
   content: string[];

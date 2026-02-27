@@ -2,23 +2,29 @@
 
 import { MainRoomPage } from '../MainRoomPage';
 import { useParams } from 'next/navigation';
-import { useEffect } from 'react';
+import { useEffect, useRef } from 'react';
 import {
   getMeetingSummary,
   getMeetingFeedback,
   getIndividualEngagement,
+  getTotalEngagement,
 } from '@org/shop-data';
 import { useMeetingStore } from '@org/shop-data';
 
 export function MainRoomWrapper() {
   const params = useParams();
   const currentServerId = params.serverId as string;
-  const { meetingId } = useMeetingStore();
+  const meetingId = useMeetingStore((state) => state.meetingId);
+  const fetchedRef = useRef<string | null>(null);
 
   useEffect(() => {
     if (!currentServerId || !meetingId) return;
 
-    console.log(currentServerId, meetingId, 'currentServerId, meetingId');
+    // 이미 해당 meetingId로 데이터를 가져왔다면 중복 호출 방지
+    if (fetchedRef.current === meetingId) return;
+
+    console.log('MainRoomWrapper: Fetching summaries for', meetingId);
+    fetchedRef.current = meetingId;
 
     const fetchSummary = async () => {
       try {
@@ -49,6 +55,16 @@ export function MainRoomWrapper() {
         console.log(individualEngagement, 'individualEngagement');
       } catch (error) {
         console.error('getIndividualEngagement error', error);
+      }
+
+      try {
+        const totalEngagement = await getTotalEngagement(
+          currentServerId,
+          meetingId
+        );
+        console.log(totalEngagement, 'totalEngagement');
+      } catch (error) {
+        console.error('getTotalEngagement error', error);
       }
     };
 

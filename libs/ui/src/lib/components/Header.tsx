@@ -1,42 +1,68 @@
-import { useEffect } from 'react';
+import { useEffect, useCallback } from 'react';
 import { colors, typography } from '../../design';
 import { useServerJoinedTeam, useProfile } from '../../context';
-import { useRouter, useParams } from 'next/navigation';
+import { useRouter, useParams, usePathname } from 'next/navigation';
 import { startMeeting, leaveMeeting, getActiveMeetings } from '@org/shop-data';
+import { useMeetingStore } from '@org/shop-data';
 
 export function Header() {
   const { joined, setJoined, meeting, setMeeting } = useServerJoinedTeam();
+  const { setMeetingId } = useMeetingStore();
   const { profile } = useProfile();
   const params = useParams();
   const router = useRouter();
+  const pathname = usePathname();
 
   const currentTeamId = params.serverId as string;
 
-  useEffect(() => {
-    if (!currentTeamId) return;
+  const checkActiveMeeting = useCallback(async () => {
+    if (!currentTeamId || !profile) return;
 
-    const checkActiveMeeting = async () => {
-      try {
-        const activeMeetings = await getActiveMeetings(currentTeamId);
-        // 활성화된 미팅이 있으면 meeting 상태를 true로 설정
-        // API 스펙에 따라 activeMeetings가 배열이거나 객체일 수 있으므로 적절히 처리
-        if (
-          activeMeetings &&
-          (Array.isArray(activeMeetings)
-            ? activeMeetings.length > 0
-            : Object.keys(activeMeetings).length > 0)
-        ) {
-          setMeeting(true);
-        } else {
+    try {
+      const activeMeetings = await getActiveMeetings(currentTeamId);
+
+      const myId =
+        profile.userId || profile.id || profile.user_id || profile.accountId;
+
+      if (!activeMeetings || !activeMeetings.meetingId) {
+        // 미팅 페이지(`/meeting`)가 아닐 때만 미팅 상태를 해제합니다.
+        if (!pathname.includes('/meeting')) {
+          setMeetingId('');
           setMeeting(false);
         }
-      } catch (error) {
-        console.log('getActiveMeetings error', error);
+        return;
       }
-    };
 
+      // 현재 유저가 참가자 명단에 있는지 확인
+      const isParticipant = activeMeetings.participants?.some(
+        (p: any) => (p.userId || p.id || p.user_id) === myId
+      );
+
+      if (isParticipant) {
+        setMeetingId(activeMeetings.meetingId);
+        setMeeting(true);
+      } else {
+        // 이미 미팅 페이지에 진입했거나 버튼을 통해 상태가 변경된 경우,
+        // stale한 API 응답(204 등)으로 인해 상태가 꼬이지 않도록 경로를 체크합니다.
+        if (!pathname.includes('/meeting')) {
+          setMeetingId(activeMeetings.meetingId);
+          setMeeting(false);
+        }
+      }
+    } catch (error) {
+      console.log('Header: getActiveMeetings error', error);
+    }
+  }, [currentTeamId, profile, setMeeting, setMeetingId, pathname]);
+
+  useEffect(() => {
+    // 1. 초기 경로 동기화 (회의 페이지라면 즉시 회의 중으로 표시)
+    if (pathname.includes('/meeting')) {
+      setMeeting(true);
+    }
+
+    // 2. 서버 데이터와 동기화
     checkActiveMeeting();
-  }, [currentTeamId, setMeeting]);
+  }, [checkActiveMeeting, pathname, setMeeting]);
 
   const onClickMain = () => {
     router.push(`/main/${currentTeamId}`);
@@ -49,25 +75,32 @@ export function Header() {
 
   const onClickMeeting = async () => {
     if (meeting) {
+      // 회의 나가기
       try {
         await leaveMeeting(currentTeamId);
+        setMeeting(false); // API 성공 시 즉시 상태 변경
+        setMeetingId('');
         router.push(`/main/${currentTeamId}`);
-        setMeeting(false);
       } catch (error) {
         console.log('leaveMeeting error', error);
+        alert('회의 나가기에 실패했습니다.');
       }
     } else {
+      // 회의 시작
       try {
-        await startMeeting(currentTeamId);
+        const res = await startMeeting(currentTeamId);
+        setMeeting(true); // API 성공 시 즉시 상태 변경
+        if (res?.meetingId) {
+          setMeetingId(res.meetingId);
+        }
         router.push(`/main/${currentTeamId}/meeting`);
-        setMeeting(true);
       } catch (error) {
         console.log('startMeeting error', error);
+        alert('회의 시작에 실패했습니다.');
       }
     }
   };
-
-  return (
+  streams: return (
     <header
       className="w-full flex justify-between items-center p-6 border-l border-white/5"
       style={{

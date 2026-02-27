@@ -20,7 +20,7 @@ export function ChatRoomPage() {
 
   // 현재 방 이름 찾기
   const currentRoom = chatRooms.find(
-    (room) => room.room_id === Number(currentRoomId)
+    (room) => room.chatRoomId === currentRoomId
   );
   const roomName = currentRoom?.name || '채널';
 
@@ -45,7 +45,7 @@ export function ChatRoomPage() {
     if (input.trim() && currentRoomId) {
       const newMessage: Message = {
         id: Date.now(),
-        chatRoomId: Number(currentRoomId),
+        chatRoomId: currentRoomId,
         userName: '나',
         time: new Date().toLocaleTimeString([], {
           hour: '2-digit',

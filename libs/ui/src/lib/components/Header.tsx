@@ -20,12 +20,10 @@ export function Header() {
 
     try {
       const activeMeetings = await getActiveMeetings(currentTeamId);
-
       const myId =
         profile.userId || profile.id || profile.user_id || profile.accountId;
 
       if (!activeMeetings || !activeMeetings.meetingId) {
-        // 미팅 페이지(`/meeting`)가 아닐 때만 미팅 상태를 해제합니다.
         if (!pathname.includes('/meeting')) {
           setMeetingId('');
           setMeeting(false);
@@ -33,7 +31,6 @@ export function Header() {
         return;
       }
 
-      // 현재 유저가 참가자 명단에 있는지 확인
       const isParticipant = activeMeetings.participants?.some(
         (p: any) => (p.userId || p.id || p.user_id) === myId
       );
@@ -42,8 +39,6 @@ export function Header() {
         setMeetingId(activeMeetings.meetingId);
         setMeeting(true);
       } else {
-        // 이미 미팅 페이지에 진입했거나 버튼을 통해 상태가 변경된 경우,
-        // stale한 API 응답(204 등)으로 인해 상태가 꼬이지 않도록 경로를 체크합니다.
         if (!pathname.includes('/meeting')) {
           setMeetingId(activeMeetings.meetingId);
           setMeeting(false);
@@ -52,17 +47,14 @@ export function Header() {
     } catch (error) {
       console.log('Header: getActiveMeetings error', error);
     }
-  }, [currentTeamId, profile, setMeeting, setMeetingId, pathname]);
+  }, [currentTeamId, !!profile, pathname]); // profile 객체 전체 대신 존재 여부만 체크
 
   useEffect(() => {
-    // 1. 초기 경로 동기화 (회의 페이지라면 즉시 회의 중으로 표시)
-    if (pathname.includes('/meeting')) {
+    if (pathname.includes('/meeting') && !meeting) {
       setMeeting(true);
     }
-
-    // 2. 서버 데이터와 동기화
     checkActiveMeeting();
-  }, [checkActiveMeeting, pathname, setMeeting]);
+  }, [pathname, checkActiveMeeting]); // checkActiveMeeting은 이제 훨씬 안정적임
 
   const onClickMain = () => {
     router.push(`/main/${currentTeamId}`);

@@ -1,6 +1,6 @@
 'use client';
 
-import { createContext, useContext, useEffect, useState } from 'react';
+import { createContext, useContext, useEffect, useState, useMemo } from 'react';
 import { getMyProfile } from '@org/shop-data';
 
 const ProfileContext = createContext<{
@@ -39,17 +39,18 @@ export function ProfileProvider({ children }: { children: React.ReactNode }) {
     fetchProfile();
   }, []);
 
+  const value = useMemo(
+    () => ({
+      profile,
+      loading,
+      refetchProfile: fetchProfile,
+      silentRefetchProfile: silentFetchProfile,
+    }),
+    [profile, loading]
+  );
+
   return (
-    <ProfileContext.Provider
-      value={{
-        profile,
-        loading,
-        refetchProfile: fetchProfile,
-        silentRefetchProfile: silentFetchProfile,
-      }}
-    >
-      {children}
-    </ProfileContext.Provider>
+    <ProfileContext.Provider value={value}>{children}</ProfileContext.Provider>
   );
 }
 

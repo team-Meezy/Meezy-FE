@@ -1,7 +1,7 @@
 // ServerCreateContext.tsx
 'use client';
 
-import { createContext, useContext, useState } from 'react';
+import { createContext, useContext, useState, useMemo } from 'react';
 
 const ServerCreateContext = createContext<{
   imageFile: File | null;
@@ -15,8 +15,10 @@ export function ServerCreateProvider({
 }) {
   const [imageFile, setImageFile] = useState<File | null>(null);
 
+  const value = useMemo(() => ({ imageFile, setImageFile }), [imageFile]);
+
   return (
-    <ServerCreateContext.Provider value={{ imageFile, setImageFile }}>
+    <ServerCreateContext.Provider value={value}>
       {children}
     </ServerCreateContext.Provider>
   );

@@ -2,12 +2,17 @@ import { useEffect, useCallback } from 'react';
 import { colors, typography } from '../../design';
 import { useServerJoinedTeam, useProfile } from '../../context';
 import { useRouter, useParams, usePathname } from 'next/navigation';
-import { startMeeting, leaveMeeting, getActiveMeetings } from '@org/shop-data';
+import {
+  startMeeting,
+  leaveMeeting,
+  getActiveMeetings,
+  uploadMeetingRecording,
+} from '@org/shop-data';
 import { useMeetingStore } from '@org/shop-data';
 
 export function Header() {
   const { joined, setJoined, meeting, setMeeting } = useServerJoinedTeam();
-  const { setMeetingId } = useMeetingStore();
+  const { meetingId, setMeetingId } = useMeetingStore();
   const { profile } = useProfile();
   const params = useParams();
   const router = useRouter();
@@ -68,14 +73,23 @@ export function Header() {
   const onClickMeeting = async () => {
     if (meeting) {
       // 회의 나가기
+      console.log(meetingId, 'meetingId');
       try {
         await leaveMeeting(currentTeamId);
         setMeeting(false); // API 성공 시 즉시 상태 변경
-        setMeetingId('');
         router.push(`/main/${currentTeamId}`);
       } catch (error) {
         console.log('leaveMeeting error', error);
         alert('회의 나가기에 실패했습니다.');
+      }
+
+      try {
+        console.log('uploadMeetingRecording start', currentTeamId, meetingId);
+        const res = await uploadMeetingRecording(currentTeamId, meetingId);
+        console.log('uploadMeetingRecording success', res);
+      } catch (error) {
+        console.log('uploadMeetingRecording error', error);
+        alert('회의 녹음 파일 업로드에 실패했습니다.');
       }
     } else {
       // 회의 시작
@@ -84,6 +98,7 @@ export function Header() {
         setMeeting(true); // API 성공 시 즉시 상태 변경
         if (res?.meetingId) {
           setMeetingId(res.meetingId);
+          console.log(res.meetingId, 'meetingId.startMeeting');
         }
         router.push(`/main/${currentTeamId}/meeting`);
       } catch (error) {

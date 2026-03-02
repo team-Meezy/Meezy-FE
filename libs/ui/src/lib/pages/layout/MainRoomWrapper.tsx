@@ -10,12 +10,14 @@ import {
   getTotalEngagement,
 } from '@org/shop-data';
 import { useMeetingStore } from '@org/shop-data';
+import { useServerJoinedTeam } from '../../../context';
 
 export function MainRoomWrapper() {
   const params = useParams();
   const currentServerId = params.serverId as string;
-  const meetingId = useMeetingStore((state) => state.meetingId);
+  const { meetingId } = useMeetingStore();
   const fetchedRef = useRef<string | null>(null);
+  const { joined, setJoined, meeting, setMeeting } = useServerJoinedTeam();
 
   useEffect(() => {
     if (!currentServerId || !meetingId) return;
@@ -69,7 +71,7 @@ export function MainRoomWrapper() {
     };
 
     fetchSummary();
-  }, [currentServerId, meetingId]);
+  }, [currentServerId, meetingId, meeting]);
 
   // URL 파라미터가 아예 없는 경우 방어 로직
   if (!currentServerId) {

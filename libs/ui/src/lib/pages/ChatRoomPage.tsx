@@ -167,7 +167,7 @@ export function ChatRoomPage() {
               <div className="flex flex-col gap-1.5 flex-1">
                 <div className="flex items-center gap-2">
                   <span style={{ ...typography.body.BodyB, color: '#FFFFFF' }}>
-                    {msg.userName}
+                    {msg.senderName}
                   </span>
                   <span
                     style={{
@@ -175,22 +175,22 @@ export function ChatRoomPage() {
                       color: colors.gray[400],
                     }}
                   >
-                    {msg.time}
+                    {new Date(msg.createdAt).toLocaleTimeString([], {
+                      hour: '2-digit',
+                      minute: '2-digit',
+                    })}
                   </span>
                 </div>
                 <div className="flex flex-col gap-1">
-                  {msg.content.map((line, idx) => (
-                    <p
-                      key={`${msg.id}-line-${idx}`}
-                      style={{
-                        ...typography.body.BodyM,
-                        color: '#FFFFFF',
-                        opacity: 0.9,
-                      }}
-                    >
-                      {line}
-                    </p>
-                  ))}
+                  <p
+                    style={{
+                      ...typography.body.BodyM,
+                      color: '#FFFFFF',
+                      opacity: 0.9,
+                    }}
+                  >
+                    {msg.content}
+                  </p>
                 </div>
               </div>
             </div>

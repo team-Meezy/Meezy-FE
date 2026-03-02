@@ -2,6 +2,9 @@ import { useEffect, useRef, useState, useCallback } from 'react';
 import {
   useMeetingSignal,
   useMeetingEvents,
+  useMeetingVoiceActivity,
+  useMeetingStore,
+  uploadMeetingRecording,
   SignalType,
   MeetingEvent,
 } from '@org/shop-data';
@@ -18,6 +21,12 @@ export function useMeetingWebRTC(teamId: string, myId: string) {
 
   const pcs = useRef<Map<string, RTCPeerConnection>>(new Map());
   const localStreamRef = useRef<MediaStream | null>(null);
+  const { meetingId } = useMeetingStore();
+  const { sendVoiceActivity } = useMeetingVoiceActivity(meetingId, myId);
+
+  // Recording Refs
+  const mediaRecorderRef = useRef<MediaRecorder | null>(null);
+  const recordedChunksRef = useRef<Blob[]>([]);
 
   const removeParticipant = useCallback((userId: string) => {
     const pc = pcs.current.get(userId);
@@ -146,8 +155,6 @@ export function useMeetingWebRTC(teamId: string, myId: string) {
             console.log(
               `New participant joined: ${event.joinedUserName} (${event.joinedUserId})`
             );
-            // 나중에 들어온 사람에게 내가 먼저 Offer를 보내서 연결 시도 (Mesh 전략)
-            // 혹은 서로 Offer를 보낼 수도 있는데, 보통 한쪽에서 시작함.
             connectToUser(event.joinedUserId);
           }
           break;
@@ -159,7 +166,10 @@ export function useMeetingWebRTC(teamId: string, myId: string) {
           break;
         case 'meeting-ended':
           alert('회의가 종료되었습니다.');
-          window.location.href = `/main/${teamId}`;
+          window.dispatchEvent(new CustomEvent('meezy:stop-and-upload'));
+          setTimeout(() => {
+            window.location.href = `/main/${teamId}`;
+          }, 1000);
           break;
       }
     },
@@ -167,6 +177,133 @@ export function useMeetingWebRTC(teamId: string, myId: string) {
   );
 
   useMeetingEvents(teamId, onMeetingEvent);
+
+  // Recording Functions
+  const startRecording = useCallback(() => {
+    if (!localStreamRef.current) return;
+    console.log('useMeetingWebRTC: Starting recording...');
+    recordedChunksRef.current = [];
+    try {
+      const recorder = new MediaRecorder(localStreamRef.current, {
+        mimeType: 'video/webm;codecs=vp8,opus',
+      });
+      recorder.ondataavailable = (event) => {
+        if (event.data.size > 0) recordedChunksRef.current.push(event.data);
+      };
+      recorder.start();
+      mediaRecorderRef.current = recorder;
+    } catch (e) {
+      console.error('useMeetingWebRTC: Failed to start recording:', e);
+    }
+  }, []);
+
+  const stopRecording = useCallback((): Promise<Blob> => {
+    return new Promise((resolve) => {
+      if (
+        !mediaRecorderRef.current ||
+        mediaRecorderRef.current.state === 'inactive'
+      ) {
+        resolve(new Blob([], { type: 'video/webm' }));
+        return;
+      }
+      mediaRecorderRef.current.onstop = () => {
+        const blob = new Blob(recordedChunksRef.current, {
+          type: 'video/webm',
+        });
+        console.log(
+          'useMeetingWebRTC: Recording stopped, blob size:',
+          blob.size
+        );
+        resolve(blob);
+      };
+      mediaRecorderRef.current.stop();
+    });
+  }, []);
+
+  // Voice Activity Detection (VAD)
+  useEffect(() => {
+    if (!localStream) return;
+
+    let audioContext: AudioContext;
+    let analyser: AnalyserNode;
+    let animationFrameId: number;
+
+    const initVAD = async () => {
+      try {
+        audioContext = new (window.AudioContext ||
+          (window as any).webkitAudioContext)();
+        const source = audioContext.createMediaStreamSource(localStream);
+        analyser = audioContext.createAnalyser();
+        analyser.fftSize = 256;
+        source.connect(analyser);
+
+        const bufferLength = analyser.frequencyBinCount;
+        const dataArray = new Uint8Array(bufferLength);
+        let lastSentTime = 0;
+
+        const checkVolume = () => {
+          analyser.getByteFrequencyData(dataArray);
+          let sum = 0;
+          for (let i = 0; i < bufferLength; i++) {
+            sum += dataArray[i];
+          }
+          const average = sum / bufferLength;
+
+          if (average > 30) {
+            const now = Date.now();
+            if (now - lastSentTime > 1500) {
+              sendVoiceActivity();
+              lastSentTime = now;
+            }
+          }
+          animationFrameId = requestAnimationFrame(checkVolume);
+        };
+
+        checkVolume();
+      } catch (e) {
+        console.error('VAD Initialization failed:', e);
+      }
+    };
+
+    initVAD();
+
+    return () => {
+      if (animationFrameId) cancelAnimationFrame(animationFrameId);
+      if (audioContext) audioContext.close();
+    };
+  }, [localStream, sendVoiceActivity]);
+
+  // Automatic Recording Start
+  useEffect(() => {
+    if (localStream && !mediaRecorderRef.current) {
+      startRecording();
+    }
+  }, [localStream, startRecording]);
+
+  // Listen for Stop and Upload Event
+  useEffect(() => {
+    const handleStopAndUpload = async () => {
+      console.log('useMeetingWebRTC: Event meezy:stop-and-upload received');
+      await stopRecording(); // 로컬 녹음은 중지하되, 스펙상 파일 업로드는 하지 않음
+      if (teamId && meetingId) {
+        try {
+          // 스펙에 따라 빈 바디로 요청을 보냅니다.
+          await uploadMeetingRecording(teamId, meetingId);
+          console.log('useMeetingWebRTC: Recording trigger sent successfully');
+        } catch (error) {
+          console.error(
+            'useMeetingWebRTC: Failed to trigger recording:',
+            error
+          );
+        }
+      }
+    };
+
+    window.addEventListener('meezy:stop-and-upload', handleStopAndUpload);
+    return () => {
+      window.removeEventListener('meezy:stop-and-upload', handleStopAndUpload);
+    };
+  }, [teamId, meetingId, stopRecording]);
 
   useEffect(() => {
     const initLocalMedia = async () => {
@@ -215,5 +352,7 @@ export function useMeetingWebRTC(teamId: string, myId: string) {
     localStream,
     remoteStreams,
     connectToUser,
+    startRecording,
+    stopRecording,
   };
 }

@@ -73,7 +73,9 @@ export function Header() {
   const onClickMeeting = async () => {
     if (meeting) {
       // 회의 나가기
-      console.log(meetingId, 'meetingId');
+      // 회의 종료 시 녹음 중지 및 업로드 이벤트를 발생시킵니다.
+      window.dispatchEvent(new CustomEvent('meezy:stop-and-upload'));
+
       try {
         await leaveMeeting(currentTeamId);
         setMeeting(false); // API 성공 시 즉시 상태 변경
@@ -81,15 +83,6 @@ export function Header() {
       } catch (error) {
         console.log('leaveMeeting error', error);
         alert('회의 나가기에 실패했습니다.');
-      }
-
-      try {
-        console.log('uploadMeetingRecording start', currentTeamId, meetingId);
-        const res = await uploadMeetingRecording(currentTeamId, meetingId);
-        console.log('uploadMeetingRecording success', res);
-      } catch (error) {
-        console.log('uploadMeetingRecording error', error);
-        alert('회의 녹음 파일 업로드에 실패했습니다.');
       }
     } else {
       // 회의 시작

@@ -9,3 +9,4 @@ export { getIndividualEngagement } from './use-get-individual-engagement';
 export { getTotalEngagement } from './use-get-total-engagement';
 export { uploadMeetingRecording } from './use-upload-meeting-recording';
 export { useMeetingVoiceActivity } from './use-meeting-voice-activity';
+export { useMeetingChatActivity } from './use-meeting-chat-activity';

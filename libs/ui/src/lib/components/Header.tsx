@@ -1,15 +1,68 @@
+import { useEffect, useCallback } from 'react';
 import { colors, typography } from '../../design';
 import { useServerJoinedTeam, useProfile } from '../../context';
-import { useRouter } from 'next/navigation';
+import { useRouter, useParams, usePathname } from 'next/navigation';
+import {
+  startMeeting,
+  leaveMeeting,
+  getActiveMeetings,
+  uploadMeetingRecording,
+} from '@org/shop-data';
+import { useMeetingStore } from '@org/shop-data';
 
 export function Header() {
   const { joined, setJoined, meeting, setMeeting } = useServerJoinedTeam();
+  const { meetingId, setMeetingId } = useMeetingStore();
   const { profile } = useProfile();
-
+  const params = useParams();
   const router = useRouter();
+  const pathname = usePathname();
 
-  const onClickMain = (serverId: number) => {
-    router.push(`/main/${serverId}`);
+  const currentTeamId = params.serverId as string;
+
+  const checkActiveMeeting = useCallback(async () => {
+    if (!currentTeamId || !profile) return;
+
+    try {
+      const activeMeetings = await getActiveMeetings(currentTeamId);
+      const myId =
+        profile.userId || profile.id || profile.user_id || profile.accountId;
+
+      if (!activeMeetings || !activeMeetings.meetingId) {
+        if (!pathname.includes('/meeting')) {
+          setMeetingId('');
+          setMeeting(false);
+        }
+        return;
+      }
+
+      const isParticipant = activeMeetings.participants?.some(
+        (p: any) => (p.userId || p.id || p.user_id) === myId
+      );
+
+      if (isParticipant) {
+        setMeetingId(activeMeetings.meetingId);
+        setMeeting(true);
+      } else {
+        if (!pathname.includes('/meeting')) {
+          setMeetingId(activeMeetings.meetingId);
+          setMeeting(false);
+        }
+      }
+    } catch (error) {
+      console.log('Header: getActiveMeetings error', error);
+    }
+  }, [currentTeamId, !!profile, pathname]); // profile 객체 전체 대신 존재 여부만 체크
+
+  useEffect(() => {
+    if (pathname.includes('/meeting') && !meeting) {
+      setMeeting(true);
+    }
+    checkActiveMeeting();
+  }, [pathname, checkActiveMeeting]); // checkActiveMeeting은 이제 훨씬 안정적임
+
+  const onClickMain = () => {
+    router.push(`/main/${currentTeamId}`);
   };
 
   const onClickMypage = () => {
@@ -17,16 +70,37 @@ export function Header() {
     router.push('/main/mypage');
   };
 
-  const onClickMeeting = (serverId: number) => {
-    setMeeting(!meeting);
+  const onClickMeeting = async () => {
     if (meeting) {
-      router.push(`/main/${serverId}`);
+      // 회의 나가기
+      // 회의 종료 시 녹음 중지 및 업로드 이벤트를 발생시킵니다.
+      window.dispatchEvent(new CustomEvent('meezy:stop-and-upload'));
+
+      try {
+        await leaveMeeting(currentTeamId);
+        setMeeting(false); // API 성공 시 즉시 상태 변경
+        router.push(`/main/${currentTeamId}`);
+      } catch (error) {
+        console.log('leaveMeeting error', error);
+        alert('회의 나가기에 실패했습니다.');
+      }
     } else {
-      router.push(`/main/${serverId}/meeting`);
+      // 회의 시작
+      try {
+        const res = await startMeeting(currentTeamId);
+        setMeeting(true); // API 성공 시 즉시 상태 변경
+        if (res?.meetingId) {
+          setMeetingId(res.meetingId);
+          console.log(res.meetingId, 'meetingId.startMeeting');
+        }
+        router.push(`/main/${currentTeamId}/meeting`);
+      } catch (error) {
+        console.log('startMeeting error', error);
+        alert('회의 시작에 실패했습니다.');
+      }
     }
   };
-
-  return (
+  streams: return (
     <header
       className="w-full flex justify-between items-center p-6 border-l border-white/5"
       style={{
@@ -37,7 +111,7 @@ export function Header() {
       {/* 서비스 로고 */}
       <h1
         className="text-[#ff5c00] font-extrabold text-2xl tracking-tight cursor-pointer"
-        onClick={() => onClickMain(1)}
+        onClick={() => onClickMain()}
       >
         Meezy.
       </h1>
@@ -54,7 +128,7 @@ export function Header() {
                 : colors.primary[500],
               ...typography.body.BodyM,
             }}
-            onClick={() => onClickMeeting(1)}
+            onClick={() => onClickMeeting()}
           >
             {meeting ? '회의 나가기' : '회의 시작'}
           </button>

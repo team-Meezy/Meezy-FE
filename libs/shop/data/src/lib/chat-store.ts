@@ -10,9 +10,9 @@ interface ChatRoom {
 export interface Message {
   id: number;
   chatRoomId: string;
-  userName: string;
-  time: string;
-  content: string[];
+  senderName: string;
+  content: string;
+  createdAt: string;
 }
 
 interface ChatState {

@@ -35,7 +35,7 @@ export function useChatSocket(teamId: string, chatRoomId: string) {
   const sendMessage = (content: string) => {
     if (client.current?.connected) {
       client.current.publish({
-        destination: `/api/v1/teams/${teamId}/chat-rooms/${chatRoomId}/messages`,
+        destination: `/app/teams/${teamId}/chat-rooms/${chatRoomId}/messages`,
         body: JSON.stringify({ content }),
       });
     }

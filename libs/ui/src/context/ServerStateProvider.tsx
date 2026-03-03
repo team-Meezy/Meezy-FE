@@ -5,6 +5,7 @@ import {
   useContext,
   useState,
   useCallback,
+  useMemo,
   type ReactNode,
 } from 'react';
 import { getTeams, getTeamMembers } from '@org/shop-data';
@@ -82,25 +83,37 @@ export function ServerStateProvider({ children }: { children: ReactNode }) {
     }
   }, []);
 
+  const value = useMemo(
+    () => ({
+      chatRoom,
+      setChatRoom,
+      serverProfile,
+      setServerProfile,
+      teamMembers,
+      setTeamMembers,
+      updateTeams,
+      projectSidebarList,
+      setProjectSidebarList,
+      inviteCode,
+      setInviteCode,
+      contextMenuUserId,
+      setContextMenuUserId,
+      updateTeamMembers,
+    }),
+    [
+      chatRoom,
+      serverProfile,
+      teamMembers,
+      updateTeams,
+      projectSidebarList,
+      inviteCode,
+      contextMenuUserId,
+      updateTeamMembers,
+    ]
+  );
+
   return (
-    <ServerStateContext.Provider
-      value={{
-        chatRoom,
-        setChatRoom,
-        serverProfile,
-        setServerProfile,
-        teamMembers,
-        setTeamMembers,
-        updateTeams,
-        projectSidebarList,
-        setProjectSidebarList,
-        inviteCode,
-        setInviteCode,
-        contextMenuUserId,
-        setContextMenuUserId,
-        updateTeamMembers,
-      }}
-    >
+    <ServerStateContext.Provider value={value}>
       {children}
     </ServerStateContext.Provider>
   );

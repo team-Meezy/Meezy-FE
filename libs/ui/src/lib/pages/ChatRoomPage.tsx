@@ -12,9 +12,13 @@ import {
   deleteChatRoom,
   getChatRooms,
   updateChatRoomName,
+  useChatSocket,
+  useMeetingChatActivity,
+  useMeetingStore,
 } from '@org/shop-data';
 import { useParams, useRouter } from 'next/navigation';
 import { DeleteRoomModal, RenameRoomModal } from '../modals';
+import { useProfile } from '../../context';
 
 export function ChatRoomPage() {
   const [input, setInput] = useState('');
@@ -24,11 +28,23 @@ export function ChatRoomPage() {
     useChatStore();
   const params = useParams();
   const router = useRouter();
+  const { profile } = useProfile();
 
   // URL에서 teamId 및 chatRoomId 가져오기
   const currentTeamId = params.serverId as string;
   const currentRoomId = params.chatRoomId as string;
-  console.log(currentRoomId, 'currentRoomId');
+
+  // 채팅 웹소켓 연결
+  const { sendMessage: emitChatMessage } = useChatSocket(
+    currentTeamId,
+    currentRoomId
+  );
+
+  // 회의 참여 기록 웹소켓 (회의 중일 때만 작동하도록 함)
+  const { meetingId } = useMeetingStore();
+  const myId =
+    profile?.userId || profile?.id || profile?.user_id || profile?.accountId;
+  const { sendChatActivity } = useMeetingChatActivity(meetingId, myId || '');
 
   // 현재 방 이름 찾기
   const currentRoom = chatRooms.find(
@@ -55,17 +71,16 @@ export function ChatRoomPage() {
 
   const sendMessage = () => {
     if (input.trim() && currentRoomId) {
-      const newMessage: Message = {
-        id: Date.now(),
-        chatRoomId: currentRoomId,
-        userName: '나',
-        time: new Date().toLocaleTimeString([], {
-          hour: '2-digit',
-          minute: '2-digit',
-        }),
-        content: [input.trim()],
-      };
-      addMessage(newMessage);
+      // 1. 실제 채팅 메시지 발송
+      emitChatMessage(input.trim());
+
+      // 2. 회의 중이라면 채팅 활동 기록 신호 발송
+      if (meetingId) {
+        sendChatActivity();
+      }
+
+      // 3. (옵션) 내 메시지는 즉시 화면에 표시하거나 소켓 수신을 기다림
+      // 여기서는 소켓 수신 시 addMessage가 호출되므로 setInput만 비움
       setInput('');
     }
   };
@@ -152,7 +167,7 @@ export function ChatRoomPage() {
               <div className="flex flex-col gap-1.5 flex-1">
                 <div className="flex items-center gap-2">
                   <span style={{ ...typography.body.BodyB, color: '#FFFFFF' }}>
-                    {msg.userName}
+                    {msg.senderName}
                   </span>
                   <span
                     style={{
@@ -160,22 +175,22 @@ export function ChatRoomPage() {
                       color: colors.gray[400],
                     }}
                   >
-                    {msg.time}
+                    {new Date(msg.createdAt).toLocaleTimeString([], {
+                      hour: '2-digit',
+                      minute: '2-digit',
+                    })}
                   </span>
                 </div>
                 <div className="flex flex-col gap-1">
-                  {msg.content.map((line, idx) => (
-                    <p
-                      key={`${msg.id}-line-${idx}`}
-                      style={{
-                        ...typography.body.BodyM,
-                        color: '#FFFFFF',
-                        opacity: 0.9,
-                      }}
-                    >
-                      {line}
-                    </p>
-                  ))}
+                  <p
+                    style={{
+                      ...typography.body.BodyM,
+                      color: '#FFFFFF',
+                      opacity: 0.9,
+                    }}
+                  >
+                    {msg.content}
+                  </p>
                 </div>
               </div>
             </div>

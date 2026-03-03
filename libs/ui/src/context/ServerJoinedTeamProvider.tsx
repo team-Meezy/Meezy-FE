@@ -1,6 +1,6 @@
 'use client';
 
-import { createContext, useContext, useState } from 'react';
+import { createContext, useContext, useState, useMemo } from 'react';
 
 const ServerJoinedTeamContext = createContext<{
   joined: boolean;
@@ -20,17 +20,20 @@ export function ServerJoinedTeamProvider({
   const [meeting, setMeeting] = useState(false);
   const [selectedRoomId, setSelectedRoomId] = useState<number | null>(null);
 
+  const value = useMemo(
+    () => ({
+      joined,
+      setJoined,
+      meeting,
+      setMeeting,
+      selectedRoomId,
+      setSelectedRoomId,
+    }),
+    [joined, meeting, selectedRoomId]
+  );
+
   return (
-    <ServerJoinedTeamContext.Provider
-      value={{
-        joined,
-        setJoined,
-        meeting,
-        setMeeting,
-        selectedRoomId,
-        setSelectedRoomId,
-      }}
-    >
+    <ServerJoinedTeamContext.Provider value={value}>
       {children}
     </ServerJoinedTeamContext.Provider>
   );

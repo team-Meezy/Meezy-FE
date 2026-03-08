@@ -34,6 +34,20 @@ export function useMeetingWebRTC(teamId: string, myId: string) {
   const mediaRecorderRef = useRef<MediaRecorder | null>(null);
   const recordedChunksRef = useRef<Blob[]>([]);
 
+  const teamIdRef = useRef(teamId);
+  const meetingIdRef = useRef(meetingId);
+
+  // Helper for verbose logging
+  const log = useCallback((msg: string, data?: any) => {
+    const time = new Date().toLocaleTimeString();
+    console.log(`[${time}] useMeetingWebRTC: ${msg}`, data || '');
+  }, []);
+
+  useEffect(() => {
+    teamIdRef.current = teamId;
+    meetingIdRef.current = meetingId;
+  }, [teamId, meetingId]);
+
   const removeParticipant = useCallback((userId: string) => {
     const pc = pcs.current.get(userId);
     if (pc) {
@@ -68,11 +82,6 @@ export function useMeetingWebRTC(teamId: string, myId: string) {
       };
 
       pc.ontrack = (event) => {
-        console.log(
-          'Received remote track from:',
-          targetUserId,
-          event.streams[0]
-        );
         setRemoteStreams((prev) => {
           if (prev.find((ps) => ps.userId === targetUserId)) return prev;
           return [...prev, { userId: targetUserId, stream: event.streams[0] }];
@@ -129,22 +138,16 @@ export function useMeetingWebRTC(teamId: string, myId: string) {
         });
       } else if (type === 'answer') {
         const pc = pcs.current.get(fromUserId);
-        if (pc) {
+        if (pc)
           await pc.setRemoteDescription(
             new RTCSessionDescription({ type: 'answer', sdp })
           );
-        }
       } else if (type === 'ice-candidate') {
         const pc = pcs.current.get(fromUserId);
-        if (pc) {
+        if (pc)
           await pc.addIceCandidate(
-            new RTCIceCandidate({
-              candidate,
-              sdpMid,
-              sdpMLineIndex,
-            })
+            new RTCIceCandidate({ candidate, sdpMid, sdpMLineIndex })
           );
-        }
       }
     },
     [myId, getOrCreatePC]
@@ -155,14 +158,9 @@ export function useMeetingWebRTC(teamId: string, myId: string) {
   const connectToUser = useCallback(
     async (targetUserId: string) => {
       if (targetUserId === myId) return;
-
-      console.log(
-        `🚀 [useMeetingWebRTC] Initiating connection to: ${targetUserId}`
-      );
       const pc = getOrCreatePC(targetUserId, true);
       const offer = await pc.createOffer();
       await pc.setLocalDescription(offer);
-
       sendSignal({
         type: 'offer',
         fromUserId: myId,
@@ -173,52 +171,51 @@ export function useMeetingWebRTC(teamId: string, myId: string) {
     [myId, getOrCreatePC, sendSignal]
   );
 
-  // 시그널링 외에 참가자 입장/퇴장 이벤트 처리
   const onMeetingEvent = useCallback(
     async (event: MeetingEvent) => {
       switch (event.type) {
         case 'participant-joined':
-          if (event.joinedUserId && event.joinedUserId !== myId) {
-            console.log(
-              `New participant joined: ${event.joinedUserName} (${event.joinedUserId})`
-            );
+          if (event.joinedUserId && event.joinedUserId !== myId)
             connectToUser(event.joinedUserId);
-          }
           break;
         case 'participant-left':
-          if (event.leftUserId) {
-            console.log(`Participant left: ${event.leftUserId}`);
-            removeParticipant(event.leftUserId);
-          }
+          if (event.leftUserId) removeParticipant(event.leftUserId);
           break;
         case 'meeting-ended':
-          alert('회의가 종료되었습니다.');
+          log('socket meeting-ended trigger');
           window.dispatchEvent(new CustomEvent('meezy:stop-and-upload'));
           setTimeout(() => {
             window.location.href = `/main/${teamId}`;
-          }, 1000);
+          }, 3000);
           break;
       }
     },
-    [myId, teamId, removeParticipant]
+    [myId, teamId, removeParticipant, connectToUser, log]
   );
 
   useMeetingEvents(teamId, onMeetingEvent);
 
-  // Recording Functions
   const startRecording = useCallback(() => {
-    if (!localStreamRef.current) return;
-    console.log('useMeetingWebRTC: Starting recording...');
+    log('startRecording entry point');
+    if (typeof MediaRecorder === 'undefined') {
+      log('[ERROR] MediaRecorder is NOT supported in this browser');
+      return;
+    }
+    if (!localStreamRef.current) {
+      log('[WARN] startRecording aborted: localStreamRef.current is null');
+      return;
+    }
+
+    log('MediaRecorder initializing...');
     recordedChunksRef.current = [];
 
-    // 지원 가능한 MIME 타입 정의
     const mimeTypes = [
       'audio/webm;codecs=opus',
       'audio/webm',
       'audio/ogg;codecs=opus',
       'audio/wav',
+      'audio/mpeg', // fallback check
     ];
-
     let selectedMimeType = '';
     for (const mimeType of mimeTypes) {
       if (MediaRecorder.isTypeSupported(mimeType)) {
@@ -231,240 +228,111 @@ export function useMeetingWebRTC(teamId: string, myId: string) {
       const recorder = new MediaRecorder(localStreamRef.current, {
         mimeType: selectedMimeType || undefined,
       });
-      console.log(
-        'useMeetingWebRTC: MediaRecorder initialized with',
-        recorder.mimeType
-      );
+      mediaRecorderRef.current = recorder; // Ensure ref is assigned before starting
 
       recorder.ondataavailable = (event) => {
-        if (event.data.size > 0) recordedChunksRef.current.push(event.data);
+        if (event.data.size > 0) {
+          recordedChunksRef.current.push(event.data);
+        }
       };
-      recorder.start();
-      mediaRecorderRef.current = recorder;
+
+      recorder.onstop = () => {
+        log(
+          'MediaRecorder stopped internally. Chunks collected:',
+          recordedChunksRef.current.length
+        );
+      };
+
+      recorder.start(1000); // 1s chunks
+      log('MediaRecorder SUCCESS. state:', recorder.state);
+      log('MIME Type selected:', recorder.mimeType);
     } catch (e) {
-      console.error('useMeetingWebRTC: Failed to start recording:', e);
+      log('[ERROR] MediaRecorder instantiation/start failed', e);
+      // Fallback: Try without specific options if it failed
+      try {
+        const fallbackRecorder = new MediaRecorder(localStreamRef.current);
+        mediaRecorderRef.current = fallbackRecorder;
+        fallbackRecorder.ondataavailable = (event) => {
+          if (event.data.size > 0) {
+            recordedChunksRef.current.push(event.data);
+          }
+        };
+        fallbackRecorder.onstop = () => {
+          log(
+            'Fallback MediaRecorder stopped internally. Chunks collected:',
+            recordedChunksRef.current.length
+          );
+        };
+        fallbackRecorder.start(1000);
+        log('Fallback MediaRecorder SUCCESS. state:', fallbackRecorder.state);
+      } catch (fallbackError) {
+        log(
+          '[CRITICAL ERROR] Fallback MediaRecorder instantiation/start failed',
+          fallbackError
+        );
+      }
     }
-  }, []);
+  }, [log]);
 
   const initLocalMedia = useCallback(async () => {
-    console.log('📹 [useMeetingWebRTC] Initializing local media for:', myId);
+    log('initLocalMedia starting...');
     try {
-      // 기존 트랙이 있다면 중지
       localStreamRef.current?.getTracks().forEach((track) => track.stop());
-
       const stream = await navigator.mediaDevices.getUserMedia({
         video: true,
         audio: true,
       });
-
-      // 장치 목록 출력 (디버깅용)
-      try {
-        const devices = await navigator.mediaDevices.enumerateDevices();
-        const audioInputs = devices.filter((d) => d.kind === 'audioinput');
-        console.log(
-          '🎙️ [useMeetingWebRTC] Available Audio Inputs:',
-          audioInputs.map((d) => ({
-            label: d.label || 'Unknown Device',
-            deviceId: d.deviceId,
-          }))
-        );
-      } catch (e) {
-        console.warn('🎙️ [useMeetingWebRTC] Could not enumerate devices');
-      }
-
+      log('getUserMedia SUCCESS. stream tracks:', stream.getTracks().length);
       setLocalStream(stream);
       localStreamRef.current = stream;
       return stream;
     } catch (error) {
-      console.error('useMeetingWebRTC: Failed to get local media:', error);
+      log('[ERROR] initLocalMedia failed', error);
       return null;
     }
-  }, [myId]);
+  }, [log]);
 
-  const stopRecording = useCallback((): Promise<Blob> => {
-    return new Promise((resolve) => {
-      console.log('⏹️ [useMeetingWebRTC] stopRecording called');
-      if (
-        !mediaRecorderRef.current ||
-        mediaRecorderRef.current.state === 'inactive'
-      ) {
-        console.warn('埋 [useMeetingWebRTC] MediaRecorder is not active');
-        resolve(new Blob([], { type: 'audio/webm' }));
-        return;
-      }
-
-      const mimeType = mediaRecorderRef.current.mimeType;
-
-      mediaRecorderRef.current.onstop = () => {
-        // [중요] 백엔드 문서상 MP3(audio/mpeg) 형식을 요구하므로,
-        // 브라우저가 실제로는 WebM으로 기록했더라도 MIME 타입을 audio/mpeg로 설정하여 전송합니다.
-        // 대부분의 최신 백엔드 엔진은 파일의 실제 바이너리를 분석하여 처리할 수 있습니다.
-        const blob = new Blob(recordedChunksRef.current, {
-          type: 'audio/mpeg',
-        });
-        console.log('✅ [useMeetingWebRTC] MP3(Fake) Blob created!', {
-          size: blob.size,
-          type: blob.type,
-        });
-        resolve(blob);
-      };
-      mediaRecorderRef.current.stop();
-    });
-  }, []);
-
+  // VAD Loop logic
   useEffect(() => {
     if (!localStream) return;
-
     const initVAD = async () => {
-      if (isVADInitializingRef.current) {
-        console.log('🎙️ [VAD] Already initializing, skipping duplicate call');
-        return;
-      }
+      if (isVADInitializingRef.current) return;
       isVADInitializingRef.current = true;
-
-      const isSecure = typeof window !== 'undefined' && window.isSecureContext;
-      console.log('🎙️ [VAD] Initializing VAD...', {
-        isSecureContext: isSecure,
-        hasExistingContext: !!audioContextRef.current,
-      });
-
       try {
-        // 1. Check tracks first
-        const audioTracks = localStream.getAudioTracks();
-        if (audioTracks.length === 0) {
-          console.warn('⚠️ [VAD] No audio tracks found in localStream');
-          return;
-        }
-
-        audioTracks.forEach((track, i) => {
-          console.log(`🎙️ [VAD] Track[${i}]:`, {
-            label: track.label,
-            enabled: track.enabled,
-            readyState: track.readyState,
-            muted: track.muted,
-          });
-        });
-
-        // 2. Check permissions
-        if (navigator.permissions && (navigator.permissions as any).query) {
-          try {
-            const status = await (navigator.permissions as any).query({
-              name: 'microphone',
-            });
-            console.log('🎙️ [VAD] Microphone Permission state:', status.state);
-          } catch (e) {
-            console.log('🎙️ [VAD] Could not query permission status');
-          }
-        }
-
-        // 3. Create or reuse AudioContext
         if (!audioContextRef.current) {
-          console.log('🎙️ [VAD] Creating new AudioContext...');
           const AC = window.AudioContext || (window as any).webkitAudioContext;
-          if (!AC) {
-            console.error(
-              '❌ [VAD] AudioContext NOT supported in this browser!'
-            );
-            return;
-          }
-          audioContextRef.current = new AC();
-          console.log(
-            '🎙️ [VAD] AudioContext created. State:',
-            audioContextRef.current.state
-          );
+          if (AC) audioContextRef.current = new AC();
         }
-
         const ctx = audioContextRef.current;
-
-        // 4. Handle suspended state
-        if (ctx.state === 'suspended') {
-          console.log(
-            '🎙️ [VAD] AudioContext is suspended. VAD will start fully after user interaction.'
-          );
-          const resume = () => {
-            if (ctx.state === 'suspended') {
-              console.log('🎙️ [VAD] Attempting to resume AudioContext...');
-              ctx
-                .resume()
-                .then(() => {
-                  console.log(
-                    '🎙️ [VAD] AudioContext resumed successfully. New state:',
-                    ctx.state
-                  );
-                })
-                .catch((err) => {
-                  console.error('❌ [VAD] Failed to resume AudioContext:', err);
-                });
-            }
-          };
+        if (ctx && ctx.state === 'suspended') {
+          const resume = () => ctx.resume().catch(() => {});
           window.addEventListener('click', resume, { once: true });
-          window.addEventListener('keydown', resume, { once: true });
         }
+        if (ctx && !analyserRef.current) {
+          const source = ctx.createMediaStreamSource(localStream);
+          analyserRef.current = ctx.createAnalyser();
+          analyserRef.current.fftSize = 256;
+          source.connect(analyserRef.current);
+        }
+        if (!analyserRef.current) return;
 
-        // 5. Connect stream
-        console.log('🎙️ [VAD] Connecting stream to analyser...');
-        const source = ctx.createMediaStreamSource(localStream);
-        analyserRef.current = ctx.createAnalyser();
-        analyserRef.current.fftSize = 256;
-        source.connect(analyserRef.current);
-
-        const bufferLength = analyserRef.current.frequencyBinCount;
-        const dataArray = new Uint8Array(bufferLength);
-        const timeDataArray = new Uint8Array(bufferLength);
+        const dataArray = new Uint8Array(analyserRef.current.frequencyBinCount);
         let lastSentTime = 0;
-        let logCounter = 0;
 
         const checkVolume = () => {
           if (!analyserRef.current) return;
           analyserRef.current.getByteFrequencyData(dataArray);
-          analyserRef.current.getByteTimeDomainData(timeDataArray);
-
           let sum = 0;
-          let timeMax = 0;
-          let timeMin = 255;
-          for (let i = 0; i < bufferLength; i++) {
-            sum += dataArray[i];
-            if (timeDataArray[i] > timeMax) timeMax = timeDataArray[i];
-            if (timeDataArray[i] < timeMin) timeMin = timeDataArray[i];
-          }
-          const average = sum / bufferLength;
-          // Time domain amplitude (128 is center/silence)
-          const timeAmplitude = Math.max(timeMax - 128, 128 - timeMin);
+          for (let i = 0; i < dataArray.length; i++) sum += dataArray[i];
+          const average = sum / dataArray.length;
 
-          logCounter++;
-          if (logCounter > 30) {
-            const track = localStream.getAudioTracks()[0];
-            console.log('🎙️ [VAD] Active.', {
-              avgVol: average.toFixed(2),
-              timeAmp: timeAmplitude,
-              state: ctx.state,
-              sampleRate: ctx.sampleRate,
-              track: track
-                ? {
-                    label: track.label,
-                    enabled: track.enabled,
-                    muted: (track as any).muted || false, // 'muted' property on track
-                    readyState: track.readyState,
-                  }
-                : 'no-track',
-            });
-            logCounter = 0;
-          }
-
-          if ((average > 15 || timeAmplitude > 5) && ctx.state === 'running') {
+          if (average > 15 && ctx && ctx.state === 'running') {
             setIsSpeaking(true);
             const now = Date.now();
             if (now - lastSentTime > 1000) {
-              console.log(
-                '🎙️ [VAD] Voice detected! avg:',
-                average.toFixed(2),
-                'amp:',
-                timeAmplitude
-              );
               sendVoiceActivity();
               lastSentTime = now;
             }
-
             if (speakingTimeoutRef.current)
               clearTimeout(speakingTimeoutRef.current);
             speakingTimeoutRef.current = setTimeout(
@@ -474,37 +342,35 @@ export function useMeetingWebRTC(teamId: string, myId: string) {
           }
           animationFrameIdRef.current = requestAnimationFrame(checkVolume);
         };
-
         checkVolume();
-        console.log('🎙️ [VAD] Initialization complete and loop started.');
       } catch (e) {
-        console.error('❌ [VAD] Initialization check failed:', e);
+        console.error('VAD Error:', e);
       } finally {
         isVADInitializingRef.current = false;
       }
     };
-
     initVAD();
-
     return () => {
-      console.log('🎙️ [VAD] Cleaning up VAD...');
-      if (animationFrameIdRef.current) {
+      if (animationFrameIdRef.current)
         cancelAnimationFrame(animationFrameIdRef.current);
-      }
       if (
         audioContextRef.current &&
         audioContextRef.current.state !== 'closed'
       ) {
         audioContextRef.current.close().then(() => {
           audioContextRef.current = null;
-          analyserRef.current = null;
         });
       }
     };
   }, [localStream, sendVoiceActivity]);
 
-  // Automatic Recording Start
+  // Recording Auto-start Effect
   useEffect(() => {
+    log('Recording effect triggered', {
+      hasStream: !!localStream,
+      hasRecorder: !!mediaRecorderRef.current,
+      recorderState: mediaRecorderRef.current?.state,
+    });
     if (
       localStream &&
       (!mediaRecorderRef.current ||
@@ -512,64 +378,117 @@ export function useMeetingWebRTC(teamId: string, myId: string) {
     ) {
       startRecording();
     }
-  }, [localStream, startRecording]);
+  }, [localStream, startRecording, log]);
 
-  // Listen for Stop and Upload Event
+  // Main Event Handler for Upload
   useEffect(() => {
     const handleStopAndUpload = async () => {
-      console.log('useMeetingWebRTC: Event meezy:stop-and-upload received');
+      log('[EVENT] meezy:stop-and-upload start');
+      const tId = teamIdRef.current;
+      const mId = meetingIdRef.current;
+      const recorder = mediaRecorderRef.current;
+      const stream = localStreamRef.current;
+
+      log('[DEBUG] current context extracted', {
+        teamId: tId,
+        meetingId: mId,
+        hasRecorder: !!recorder,
+        recorderState: recorder?.state,
+        hasStream: !!stream,
+      });
+
       try {
-        console.log('useMeetingWebRTC: stopRecording called');
-        const recordingBlob = await stopRecording();
-        console.log('useMeetingWebRTC: stopRecording called', recordingBlob);
+        let blob: Blob | null = null;
 
-        // [중요] 미디어 트랙 중지 및 스트림 정리
-        if (localStreamRef.current) {
-          console.log('useMeetingWebRTC: Stopping all local tracks');
-          localStreamRef.current.getTracks().forEach((track) => {
-            track.stop();
-            console.log(`Track ${track.kind} stopped`);
+        if (recorder && recorder.state !== 'inactive') {
+          log('[DEBUG] calling recorder.stop()');
+
+          blob = await new Promise<Blob>((resolve) => {
+            const timeout = setTimeout(() => {
+              log(
+                '[WARN] stop recording timeout (3s) - resolving with available chunks'
+              );
+              resolve(
+                new Blob(recordedChunksRef.current, { type: 'audio/mpeg' })
+              );
+            }, 3000);
+
+            recorder.onstop = () => {
+              clearTimeout(timeout);
+              log('[DEBUG] MediaRecorder.onstop internally fired', {
+                chunkCount: recordedChunksRef.current.length,
+              });
+              resolve(
+                new Blob(recordedChunksRef.current, { type: 'audio/mpeg' })
+              );
+            };
+            recorder.stop();
           });
-          localStreamRef.current = null;
-          setLocalStream(null);
-        }
-
-        if (teamId && meetingId && recordingBlob && recordingBlob.size > 0) {
-          console.log(
-            'useMeetingWebRTC: Calling uploadMeetingRecording...',
-            recordingBlob
+        } else if (recordedChunksRef.current.length > 0) {
+          log(
+            '[WARN] Recorder is NULL or INACTIVE, but we have chunks! Uploading anyway.',
+            {
+              exists: !!recorder,
+              state: recorder?.state,
+              chunkCount: recordedChunksRef.current.length,
+            }
           );
-          const res = await uploadMeetingRecording(
-            teamId,
-            meetingId,
-            recordingBlob
-          );
-          console.log('useMeetingWebRTC: Recording uploaded successfully', res);
+          blob = new Blob(recordedChunksRef.current, { type: 'audio/mpeg' });
         } else {
-          console.warn('useMeetingWebRTC: No recording data to upload', {
-            teamId,
-            meetingId,
-            size: recordingBlob?.size,
-          });
+          log(
+            '[WARN] Recorder is NULL or INACTIVE and NO chunks available, skipping upload',
+            {
+              exists: !!recorder,
+              state: recorder?.state,
+            }
+          );
         }
-      } catch (error) {
-        console.error(
-          'useMeetingWebRTC: Error in stop and upload handler:',
-          error
-        );
+
+        if (blob) {
+          log('[DEBUG] final blob generated', { size: blob.size });
+          if (tId && mId && blob.size > 0) {
+            log('[DEBUG] initializing uploadMeetingRecording API call...');
+            const res = await uploadMeetingRecording(tId, mId, blob);
+            console.log('[SUCCESS] API call completed', res);
+          } else {
+            log('[WARN] upload conditions NOT met (IDs missing or zero size)', {
+              tIdExists: !!tId,
+              mIdExists: !!mId,
+              blobSize: blob.size,
+            });
+          }
+        }
+      } catch (err) {
+        log('[ERROR] handleStopAndUpload task failed', err);
+      }
+
+      // Clean up tracks always at the end
+      if (localStreamRef.current) {
+        log('[DEBUG] Final track cleanup');
+        localStreamRef.current.getTracks().forEach((t) => t.stop());
+        localStreamRef.current = null;
+        setLocalStream(null);
       }
     };
 
     window.addEventListener('meezy:stop-and-upload', handleStopAndUpload);
     return () => {
+      console.log(
+        `[${new Date().toLocaleTimeString()}] useMeetingWebRTC: event listener cleanup`
+      );
       window.removeEventListener('meezy:stop-and-upload', handleStopAndUpload);
     };
-  }, [teamId, meetingId, stopRecording]);
+  }, [log]);
 
   useEffect(() => {
     if (myId) initLocalMedia();
-
     return () => {
+      if (
+        mediaRecorderRef.current &&
+        mediaRecorderRef.current.state !== 'inactive'
+      ) {
+        mediaRecorderRef.current.stop();
+      }
       localStreamRef.current?.getTracks().forEach((track) => track.stop());
       pcs.current.forEach((pc) => pc.close());
       pcs.current.clear();
@@ -581,8 +500,6 @@ export function useMeetingWebRTC(teamId: string, myId: string) {
     remoteStreams,
     isSpeaking,
     connectToUser,
-    startRecording,
-    stopRecording,
     initLocalMedia,
   };
 }

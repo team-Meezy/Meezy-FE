@@ -10,11 +10,9 @@ import Kamera from '../../assets/Kamera.svg';
 import { useMeetingWebRTC } from '../../hooks';
 import { useServerJoinedTeam, useProfile } from '../../context';
 import { useParams } from 'next/navigation';
-import { getActiveMeetings, uploadMeetingRecording } from '@org/shop-data';
-import { useMeetingStore } from '@org/shop-data';
+import { getActiveMeetings } from '@org/shop-data';
 
 export const MeetingRoomPage = () => {
-  const { meeting } = useServerJoinedTeam();
   const { profile } = useProfile();
   const params = useParams();
   const currentTeamId = params.serverId as string;
@@ -33,24 +31,6 @@ export const MeetingRoomPage = () => {
     initLocalMedia,
   } = useMeetingWebRTC(currentTeamId, myId || '');
   const localVideoRef = useRef<HTMLVideoElement | null>(null);
-  const { meetingId } = useMeetingStore();
-  const fileInputRef = useRef<HTMLInputElement>(null);
-
-  const onTestUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0];
-    if (!file || !currentTeamId || !meetingId) return;
-
-    try {
-      console.log('Testing upload with file:', file.name, file.size);
-      alert('업로드를 시작합니다: ' + file.name);
-      const res = await uploadMeetingRecording(currentTeamId, meetingId, file);
-      console.log('Test upload success:', res);
-      alert('업로드 성공!');
-    } catch (error) {
-      console.error('Test upload failed:', error);
-      alert('업로드 실패: ' + (error as any).message);
-    }
-  };
 
   // 로컬 스트림 연결
   useEffect(() => {
@@ -127,10 +107,6 @@ export const MeetingRoomPage = () => {
     if (totalParticipants <= 2) return 'grid-cols-1';
     return 'grid-cols-2';
   };
-
-  console.log('MeetingRoomPage: profile', profile);
-  console.log('MeetingRoomPage: myId', myId);
-  console.log('MeetingRoomPage: localStream', !!localStream);
 
   return (
     <div className="flex-1 flex flex-col h-full min-h-0 bg-[#121212] overflow-hidden">
@@ -219,23 +195,6 @@ export const MeetingRoomPage = () => {
             ⛶
           </span>
         </button>
-
-        {/* 테스트용 업로드 버튼 */}
-        <div className="absolute left-8">
-          <input
-            type="file"
-            accept="audio/*"
-            ref={fileInputRef}
-            className="hidden"
-            onChange={onTestUpload}
-          />
-          <button
-            onClick={() => fileInputRef.current?.click()}
-            className="text-[10px] text-white/20 hover:text-white/60 border border-white/10 px-2 py-1 rounded"
-          >
-            Test Upload
-          </button>
-        </div>
       </div>
     </div>
   );

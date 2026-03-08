@@ -79,6 +79,7 @@ export function Header() {
       try {
         await leaveMeeting(currentTeamId);
         setMeeting(false); // API 성공 시 즉시 상태 변경
+        // await uploadMeetingRecording(currentTeamId, meetingId, recordingBlob);
         router.push(`/main/${currentTeamId}`);
       } catch (error) {
         console.log('leaveMeeting error', error);

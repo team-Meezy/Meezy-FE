@@ -36,7 +36,11 @@ export function MainRoomWrapper() {
         );
         console.log(meetingSummary, 'meetingSummary');
       } catch (error) {
-        console.error('getMeetingSummary error', error);
+        if ((error as any).response?.status === 404) {
+          console.log('Meeting summary not yet available (404)');
+        } else {
+          console.error('getMeetingSummary error', error);
+        }
       }
 
       try {
@@ -46,7 +50,11 @@ export function MainRoomWrapper() {
         );
         console.log(meetingFeedback, 'meetingFeedback');
       } catch (error) {
-        console.error('getMeetingFeedback error', error);
+        if ((error as any).response?.status === 404) {
+          console.log('Meeting feedback not yet available (404)');
+        } else {
+          console.error('getMeetingFeedback error', error);
+        }
       }
 
       try {

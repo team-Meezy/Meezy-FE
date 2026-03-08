@@ -23,7 +23,13 @@ export const VideoCard = ({
   onKameraClick: () => void;
 }) => {
   return (
-    <div className="relative bg-[#1e1e1e] rounded-2xl flex flex-col items-center justify-center overflow-hidden w-full h-full min-h-0 transition-all border border-white/5 shadow-lg">
+    <div
+      className={`relative bg-[#1e1e1e] rounded-2xl flex flex-col items-center justify-center overflow-hidden w-full h-full min-h-0 transition-all border ${
+        isSpeaking
+          ? 'border-[#4ade80] shadow-[0_0_15px_rgba(74,222,128,0.3)]'
+          : 'border-white/5 shadow-lg'
+      }`}
+    >
       {/* Video Area */}
       {videoStream && (
         <div

@@ -1,33 +1,88 @@
 import axios from 'axios';
 
 const getBaseUrl = () => {
+  let url = '';
+
+  // 체크: process.env (Next.js or Node environment)
   if (typeof process !== 'undefined' && process.env) {
-    const url =
-      process.env['NEXT_PUBLIC_BASE_URL'] || process.env['VITE_BASE_URL'];
-    if (url) return url;
+    url =
+      process.env['NEXT_PUBLIC_BASE_URL'] || process.env['VITE_BASE_URL'] || '';
   }
-  try {
-    const env = (import.meta as any).env;
-    return env?.VITE_BASE_URL || env?.BASE_URL || '/';
-  } catch (e) {
-    return '/';
+
+  // 체크: import.meta.env (Vite environment)
+  if (!url || url === 'undefined' || url === '/') {
+    try {
+      const env = (import.meta as any).env;
+      url = env?.VITE_BASE_URL || env?.BASE_URL || '';
+    } catch (e) {
+      /* ignore */
+    }
   }
+
+  // 브라우저 환경이라면 window.location을 최종 폴백으로 사용
+  if (
+    (!url || url === 'undefined' || url === '/') &&
+    typeof window !== 'undefined'
+  ) {
+    url = window.location.origin;
+  }
+
+  // 최종 정리: "undefined" 문자열이거나 빈 값이면 '/' 반환, 아니면 끝의 '/' 제거
+  if (!url || url === 'undefined') return '/';
+  return url.replace(/\/$/, '');
 };
 
-const BASE_URL = getBaseUrl();
+export const BASE_URL = getBaseUrl();
+
+// WebSocket을 위한 설정
+export const WS_PROTOCOL =
+  (typeof window !== 'undefined' &&
+    (window.location.protocol === 'https:' ||
+      window.location.host.includes('meezy.kr'))) ||
+  BASE_URL.includes('meezy.kr') ||
+  BASE_URL.startsWith('https')
+    ? 'wss'
+    : 'ws';
+
+// WS_HOST는 프로토콜(http/https)을 제외한 호스트명만 포함해야 함
+const getWsHost = () => {
+  if (BASE_URL.startsWith('http')) {
+    return BASE_URL.replace(/^https?:\/\//, '').split('/')[0];
+  }
+  if (typeof window !== 'undefined' && window.location.host) {
+    return window.location.host;
+  }
+  // Fallback to meezy.kr if we're in a known environment but can't find host
+  return 'meezy.kr';
+};
+
+export const WS_HOST = getWsHost();
+
+if (typeof window !== 'undefined') {
+  console.log(' [Meezy API Client Config]', {
+    BASE_URL,
+    WS_PROTOCOL,
+    WS_HOST,
+  });
+
+  if (
+    window.location.protocol === 'http:' &&
+    window.location.hostname.includes('meezy.kr')
+  ) {
+    console.error(
+      '🔴 [Meezy] INSECURE CONTEXT DETECTED! Audio processing (VAD) and secure WebSockets will likely be blocked by the browser on http://meezy.kr. Please use https://meezy.kr'
+    );
+  }
+}
 
 // 인증이 필요한 API
 export const privateApi = axios.create({
   baseURL: BASE_URL,
-  timeout: 10000,
-  headers: { 'Content-Type': undefined },
-  withCredentials: true, // 쿠키에 리프레시 토큰이 있다면 필수
 });
 
 // 인증이 필요 없는 API
 export const publicApi = axios.create({
   baseURL: BASE_URL,
-  timeout: 10000,
 });
 
 // [요청 인터셉터] : 모든 privateApi 요청 직전에 실행

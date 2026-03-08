@@ -10,7 +10,8 @@ import Kamera from '../../assets/Kamera.svg';
 import { useMeetingWebRTC } from '../../hooks';
 import { useServerJoinedTeam, useProfile } from '../../context';
 import { useParams } from 'next/navigation';
-import { getActiveMeetings } from '@org/shop-data';
+import { getActiveMeetings, uploadMeetingRecording } from '@org/shop-data';
+import { useMeetingStore } from '@org/shop-data';
 
 export const MeetingRoomPage = () => {
   const { meeting } = useServerJoinedTeam();
@@ -24,11 +25,32 @@ export const MeetingRoomPage = () => {
   const [isKamera, setIsKamera] = useState(true);
   const [participants, setParticipants] = useState<any[]>([]);
 
-  const { localStream, remoteStreams, connectToUser } = useMeetingWebRTC(
-    currentTeamId,
-    myId || ''
-  );
+  const {
+    localStream,
+    remoteStreams,
+    isSpeaking,
+    connectToUser,
+    initLocalMedia,
+  } = useMeetingWebRTC(currentTeamId, myId || '');
   const localVideoRef = useRef<HTMLVideoElement | null>(null);
+  const { meetingId } = useMeetingStore();
+  const fileInputRef = useRef<HTMLInputElement>(null);
+
+  const onTestUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file || !currentTeamId || !meetingId) return;
+
+    try {
+      console.log('Testing upload with file:', file.name, file.size);
+      alert('업로드를 시작합니다: ' + file.name);
+      const res = await uploadMeetingRecording(currentTeamId, meetingId, file);
+      console.log('Test upload success:', res);
+      alert('업로드 성공!');
+    } catch (error) {
+      console.error('Test upload failed:', error);
+      alert('업로드 실패: ' + (error as any).message);
+    }
+  };
 
   // 로컬 스트림 연결
   useEffect(() => {
@@ -63,26 +85,38 @@ export const MeetingRoomPage = () => {
     fetchParticipants();
 
     // 주기적으로 참가자 명단 갱신 (또는 소켓 이벤트 대기)
-    const interval = setInterval(fetchParticipants, 5000);
+    const interval = setInterval(fetchParticipants, 30000);
     return () => clearInterval(interval);
   }, [currentTeamId, myId, connectToUser]);
 
-  const onMikeClick = () => {
+  const onMikeClick = async () => {
     if (localStream) {
       const audioTrack = localStream.getAudioTracks()[0];
       if (audioTrack) {
         audioTrack.enabled = !audioTrack.enabled;
         setIsMike(audioTrack.enabled);
       }
+    } else {
+      // 스트림이 없으면 다시 시도
+      const stream = await initLocalMedia();
+      if (stream) {
+        setIsMike(true);
+      }
     }
   };
 
-  const onKameraClick = () => {
+  const onKameraClick = async () => {
     if (localStream) {
       const videoTrack = localStream.getVideoTracks()[0];
       if (videoTrack) {
         videoTrack.enabled = !videoTrack.enabled;
         setIsKamera(videoTrack.enabled);
+      }
+    } else {
+      // 스트림이 없으면 다시 시도
+      const stream = await initLocalMedia();
+      if (stream) {
+        setIsKamera(true);
       }
     }
   };
@@ -105,7 +139,7 @@ export const MeetingRoomPage = () => {
           <div className="w-full h-full flex items-center justify-center max-w-6xl mx-auto">
             <VideoCard
               name={`${profile?.name || '나'} (나)`}
-              isSpeaking={false}
+              isSpeaking={isSpeaking}
               isMike={isMike}
               isKamera={isKamera}
               videoStream={localStream}
@@ -121,7 +155,7 @@ export const MeetingRoomPage = () => {
             <div className="w-full h-full min-h-0 col-span-1">
               <VideoCard
                 name={`${profile?.name || '나'} (나)`}
-                isSpeaking={false}
+                isSpeaking={isSpeaking}
                 isMike={isMike}
                 isKamera={isKamera}
                 videoStream={localStream}
@@ -185,6 +219,23 @@ export const MeetingRoomPage = () => {
             ⛶
           </span>
         </button>
+
+        {/* 테스트용 업로드 버튼 */}
+        <div className="absolute left-8">
+          <input
+            type="file"
+            accept="audio/*"
+            ref={fileInputRef}
+            className="hidden"
+            onChange={onTestUpload}
+          />
+          <button
+            onClick={() => fileInputRef.current?.click()}
+            className="text-[10px] text-white/20 hover:text-white/60 border border-white/10 px-2 py-1 rounded"
+          >
+            Test Upload
+          </button>
+        </div>
       </div>
     </div>
   );

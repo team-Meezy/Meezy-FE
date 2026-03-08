@@ -5,8 +5,12 @@ import { colors, typography } from '../../design';
 import { ParticipationChart } from '../components/ParticipationChart';
 import { DashboardCard } from '../components/DashboardCard';
 import { useRouter } from 'next/navigation';
-import { getTeamDetail } from '@org/shop-data';
-import { useServerState } from '../../context';
+import {
+  getTeamDetail,
+  getTotalEngagement,
+  getIndividualEngagement,
+} from '@org/shop-data';
+import { useServerState, useProfile } from '../../context';
 import { useServerIdStore } from '@org/shop-data';
 
 export function MainRoomPage() {
@@ -14,6 +18,15 @@ export function MainRoomPage() {
   const { serverId } = useServerIdStore();
   const router = useRouter();
   const { setTeamMembers } = useServerState();
+  const { profile } = useProfile();
+  const [participationRate, setParticipationRate] = useState<number | null>(
+    null
+  );
+
+  const displayName =
+    profile?.nickname || profile?.name || profile?.username || '회원';
+  const ratePercent =
+    participationRate != null ? Math.round(participationRate * 100) : null;
 
   useEffect(() => {
     const calc = () => setChartSize(Math.min(window.innerWidth * 0.1, 240));
@@ -37,11 +50,47 @@ export function MainRoomPage() {
     getDetail();
   }, [serverId]);
 
-  const onClickFeedback = (serverId: number) => {
+  // 개인 회의 참여율 데이터 가져오기
+  useEffect(() => {
+    if (!serverId) return;
+
+    const fetchParticipation = async () => {
+      try {
+        // 1) totalEngagement에서 meetingId 가져오기
+        const totalEngagement = await getTotalEngagement(serverId, serverId);
+        console.log(totalEngagement, 'totalEngagement');
+        const fetchedMeetingId = totalEngagement?.meetingId;
+
+        if (!fetchedMeetingId) {
+          console.warn(
+            'No meetingId from totalEngagement, skipping individual'
+          );
+          return;
+        }
+
+        // 2) 가져온 meetingId로 individualEngagement 호출
+        const individualEngagement = await getIndividualEngagement(
+          serverId,
+          fetchedMeetingId
+        );
+        console.log(individualEngagement, 'individualEngagement');
+
+        if (individualEngagement?.currentRate != null) {
+          setParticipationRate(individualEngagement.currentRate);
+        }
+      } catch (error) {
+        console.error('fetchParticipation error', error);
+      }
+    };
+
+    fetchParticipation();
+  }, [serverId]);
+
+  const onClickFeedback = (serverId: string) => {
     router.push(`/main/${serverId}/feedback`);
   };
 
-  const onClickSummary = (serverId: number) => {
+  const onClickSummary = (serverId: string) => {
     router.push(`/main/${serverId}/summary`);
   };
 
@@ -52,7 +101,7 @@ export function MainRoomPage() {
     >
       {/* 회의 참여율 섹션 */}
       <section className="w-full bg-[#1e1e1e] rounded-3xl p-12 flex items-center justify-around">
-        <ParticipationChart size={chartSize} percentage={87.5} />
+        <ParticipationChart size={chartSize} percentage={ratePercent ?? 0} />
         <div className="flex flex-col gap-3 p-10">
           <h1
             className="text-white leading-snug"
@@ -60,10 +109,12 @@ export function MainRoomPage() {
               ...typography.title.TitleB,
             }}
           >
-            손희찬님의 가장 최근{' '}
+            {displayName}님의 가장 최근{' '}
             <span className="text-[#ff5c00]">회의 참여율</span>
             은<br />
-            전체 팀원 중 <span className="text-[#ff5c00]">87.5%</span> 입니다!
+            전체 팀원 중{' '}
+            <span className="text-[#ff5c00]">{ratePercent ?? '--'}%</span>{' '}
+            입니다!
           </h1>
           <p className="text-gray-500 text-sm">
             참여율 기준은 회의 중 말의 빈도수가 얼마나
@@ -82,7 +133,7 @@ export function MainRoomPage() {
             </>
           }
           buttonText="회의 피드백 보기"
-          onClick={() => onClickFeedback(1)}
+          onClick={() => onClickFeedback(serverId)}
         />
 
         <DashboardCard
@@ -94,7 +145,7 @@ export function MainRoomPage() {
             </>
           }
           buttonText="회의 요약 보기"
-          onClick={() => onClickSummary(1)}
+          onClick={() => onClickSummary(serverId)}
         />
       </div>
     </main>

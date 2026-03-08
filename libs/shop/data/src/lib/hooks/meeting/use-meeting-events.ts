@@ -1,5 +1,6 @@
 import { useEffect } from 'react';
 import { Client } from '@stomp/stompjs';
+import { WS_HOST, WS_PROTOCOL } from '../axios';
 
 export type MeetingEventType =
   | 'participant-joined'
@@ -21,10 +22,23 @@ export function useMeetingEvents(
   onEvent: (event: MeetingEvent) => void
 ) {
   useEffect(() => {
-    if (!teamId) return;
+    if (!teamId || !WS_HOST) return;
+
+    const currentProtocol =
+      typeof window !== 'undefined' ? window.location.protocol : 'n/a';
+    const brokerURL = `${WS_PROTOCOL}://${WS_HOST}/ws`;
+
+    console.log('Meeting Events Debug:', {
+      windowProtocol: currentProtocol,
+      WS_PROTOCOL: WS_PROTOCOL,
+      WS_HOST: WS_HOST,
+      finalURL: brokerURL,
+    });
 
     const client = new Client({
-      brokerURL: `wss://${process.env.VITE_BASE_URL}/ws`,
+      brokerURL,
+      reconnectDelay: 5000,
+      debug: (str) => console.log('STOMP Meeting Events Debug:', str),
       onConnect: () => {
         console.log(`STOMP Connected to topic: /topic/meeting/${teamId}`);
         client.subscribe(`/topic/meeting/${teamId}`, (message) => {

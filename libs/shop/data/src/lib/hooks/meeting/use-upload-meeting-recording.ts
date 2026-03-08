@@ -2,13 +2,20 @@ import { privateApi } from '../axios';
 
 export const uploadMeetingRecording = async (
   teamId: string,
-  meetingId: string
+  meetingId: string,
+  recordingBlob: Blob
 ) => {
   try {
-    // 유저가 공유한 스펙(Body Example: { })에 맞춰 빈 객체를 전송합니다.
+    const formData = new FormData();
+    // 백엔드 문서상 MP3(audio/mpeg) 형식을 요구하므로, 파일명을 recording.mp3로 고정합니다.
+    const fileName = 'recording.mp3';
+
+    // 벨류 값은 'file' 키로 설정합니다.
+    formData.append('file', recordingBlob, fileName);
+
     const response = await privateApi.post(
       `/teams/${teamId}/meetings/${meetingId}/recording`,
-      {}
+      formData
     );
     console.log('uploadMeetingRecording response', response);
     return response.data;

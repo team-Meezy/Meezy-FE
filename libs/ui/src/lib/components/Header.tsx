@@ -74,11 +74,26 @@ export function Header() {
     if (meeting) {
       // 회의 나가기
       // 회의 종료 시 녹음 중지 및 업로드 이벤트를 발생시킵니다.
+      const now = new Date().toLocaleTimeString();
+      console.log(
+        `[${now}] Header: [EXIT] Dispatching meezy:stop-and-upload. current meetingId: ${meetingId}`
+      );
       window.dispatchEvent(new CustomEvent('meezy:stop-and-upload'));
 
       try {
+        console.log(`[${now}] Header: [EXIT] Calling leaveMeeting...`);
         await leaveMeeting(currentTeamId);
         setMeeting(false); // API 성공 시 즉시 상태 변경
+
+        // [중요] 업로드 처리를 위해 더 충분히 대기 (5초)
+        console.log(
+          `[${now}] Header: [EXIT] Waiting 5s for upload to complete...`
+        );
+        await new Promise((resolve) => setTimeout(resolve, 5000));
+
+        console.log(
+          `[${new Date().toLocaleTimeString()}] Header: [EXIT] Navigating back to main`
+        );
         router.push(`/main/${currentTeamId}`);
       } catch (error) {
         console.log('leaveMeeting error', error);
@@ -100,7 +115,8 @@ export function Header() {
       }
     }
   };
-  streams: return (
+
+  return (
     <header
       className="w-full flex justify-between items-center p-6 border-l border-white/5"
       style={{

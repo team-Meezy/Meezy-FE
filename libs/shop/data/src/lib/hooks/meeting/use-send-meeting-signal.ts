@@ -1,5 +1,6 @@
 import { useEffect, useRef } from 'react';
 import { Client } from '@stomp/stompjs';
+import { WS_HOST, WS_PROTOCOL } from '../axios';
 
 export type SignalType = 'offer' | 'answer' | 'ice-candidate';
 
@@ -19,13 +20,24 @@ export function useMeetingSignal(
   onSignal: (signal: MeetingSignal) => void
 ) {
   const client = useRef<Client | null>(null);
-  const BASE_URL = process.env.VITE_BASE_URL;
 
   useEffect(() => {
-    if (!teamId || !myId) return;
+    if (!teamId || !myId || !WS_HOST) return;
+
+    const currentProtocol =
+      typeof window !== 'undefined' ? window.location.protocol : 'n/a';
+    const brokerURL = `${WS_PROTOCOL}://${WS_HOST}/ws`;
+
+    console.log('Meeting Signaling Debug:', {
+      windowProtocol: currentProtocol,
+      WS_PROTOCOL: WS_PROTOCOL,
+      WS_HOST: WS_HOST,
+      finalURL: brokerURL,
+    });
 
     client.current = new Client({
-      brokerURL: `wss://${BASE_URL}/ws`,
+      brokerURL,
+      debug: (str) => console.log('STOMP Signaling Debug:', str),
       onConnect: () => {
         console.log('STOMP Connected for Signaling');
 

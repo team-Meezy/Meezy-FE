@@ -13,7 +13,6 @@ import { useParams } from 'next/navigation';
 import { getActiveMeetings } from '@org/shop-data';
 
 export const MeetingRoomPage = () => {
-  const { meeting } = useServerJoinedTeam();
   const { profile } = useProfile();
   const params = useParams();
   const currentTeamId = params.serverId as string;
@@ -24,10 +23,13 @@ export const MeetingRoomPage = () => {
   const [isKamera, setIsKamera] = useState(true);
   const [participants, setParticipants] = useState<any[]>([]);
 
-  const { localStream, remoteStreams, connectToUser } = useMeetingWebRTC(
-    currentTeamId,
-    myId || ''
-  );
+  const {
+    localStream,
+    remoteStreams,
+    isSpeaking,
+    connectToUser,
+    initLocalMedia,
+  } = useMeetingWebRTC(currentTeamId, myId || '');
   const localVideoRef = useRef<HTMLVideoElement | null>(null);
 
   // 로컬 스트림 연결
@@ -63,26 +65,38 @@ export const MeetingRoomPage = () => {
     fetchParticipants();
 
     // 주기적으로 참가자 명단 갱신 (또는 소켓 이벤트 대기)
-    const interval = setInterval(fetchParticipants, 5000);
+    const interval = setInterval(fetchParticipants, 30000);
     return () => clearInterval(interval);
   }, [currentTeamId, myId, connectToUser]);
 
-  const onMikeClick = () => {
+  const onMikeClick = async () => {
     if (localStream) {
       const audioTrack = localStream.getAudioTracks()[0];
       if (audioTrack) {
         audioTrack.enabled = !audioTrack.enabled;
         setIsMike(audioTrack.enabled);
       }
+    } else {
+      // 스트림이 없으면 다시 시도
+      const stream = await initLocalMedia();
+      if (stream) {
+        setIsMike(true);
+      }
     }
   };
 
-  const onKameraClick = () => {
+  const onKameraClick = async () => {
     if (localStream) {
       const videoTrack = localStream.getVideoTracks()[0];
       if (videoTrack) {
         videoTrack.enabled = !videoTrack.enabled;
         setIsKamera(videoTrack.enabled);
+      }
+    } else {
+      // 스트림이 없으면 다시 시도
+      const stream = await initLocalMedia();
+      if (stream) {
+        setIsKamera(true);
       }
     }
   };
@@ -94,10 +108,6 @@ export const MeetingRoomPage = () => {
     return 'grid-cols-2';
   };
 
-  console.log('MeetingRoomPage: profile', profile);
-  console.log('MeetingRoomPage: myId', myId);
-  console.log('MeetingRoomPage: localStream', !!localStream);
-
   return (
     <div className="flex-1 flex flex-col h-full min-h-0 bg-[#121212] overflow-hidden">
       <div className="flex-1 flex flex-col items-center justify-center p-4 md:p-8 min-h-0">
@@ -105,7 +115,7 @@ export const MeetingRoomPage = () => {
           <div className="w-full h-full flex items-center justify-center max-w-6xl mx-auto">
             <VideoCard
               name={`${profile?.name || '나'} (나)`}
-              isSpeaking={false}
+              isSpeaking={isSpeaking}
               isMike={isMike}
               isKamera={isKamera}
               videoStream={localStream}
@@ -121,7 +131,7 @@ export const MeetingRoomPage = () => {
             <div className="w-full h-full min-h-0 col-span-1">
               <VideoCard
                 name={`${profile?.name || '나'} (나)`}
-                isSpeaking={false}
+                isSpeaking={isSpeaking}
                 isMike={isMike}
                 isKamera={isKamera}
                 videoStream={localStream}

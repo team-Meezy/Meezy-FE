@@ -7,6 +7,7 @@ import {
   uploadMeetingRecording,
   SignalType,
   MeetingEvent,
+  MeetingSignal,
 } from '@org/shop-data';
 
 interface ParticipantStream {
@@ -70,7 +71,7 @@ export function useMeetingWebRTC(teamId: string, myId: string) {
 
       pc.onicecandidate = (event) => {
         if (event.candidate) {
-          sendSignal({
+          sendSignal(targetUserId, {
             type: 'ice-candidate',
             fromUserId: myId,
             toUserId: targetUserId,
@@ -111,7 +112,7 @@ export function useMeetingWebRTC(teamId: string, myId: string) {
   );
 
   const onSignal = useCallback(
-    async (signal: any) => {
+    async (signal: MeetingSignal) => {
       const {
         type,
         fromUserId,
@@ -130,7 +131,7 @@ export function useMeetingWebRTC(teamId: string, myId: string) {
         );
         const answer = await pc.createAnswer();
         await pc.setLocalDescription(answer);
-        sendSignal({
+        sendSignal(fromUserId, {
           type: 'answer',
           fromUserId: myId,
           toUserId: fromUserId,
@@ -161,7 +162,7 @@ export function useMeetingWebRTC(teamId: string, myId: string) {
       const pc = getOrCreatePC(targetUserId, true);
       const offer = await pc.createOffer();
       await pc.setLocalDescription(offer);
-      sendSignal({
+      sendSignal(targetUserId, {
         type: 'offer',
         fromUserId: myId,
         toUserId: targetUserId,
@@ -173,24 +174,23 @@ export function useMeetingWebRTC(teamId: string, myId: string) {
 
   const onMeetingEvent = useCallback(
     async (event: MeetingEvent) => {
+      log('meeting event received', event);
       switch (event.type) {
-        case 'participant-joined':
-          if (event.joinedUserId && event.joinedUserId !== myId)
-            connectToUser(event.joinedUserId);
+        case 'participant_joined':
+          if (event.userId && event.userId !== myId) {
+            connectToUser(event.userId);
+          }
           break;
-        case 'participant-left':
-          if (event.leftUserId) removeParticipant(event.leftUserId);
+        case 'participant_left':
+          if (event.userId) {
+            removeParticipant(event.userId);
+          }
           break;
-        case 'meeting-ended':
-          log('socket meeting-ended trigger');
-          window.dispatchEvent(new CustomEvent('meezy:stop-and-upload'));
-          setTimeout(() => {
-            window.location.href = `/main/${teamId}`;
-          }, 3000);
-          break;
+        // meeting-ended 류 이벤트는 현재 MeetingEvent 타입에 없으므로,
+        // 서버에서 별도 타입을 추가하면 여기에 case를 확장.
       }
     },
-    [myId, teamId, removeParticipant, connectToUser, log]
+    [myId, removeParticipant, connectToUser, log]
   );
 
   useMeetingEvents(teamId, onMeetingEvent);

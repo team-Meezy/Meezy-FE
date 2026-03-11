@@ -5,7 +5,7 @@ import { WS_HOST, WS_PROTOCOL, BASE_URL } from '../axios';
 
 export type SignalType = 'offer' | 'answer' | 'ice-candidate';
 
-interface MeetingSignal {
+export interface MeetingSignal {
   type: SignalType;
   fromUserId: string;
   toUserId: string;

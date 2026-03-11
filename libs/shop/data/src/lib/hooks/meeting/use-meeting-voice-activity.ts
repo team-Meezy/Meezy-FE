@@ -10,7 +10,8 @@ interface VoiceActivity {
 
 export function useMeetingVoiceActivity(
   meetingId: string,
-  onActivity: (activity: VoiceActivity) => void
+  userId?: string,
+  onActivity?: (activity: VoiceActivity) => void
 ) {
   const client = useRef<Client | null>(null);
 
@@ -37,13 +38,15 @@ export function useMeetingVoiceActivity(
           `STOMP Connected for Voice Activity (SockJS): ${meetingId}`
         );
 
-        client.current?.subscribe(
-          `/topic/meetings/${meetingId}/voice`,
-          (message) => {
-            const activity = JSON.parse(message.body);
-            onActivity(activity);
-          }
-        );
+        if (onActivity) {
+          client.current?.subscribe(
+            `/topic/meetings/${meetingId}/voice`,
+            (message) => {
+              const activity = JSON.parse(message.body);
+              onActivity(activity);
+            }
+          );
+        }
       },
       onStompError: (frame) => {
         console.error(
@@ -62,4 +65,15 @@ export function useMeetingVoiceActivity(
       client.current?.deactivate();
     };
   }, [meetingId, onActivity]);
+
+  return {
+    sendVoiceActivity: () => {
+      if (client.current?.connected && userId) {
+        client.current.publish({
+          destination: `/app/meetings/${meetingId}/voice`,
+          body: JSON.stringify({ userId, isSpeaking: true }),
+        });
+      }
+    },
+  };
 }

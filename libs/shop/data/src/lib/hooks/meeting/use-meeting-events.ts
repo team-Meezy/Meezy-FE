@@ -1,20 +1,13 @@
 import { useEffect } from 'react';
 import { Client } from '@stomp/stompjs';
-import { WS_HOST, WS_PROTOCOL } from '../axios';
-
-export type MeetingEventType =
-  | 'participant-joined'
-  | 'participant-left'
-  | 'meeting-ended';
+import SockJS from 'sockjs-client';
+import { BASE_URL } from '../axios';
 
 export interface MeetingEvent {
-  type: MeetingEventType;
-  meetingId: string;
-  joinedUserId?: string;
-  joinedUserName?: string;
-  joinedUserProfileImageUrl?: string;
-  existingParticipantIds?: string[];
-  leftUserId?: string;
+  type: 'participant_joined' | 'participant_left';
+  userId: string;
+  userName: string;
+  timestamp: string;
 }
 
 export function useMeetingEvents(
@@ -22,25 +15,27 @@ export function useMeetingEvents(
   onEvent: (event: MeetingEvent) => void
 ) {
   useEffect(() => {
-    if (!teamId || !WS_HOST) return;
+    if (!teamId || !BASE_URL) return;
 
-    const currentProtocol =
-      typeof window !== 'undefined' ? window.location.protocol : 'n/a';
-    const brokerURL = `${WS_PROTOCOL}://${WS_HOST}/ws`;
+    const token = localStorage.getItem('accessToken');
+    const socketUrl = '/ws';
 
-    console.log('Meeting Events Debug:', {
-      windowProtocol: currentProtocol,
-      WS_PROTOCOL: WS_PROTOCOL,
-      WS_HOST: WS_HOST,
-      finalURL: brokerURL,
-    });
+    console.log('Meeting Events SockJS Debug:', socketUrl);
 
     const client = new Client({
-      brokerURL,
+      webSocketFactory: () =>
+        new SockJS(socketUrl, null, { transports: ['websocket'] }),
+      connectHeaders: token
+        ? {
+            Authorization: token,
+          }
+        : {},
       reconnectDelay: 5000,
       debug: (str) => console.log('STOMP Meeting Events Debug:', str),
       onConnect: () => {
-        console.log(`STOMP Connected to topic: /topic/meeting/${teamId}`);
+        console.log(
+          `STOMP Connected to topic: /topic/meeting/${teamId} (SockJS)`
+        );
         client.subscribe(`/topic/meeting/${teamId}`, (message) => {
           const event: MeetingEvent = JSON.parse(message.body);
           console.log(`Meeting Event Received: ${event.type}`, event);
@@ -52,6 +47,9 @@ export function useMeetingEvents(
           'STOMP Error in useMeetingEvents:',
           frame.headers['message']
         );
+      },
+      onWebSocketError: (event) => {
+        console.error('SockJS Error in useMeetingEvents:', event);
       },
     });
 

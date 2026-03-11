@@ -29,7 +29,10 @@ const getBaseUrl = () => {
 
   // 최종 정리: "undefined" 문자열이거나 빈 값이면 '/' 반환, 아니면 끝의 '/' 제거
   if (!url || url === 'undefined') return '/';
-  return url.replace(/\/$/, '');
+
+  const cleaned = url.replace(/\/$/, '');
+  // 일부 환경에서 BASE_URL이 ".../api"로 주어지는 경우가 있어, 중복 prefix를 방지하기 위해 보정
+  return cleaned.endsWith('/api') ? cleaned.slice(0, -4) : cleaned;
 };
 
 export const BASE_URL = getBaseUrl();

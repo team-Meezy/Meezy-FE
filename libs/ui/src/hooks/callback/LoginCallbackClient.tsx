@@ -2,7 +2,6 @@
 
 import { useEffect } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
-import { ApiError } from '../../api';
 import { colors } from '../../design';
 import { useErrorStore, useLoginStore } from '@org/shop-data';
 
@@ -16,10 +15,7 @@ export function LoginCallbackClient() {
     let timeoutId: NodeJS.Timeout | null = null;
     const processOAuthCallback = async () => {
       try {
-        // URL에서 인증 코드 추출
-        const code = searchParams.get('code');
         const errorParam = searchParams.get('error');
-
         if (errorParam) {
           setGeneralError('OAuth 인증이 취소되었습니다.');
           setIsProcessing(false);
@@ -27,25 +23,29 @@ export function LoginCallbackClient() {
           return;
         }
 
-        if (!code) {
-          setGeneralError('인증 코드가 없습니다.');
-          setIsProcessing(false);
-          timeoutId = setTimeout(() => router.push('/login'), 3000);
+        // 백엔드가 리다이렉트할 때 토큰을 URL 파라미터로 전달하는 경우
+        const accessToken = searchParams.get('accessToken');
+        const refreshToken = searchParams.get('refreshToken');
+        const isProfileCompleted = searchParams.get('isProfileCompleted');
+
+        if (accessToken && refreshToken) {
+          localStorage.setItem('accessToken', accessToken);
+          localStorage.setItem('refreshToken', refreshToken);
+
+          if (isProfileCompleted === 'false') {
+            router.push('/signUp');
+          } else {
+            router.push('/main');
+          }
           return;
         }
 
-        // 인증 코드를 토큰으로 교환
-        // const response = await exchangeOAuthCode(code);
-
-        // 토큰 저장
-        // localStorage.setItem('accessToken', response.accessToken);
-        // localStorage.setItem('refreshToken', response.refreshToken);
-
-        // 로그인 성공 - 메인 페이지로 이동
-        router.push('/');
-      } catch (err) {
-        const apiError = err as ApiError;
-        setGeneralError(apiError.message || 'OAuth 인증에 실패했습니다.');
+        // 파라미터가 없으면 오류 처리
+        setGeneralError('인증 정보를 가져올 수 없습니다.');
+        setIsProcessing(false);
+        timeoutId = setTimeout(() => router.push('/login'), 3000);
+      } catch (err: any) {
+        setGeneralError(err?.message || 'OAuth 인증에 실패했습니다.');
         setIsProcessing(false);
         timeoutId = setTimeout(() => router.push('/login'), 3000);
       }

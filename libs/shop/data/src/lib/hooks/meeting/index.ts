@@ -3,7 +3,11 @@ export { leaveMeeting } from './use-leave-meeting';
 export { getActiveMeetings } from './use-get-active-meetings';
 export { getMeetingSummary } from './use-get-meeting-summary';
 export { getMeetingSummaries } from './use-get-meeting-summaries';
-export { useMeetingSignal, type SignalType } from './use-send-meeting-signal';
+export {
+  useMeetingSignal,
+  type SignalType,
+  type MeetingSignal,
+} from './use-send-meeting-signal';
 export { useMeetingEvents, type MeetingEvent } from './use-meeting-events';
 export { getMeetingFeedback } from './use-get-meeting-feedback';
 export { getMeetingFeedbacks } from './use-get-meeting-feedbacks';

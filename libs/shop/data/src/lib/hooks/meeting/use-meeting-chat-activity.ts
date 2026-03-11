@@ -1,28 +1,32 @@
 import { useEffect, useRef, useCallback } from 'react';
 import { Client } from '@stomp/stompjs';
-import { WS_HOST, WS_PROTOCOL } from '../axios';
+import SockJS from 'sockjs-client';
+import { BASE_URL } from '../axios';
 
 export function useMeetingChatActivity(meetingId: string, myId: string) {
   const client = useRef<Client | null>(null);
 
   useEffect(() => {
-    if (!meetingId || !myId || !WS_HOST) return;
+    if (!meetingId || !myId || !BASE_URL) return;
 
-    const protocol =
-      typeof window !== 'undefined' && window.location.protocol === 'https:'
-        ? 'wss'
-        : 'ws';
-    const brokerURL = `${protocol}://${WS_HOST}/ws`;
-    console.log('Chat Activity WebSocket Attempt:', brokerURL);
+    const token = localStorage.getItem('accessToken');
+    const socketUrl = '/ws';
+    console.log('Chat Activity SockJS Attempt:', socketUrl);
 
     client.current = new Client({
-      brokerURL,
+      webSocketFactory: () =>
+        new SockJS(socketUrl, null, { transports: ['websocket'] }),
+      connectHeaders: token
+        ? {
+            Authorization: token,
+          }
+        : {},
       reconnectDelay: 5000,
       heartbeatIncoming: 4000,
       heartbeatOutgoing: 4000,
       debug: (str) => console.log('STOMP Chat Activity Debug:', str),
       onConnect: () => {
-        console.log('STOMP Connected for Chat Activity');
+        console.log('STOMP Connected for Chat Activity (SockJS)');
       },
       onStompError: (frame) => {
         console.error(
@@ -31,7 +35,7 @@ export function useMeetingChatActivity(meetingId: string, myId: string) {
         );
       },
       onWebSocketError: (event) => {
-        console.error('WebSocket Error in Chat Activity:', event);
+        console.error('SockJS Error in Chat Activity:', event);
       },
     });
 

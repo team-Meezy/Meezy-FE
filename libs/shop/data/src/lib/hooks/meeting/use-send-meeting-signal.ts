@@ -1,10 +1,11 @@
 import { useEffect, useRef } from 'react';
 import { Client } from '@stomp/stompjs';
-import { WS_HOST, WS_PROTOCOL } from '../axios';
+import SockJS from 'sockjs-client';
+import { WS_HOST, WS_PROTOCOL, BASE_URL } from '../axios';
 
 export type SignalType = 'offer' | 'answer' | 'ice-candidate';
 
-interface MeetingSignal {
+export interface MeetingSignal {
   type: SignalType;
   fromUserId: string;
   toUserId: string;
@@ -22,24 +23,27 @@ export function useMeetingSignal(
   const client = useRef<Client | null>(null);
 
   useEffect(() => {
-    if (!teamId || !myId || !WS_HOST) return;
+    if (!teamId || !myId || !BASE_URL) return;
 
-    const currentProtocol =
-      typeof window !== 'undefined' ? window.location.protocol : 'n/a';
-    const brokerURL = `${WS_PROTOCOL}://${WS_HOST}/ws`;
+    const token = localStorage.getItem('accessToken');
+    const socketUrl = '/ws';
 
-    console.log('Meeting Signaling Debug:', {
-      windowProtocol: currentProtocol,
-      WS_PROTOCOL: WS_PROTOCOL,
-      WS_HOST: WS_HOST,
-      finalURL: brokerURL,
-    });
+    console.log('Meeting Signaling SockJS Debug:', socketUrl);
 
     client.current = new Client({
-      brokerURL,
+      webSocketFactory: () =>
+        new SockJS(socketUrl, null, { transports: ['websocket'] }),
+      connectHeaders: token
+        ? {
+            Authorization: token,
+          }
+        : {},
+      reconnectDelay: 5000,
+      heartbeatIncoming: 4000,
+      heartbeatOutgoing: 4000,
       debug: (str) => console.log('STOMP Signaling Debug:', str),
       onConnect: () => {
-        console.log('STOMP Connected for Signaling');
+        console.log('STOMP Connected for Signaling (SockJS)');
 
         client.current?.subscribe(
           `/user/queue/teams/${teamId}/meeting/signal`,
@@ -52,6 +56,9 @@ export function useMeetingSignal(
       onStompError: (frame) => {
         console.error('STOMP Error:', frame.headers['message']);
       },
+      onWebSocketError: (event) => {
+        console.error('WebSocket Error in Signaling:', event);
+      },
     });
 
     client.current.activate();
@@ -61,19 +68,14 @@ export function useMeetingSignal(
     };
   }, [teamId, myId, onSignal]);
 
-  const sendSignal = (signal: MeetingSignal) => {
-    if (client.current?.connected) {
-      client.current.publish({
-        destination: `/app/teams/${teamId}/meeting/signal`,
-        body: JSON.stringify(signal),
-      });
-    } else {
-      console.warn(
-        'STOMP client not connected. Failed to send signal:',
-        signal.type
-      );
-    }
+  return {
+    sendSignal: (toUserId: string, signal: any) => {
+      if (client.current?.connected) {
+        client.current.publish({
+          destination: `/app/teams/${teamId}/meeting/signal/${toUserId}`,
+          body: JSON.stringify(signal),
+        });
+      }
+    },
   };
-
-  return { sendSignal };
 }

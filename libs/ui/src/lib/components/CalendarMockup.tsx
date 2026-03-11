@@ -1,5 +1,6 @@
 'use client';
 
+import { useState } from 'react';
 import { colors, typography } from '../../design';
 
 export function CalendarMockup() {
@@ -13,9 +14,11 @@ export function CalendarMockup() {
     { label: 'S', value: 6 },
   ];
 
-  const year = 2026;
-  const month = 0; // 1월
   const today = new Date();
+  const [currentDate, setCurrentDate] = useState(new Date());
+
+  const year = currentDate.getFullYear();
+  const month = currentDate.getMonth();
 
   const firstDayOfMonth = new Date(year, month, 1).getDay();
   const daysInMonth = new Date(year, month + 1, 0).getDate();
@@ -41,13 +44,37 @@ export function CalendarMockup() {
     });
   }
 
+  const handlePrevMonth = () => {
+    setCurrentDate(new Date(year, month - 1, 1));
+  };
+
+  const handleNextMonth = () => {
+    setCurrentDate(new Date(year, month + 1, 1));
+  };
+
   return (
     <div
       className="p-5 rounded-lg"
       style={{ backgroundColor: colors.gray[900] }}
     >
-      <div className="mb-4" style={{ ...typography.body.BodyB }}>
-        {`${year}년 ${month + 1}월`}
+      <div className="flex items-center justify-between mb-4">
+        <div style={{ ...typography.body.BodyB, color: 'white' }}>
+          {`${year}년 ${month + 1}월`}
+        </div>
+        <div className="flex gap-2">
+          <button
+            onClick={handlePrevMonth}
+            className="w-6 h-6 flex items-center justify-center hover:bg-gray-800 rounded transition-colors text-white"
+          >
+            {'<'}
+          </button>
+          <button
+            onClick={handleNextMonth}
+            className="w-6 h-6 flex items-center justify-center hover:bg-gray-800 rounded transition-colors text-white"
+          >
+            {'>'}
+          </button>
+        </div>
       </div>
 
       <div className="grid grid-cols-7 gap-1 text-center">
@@ -86,7 +113,7 @@ export function CalendarMockup() {
             today.getFullYear() === year &&
             today.getMonth() === month ? (
               <span
-                className="flex flex-col justify-center items-center rounded-full py-1 w-6 h-6"
+                className="flex flex-col justify-center items-center rounded-full py-1 w-6 h-6 text-white"
                 style={{ backgroundColor: colors.primary[500] }}
               >
                 {date.day}

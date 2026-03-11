@@ -1,32 +1,52 @@
-import { useEffect, useRef, useCallback } from 'react';
+import { useEffect, useRef } from 'react';
 import { Client } from '@stomp/stompjs';
-import { WS_HOST, WS_PROTOCOL } from '../axios';
+import SockJS from 'sockjs-client';
+import { BASE_URL } from '../axios';
 
-export function useMeetingVoiceActivity(meetingId: string, myId: string) {
+interface VoiceActivity {
+  userId: string;
+  isSpeaking: boolean;
+}
+
+export function useMeetingVoiceActivity(
+  meetingId: string,
+  userId?: string,
+  onActivity?: (activity: VoiceActivity) => void
+) {
   const client = useRef<Client | null>(null);
 
   useEffect(() => {
-    if (!meetingId || !myId || !WS_HOST) return;
+    if (!meetingId || !BASE_URL) return;
 
-    const currentProtocol =
-      typeof window !== 'undefined' ? window.location.protocol : 'n/a';
-    const brokerURL = `${WS_PROTOCOL}://${WS_HOST}/ws`;
+    const token = localStorage.getItem('accessToken');
+    const socketUrl = '/ws';
 
-    console.log('Voice Activity Debug:', {
-      windowProtocol: currentProtocol,
-      WS_PROTOCOL: WS_PROTOCOL,
-      WS_HOST: WS_HOST,
-      finalURL: brokerURL,
-    });
+    console.log('Voice Activity SockJS Debug:', socketUrl);
 
     client.current = new Client({
-      brokerURL,
+      webSocketFactory: () =>
+        new SockJS(socketUrl, null, { transports: ['websocket'] }),
+      connectHeaders: token
+        ? {
+            Authorization: token,
+          }
+        : {},
       reconnectDelay: 5000,
-      heartbeatIncoming: 4000,
-      heartbeatOutgoing: 4000,
       debug: (str) => console.log('STOMP Voice Activity Debug:', str),
       onConnect: () => {
-        console.log('✅✅✅ STOMP Connected for Voice Activity');
+        console.log(
+          `STOMP Connected for Voice Activity (SockJS): ${meetingId}`
+        );
+
+        if (onActivity) {
+          client.current?.subscribe(
+            `/topic/meetings/${meetingId}/voice`,
+            (message) => {
+              const activity = JSON.parse(message.body);
+              onActivity(activity);
+            }
+          );
+        }
       },
       onStompError: (frame) => {
         console.error(
@@ -35,29 +55,25 @@ export function useMeetingVoiceActivity(meetingId: string, myId: string) {
         );
       },
       onWebSocketError: (event) => {
-        console.error('WebSocket Error in Voice Activity:', event);
-      },
-      onWebSocketClose: (event) => {
-        console.log('WebSocket Closed in Voice Activity:', event);
+        console.error('SockJS Error in Voice Activity:', event);
       },
     });
+
     client.current.activate();
 
     return () => {
       client.current?.deactivate();
     };
-  }, [meetingId, myId]);
+  }, [meetingId, onActivity]);
 
-  const sendVoiceActivity = useCallback(() => {
-    if (client.current?.connected) {
-      console.log('📣 Sending Voice Activity to Backend...');
-      client.current.publish({
-        destination: `/app/meetings/${meetingId}/participation/voice`,
-      });
-    } else {
-      console.warn('⚠️ Cannot send Voice Activity: STOMP not connected');
-    }
-  }, [meetingId, myId]);
-
-  return { sendVoiceActivity };
+  return {
+    sendVoiceActivity: () => {
+      if (client.current?.connected && userId) {
+        client.current.publish({
+          destination: `/app/meetings/${meetingId}/voice`,
+          body: JSON.stringify({ userId, isSpeaking: true }),
+        });
+      }
+    },
+  };
 }

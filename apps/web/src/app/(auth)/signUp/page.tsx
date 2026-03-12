@@ -3,10 +3,12 @@
 import { useEffect, Suspense } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { SignUpPage } from '@meezy/ui/client';
+import { useProfile } from '@meezy/ui';
 
 function SignUpContent() {
   const router = useRouter();
   const searchParams = useSearchParams();
+  const { refetchProfile } = useProfile();
 
   // OAuth 콜백으로 /signUp 에 왔을 때 토큰이 쿼리에 있으면
   // 이메일/인증코드 화면을 보여주지 않고 바로 처리
@@ -25,6 +27,7 @@ function SignUpContent() {
       localStorage.setItem('accessToken', accessToken);
       localStorage.setItem('refreshToken', refreshToken);
 
+      refetchProfile();
       router.replace('/profile-setup');
     }
   }, [searchParams, router]);

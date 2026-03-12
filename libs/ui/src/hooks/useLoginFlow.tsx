@@ -2,6 +2,7 @@
 
 import { useRouter } from 'next/navigation';
 import { localLogin, useLoadingStore } from '@org/shop-data';
+import { useProfile } from '../context';
 
 interface LoginFlowParams {
   accountId: string;
@@ -16,6 +17,7 @@ export function useLoginFlow({
 }: LoginFlowParams) {
   const { setLoading, setLoadingState } = useLoadingStore();
   const router = useRouter();
+  const { refetchProfile } = useProfile();
 
   const validateEmailStep = () => {
     if (!accountId) {
@@ -70,6 +72,7 @@ export function useLoginFlow({
         localStorage.setItem('refreshToken', res.refreshToken);
       }
 
+      await refetchProfile();
       validateSuccessStep();
     } catch (error: any) {
       setLoading(false);

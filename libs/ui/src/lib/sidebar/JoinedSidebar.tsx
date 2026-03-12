@@ -180,7 +180,15 @@ export function JoinedSidebar({
               >
                 {team.room_name}
               </div>
-              <button onClick={() => onOpenModal(team.type)}>
+              <button
+                onClick={() => {
+                  if (team.type === 'MEMBER' && !isLeader) {
+                    alert('권한이 없습니다.');
+                    return;
+                  }
+                  onOpenModal(team.type);
+                }}
+              >
                 <Image src={JoinedPlus} alt="addRoom" className="w-5" />
               </button>
             </div>

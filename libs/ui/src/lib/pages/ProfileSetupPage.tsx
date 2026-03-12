@@ -5,10 +5,12 @@ import { useRouter } from 'next/navigation';
 import { colors, typography } from '../../design';
 import { Input } from '../components';
 import { setOauthProfile, useErrorStore } from '@org/shop-data';
+import { useProfile } from '../../context';
 
 export function ProfileSetupPage() {
   const router = useRouter();
   const { generalError, setGeneralError } = useErrorStore();
+  const { refetchProfile } = useProfile();
   const [accountId, setAccountId] = useState('');
   const [name, setName] = useState('');
   const [password, setPassword] = useState('');
@@ -44,6 +46,7 @@ export function ProfileSetupPage() {
         password
       );
       console.log('Profile Setup Success (ProfileSetupPage):', response);
+      await refetchProfile();
       router.push('/main');
     } catch (err: unknown) {
       const message =

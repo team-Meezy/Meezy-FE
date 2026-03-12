@@ -4,12 +4,14 @@ import { useEffect } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { colors } from '../../design';
 import { useErrorStore, useLoginStore } from '@org/shop-data';
+import { useProfile } from '../../context';
 
 export function LoginCallbackClient() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const { generalError, setGeneralError } = useErrorStore();
   const { isProcessing, setIsProcessing } = useLoginStore();
+  const { refetchProfile } = useProfile();
 
   useEffect(() => {
     let timeoutId: NodeJS.Timeout | null = null;
@@ -38,6 +40,7 @@ export function LoginCallbackClient() {
           localStorage.setItem('accessToken', accessToken);
           localStorage.setItem('refreshToken', refreshToken);
 
+          refetchProfile();
           router.push('/profile-setup');
           return;
         }

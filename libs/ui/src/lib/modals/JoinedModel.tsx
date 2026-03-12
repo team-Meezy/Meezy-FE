@@ -50,7 +50,7 @@ export function JoinedModal({ isOpen, type, onClose }: JoinedModalProps) {
               inviteCode: res.inviteCode,
               expiresAt: res.expiresAt || '',
             });
-            setServerName(res.inviteCode); // 입력창에 즉시 표시
+            // remove setServerName(res.inviteCode); to avoid mixing with ROOM input
           }
         } catch (error) {
           console.error('초대 코드 생성 실패:', error);
@@ -58,7 +58,7 @@ export function JoinedModal({ isOpen, type, onClose }: JoinedModalProps) {
       };
       createCode();
     }
-  }, [isOpen, type, serverId, setServerName]);
+  }, [isOpen, type, serverId, setInviteCode]);
 
   const createServer = async () => {
     const valueToValidate = serverName;
@@ -132,13 +132,13 @@ export function JoinedModal({ isOpen, type, onClose }: JoinedModalProps) {
 
             <input
               type="text"
-              value={serverName}
+              value={type === 'MEMBER' ? inviteCode.inviteCode : serverName}
               onChange={(e) => {
                 if (type === 'ROOM') setServerName(e.target.value);
               }}
               readOnly={type !== 'ROOM'}
               placeholder={
-                type === 'ROOM' ? '채널 이름' : inviteCode.inviteCode
+                type === 'ROOM' ? '채널 이름' : '초대 코드를 생성 중입니다...'
               }
               className="w-full border-none rounded-lg p-3 placeholder:text-gray-500 outline-none transition-all"
               style={{
@@ -160,7 +160,7 @@ export function JoinedModal({ isOpen, type, onClose }: JoinedModalProps) {
             닫기
           </button>
           <button
-            onClick={createServer}
+            onClick={type === 'ROOM' ? createServer : onClose}
             className="flex-1 py-3 px-4 bg-[#ff5c00] text-white rounded-md font-bold hover:bg-[#e65300] transition-colors"
           >
             {type === 'ROOM' ? '추가' : '완료'}

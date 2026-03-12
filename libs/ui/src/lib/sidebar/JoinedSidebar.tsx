@@ -71,6 +71,33 @@ export function JoinedSidebar({
 
   const handleClickOutside = () => setContextMenuUserId(null);
 
+  // 현재 로그인한 유저가 리더인지 확인
+  const myMemberInfo = teamMembers?.find((m) => {
+    const profileId =
+      profile?.id ||
+      profile?.userId ||
+      (profile as any)?.user_id ||
+      (profile as any)?.accountId;
+    const memberUserId =
+      (m as any).userId ||
+      (m as any).user_id ||
+      (m as any).user?.id ||
+      (m as any).user?.userId ||
+      m.teamMemberId;
+
+    if (profileId && memberUserId && String(profileId) === String(memberUserId))
+      return true;
+    if (
+      m.name === profile?.name ||
+      m.name === profile?.userName ||
+      m.name === profile?.nickName
+    )
+      return true;
+    return false;
+  });
+
+  const isLeader = myMemberInfo?.role === 'LEADER';
+
   useEffect(() => {
     if (!serverId) return;
 
@@ -104,33 +131,6 @@ export function JoinedSidebar({
   };
 
   const onClickServerProfile = () => {
-    const myMemberInfo = teamMembers?.find((m) => {
-      const profileId =
-        profile?.id ||
-        profile?.userId ||
-        (profile as any)?.user_id ||
-        (profile as any)?.accountId;
-      const memberUserId =
-        (m as any).userId ||
-        (m as any).user_id ||
-        (m as any).user?.id ||
-        (m as any).user?.userId ||
-        m.teamMemberId;
-
-      // 1. 유저 ID로 직접 비교
-      if (profileId && memberUserId && profileId === memberUserId) return true;
-
-      // 2. 이름으로 보조 비교 (ID가 불확실할 때)
-      if (
-        m.name === profile?.name ||
-        m.name === profile?.userName ||
-        m.name === profile?.nickName
-      )
-        return true;
-
-      return false;
-    });
-
     if (myMemberInfo?.role === 'LEADER') {
       router.push(`/main/${serverId}/ServerProfile`);
     } else {
@@ -237,7 +237,7 @@ export function JoinedSidebar({
                       {currentUserName}
                     </span>
                   </div>
-                  {contextMenuUserId === currentUserId && (
+                  {isLeader && contextMenuUserId === currentUserId && (
                     <div
                       className="mt-2 px-4 py-3 flex items-center justify-center rounded-lg transition-colors"
                       style={{

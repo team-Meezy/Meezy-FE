@@ -2,8 +2,7 @@
 
 import { useEffect, Suspense } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
-import { SignUpPage } from '@meezy/ui/client';
-import { useProfile } from '@meezy/ui';
+import { SignUpPage, useProfile } from '@meezy/ui/client';
 
 function SignUpContent() {
   const router = useRouter();

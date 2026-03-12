@@ -38,7 +38,12 @@ export function ProfileSetupPage() {
 
     setSubmitting(true);
     try {
-      await setOauthProfile(accountId.trim(), name.trim(), password);
+      const response = await setOauthProfile(
+        accountId.trim(),
+        name.trim(),
+        password
+      );
+      console.log('Profile Setup Success (ProfileSetupPage):', response);
       router.push('/main');
     } catch (err: unknown) {
       const message =
@@ -77,10 +82,7 @@ export function ProfileSetupPage() {
           아이디, 이름, 비밀번호를 입력해주세요.
         </p>
 
-        <form
-          className="w-full space-y-6"
-          onSubmit={handleSubmit}
-        >
+        <form className="w-full space-y-6" onSubmit={handleSubmit}>
           <div className="flex flex-col gap-3">
             <Input
               type="text"
@@ -133,7 +135,9 @@ export function ProfileSetupPage() {
                 setGeneralError('');
               }}
               error={
-                generalError === '비밀번호가 일치하지 않습니다.' ? generalError : ''
+                generalError === '비밀번호가 일치하지 않습니다.'
+                  ? generalError
+                  : ''
               }
             />
           </div>

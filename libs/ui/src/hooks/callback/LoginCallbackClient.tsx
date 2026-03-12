@@ -29,14 +29,16 @@ export function LoginCallbackClient() {
         const isProfileCompleted = searchParams.get('isProfileCompleted');
 
         if (accessToken && refreshToken) {
+          console.log('OAuth Login Success (Callback Client):', {
+            accessToken,
+            refreshToken,
+            isProfileCompleted,
+          });
+
           localStorage.setItem('accessToken', accessToken);
           localStorage.setItem('refreshToken', refreshToken);
 
-          if (isProfileCompleted === 'false') {
-            router.push('/profile-setup');
-          } else {
-            router.push('/main');
-          }
+          router.push('/profile-setup');
           return;
         }
 

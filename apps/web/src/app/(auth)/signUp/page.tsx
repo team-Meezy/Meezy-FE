@@ -16,14 +16,16 @@ export default function Page() {
     const isProfileCompleted = searchParams.get('isProfileCompleted');
 
     if (accessToken && refreshToken) {
+      console.log('OAuth Login Success (signUp page):', {
+        accessToken,
+        refreshToken,
+        isProfileCompleted,
+      });
+
       localStorage.setItem('accessToken', accessToken);
       localStorage.setItem('refreshToken', refreshToken);
 
-      if (isProfileCompleted === 'false') {
-        router.replace('/profile-setup');
-      } else {
-        router.replace('/main');
-      }
+      router.replace('/profile-setup');
     }
   }, [searchParams, router]);
 

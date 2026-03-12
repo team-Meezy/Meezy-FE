@@ -71,8 +71,9 @@ export function ServerStateProvider({ children }: { children: ReactNode }) {
       setTeams(data);
     } catch (error) {
       console.error('Failed to update teams:', error);
+      throw error;
     }
-  }, []);
+  }, [setTeams]);
 
   const updateTeamMembers = useCallback(async (id: string) => {
     try {
@@ -80,6 +81,7 @@ export function ServerStateProvider({ children }: { children: ReactNode }) {
       setTeamMembers(data);
     } catch (error) {
       console.error('Failed to update team members:', error);
+      throw error;
     }
   }, []);
 

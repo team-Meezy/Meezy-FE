@@ -1,3 +1,5 @@
+'use client';
+
 import {
   roomsrcList,
   sidebarList,
@@ -9,24 +11,20 @@ import { CalendarMockup, Header } from '../../components';
 import { ReceiveAiAssistant } from '../../components';
 import { useEffect } from 'react';
 import { useServerIdStore } from '@org/shop-data';
-import { useParams } from 'next/navigation';
+import { useParams, useRouter } from 'next/navigation';
 
 export function ServerIdLayoutWrapper({
   children,
 }: {
   children: React.ReactNode;
 }) {
-  const {
-    teamMembers,
-    setChatRoom,
-    setServerProfile,
-    setTeamMembers,
-    updateTeamMembers,
-  } = useServerState();
+  const { setChatRoom, setServerProfile, setTeamMembers, updateTeamMembers } =
+    useServerState();
   const { joined, setSelectedRoomId } = useServerJoinedTeam();
   const { setServerId } = useServerIdStore();
   const params = useParams();
   const currentServerId = params.serverId as string;
+  const router = useRouter();
 
   useEffect(() => {
     if (!currentServerId) return;
@@ -35,12 +33,19 @@ export function ServerIdLayoutWrapper({
     setServerId(currentServerId);
 
     const fetchMembers = async () => {
-      setTeamMembers([]);
-      await updateTeamMembers(currentServerId);
+      try {
+        setTeamMembers([]);
+        await updateTeamMembers(currentServerId);
+      } catch (error: any) {
+        if (error.response?.status === 403 || error.status === 403) {
+          alert('해당 팀에 대한 접근 권한이 없습니다. (강퇴 또는 권한 없음)');
+          router.push('/main');
+        }
+      }
     };
 
     fetchMembers();
-  }, [currentServerId, setServerId, setTeamMembers, updateTeamMembers]);
+  }, [currentServerId, setServerId, setTeamMembers, updateTeamMembers, router]);
 
   return (
     <div className="flex flex-1 overflow-hidden">

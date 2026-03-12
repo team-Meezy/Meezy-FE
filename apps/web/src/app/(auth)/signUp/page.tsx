@@ -1,10 +1,10 @@
 'use client';
 
-import { useEffect } from 'react';
+import { useEffect, Suspense } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { SignUpPage } from '@meezy/ui/client';
 
-export default function Page() {
+function SignUpContent() {
   const router = useRouter();
   const searchParams = useSearchParams();
 
@@ -38,4 +38,12 @@ export default function Page() {
   }
 
   return <SignUpPage />;
+}
+
+export default function Page() {
+  return (
+    <Suspense fallback={<div>Loading...</div>}>
+      <SignUpContent />
+    </Suspense>
+  );
 }

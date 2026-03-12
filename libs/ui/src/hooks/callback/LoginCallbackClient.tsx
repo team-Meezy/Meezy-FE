@@ -33,7 +33,7 @@ export function LoginCallbackClient() {
           localStorage.setItem('refreshToken', refreshToken);
 
           if (isProfileCompleted === 'false') {
-            router.push('/signUp');
+            router.push('/profile-setup');
           } else {
             router.push('/main');
           }

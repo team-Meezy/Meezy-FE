@@ -4,21 +4,51 @@ import { useServerJoinedTeam, useProfile } from '../../context';
 import { useRouter, useParams, usePathname } from 'next/navigation';
 import {
   startMeeting,
+  joinMeeting,
   leaveMeeting,
   getActiveMeetings,
   uploadMeetingRecording,
 } from '@org/shop-data';
 import { useMeetingStore } from '@org/shop-data';
+import { useServerState } from '../../context';
 
 export function Header() {
   const { joined, setJoined, meeting, setMeeting } = useServerJoinedTeam();
   const { meetingId, setMeetingId } = useMeetingStore();
   const { profile } = useProfile();
+  const { teamMembers } = useServerState();
   const params = useParams();
   const router = useRouter();
   const pathname = usePathname();
 
   const currentTeamId = params.serverId as string;
+
+  // 현재 로그인한 유저가 리더인지 확인
+  const myMemberInfo = teamMembers?.find((m) => {
+    const profileId =
+      profile?.userId ||
+      profile?.id ||
+      profile?.user_id ||
+      (profile as any)?.accountId;
+    const memberUserId =
+      (m as any).userId ||
+      (m as any).user_id ||
+      (m as any).user?.id ||
+      (m as any).user?.userId ||
+      m.teamMemberId;
+
+    if (profileId && memberUserId && String(profileId) === String(memberUserId))
+      return true;
+    if (
+      m.name === profile?.name ||
+      m.name === profile?.userName ||
+      m.name === profile?.nickName
+    )
+      return true;
+    return false;
+  });
+
+  const isLeader = myMemberInfo?.role === 'LEADER';
 
   const checkActiveMeeting = useCallback(async () => {
     if (!currentTeamId || !profile) return;
@@ -100,18 +130,26 @@ export function Header() {
         alert('회의 나가기에 실패했습니다.');
       }
     } else {
-      // 회의 시작
+      // 회의 시작 또는 참가
       try {
-        const res = await startMeeting(currentTeamId);
+        let res;
+        if (isLeader) {
+          // 리더는 회의 시작
+          res = await startMeeting(currentTeamId);
+        } else {
+          // 팀원은 회의 참가
+          res = await joinMeeting(currentTeamId);
+        }
+
         setMeeting(true); // API 성공 시 즉시 상태 변경
         if (res?.meetingId) {
           setMeetingId(res.meetingId);
-          console.log(res.meetingId, 'meetingId.startMeeting');
+          console.log(res.meetingId, `${isLeader ? 'start' : 'join'}Meeting`);
         }
         router.push(`/main/${currentTeamId}/meeting`);
       } catch (error) {
-        console.log('startMeeting error', error);
-        alert('회의 시작에 실패했습니다.');
+        console.log(`${isLeader ? 'start' : 'join'}Meeting error`, error);
+        alert(`${isLeader ? '회의 시작' : '회의 참가'}에 실패했습니다.`);
       }
     }
   };
@@ -146,7 +184,7 @@ export function Header() {
             }}
             onClick={() => onClickMeeting()}
           >
-            {meeting ? '회의 나가기' : '회의 시작'}
+            {meeting ? '회의 나가기' : isLeader ? '회의 시작' : '회의 참가'}
           </button>
         )}
         {profile?.profileImage ? (

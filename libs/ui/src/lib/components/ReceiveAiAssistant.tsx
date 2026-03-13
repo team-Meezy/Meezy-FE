@@ -1,40 +1,76 @@
 'use client';
 
+import { useRouter } from 'next/navigation';
+import { useServerIdStore } from '@org/shop-data';
+import { useServerJoinedTeam } from '../../context';
+import { colors, typography } from '../../design';
 import Image from 'next/image';
 import ReceiveAssistantIcon from '../../assets/Receive.png';
-import { colors, typography } from '../../design';
 
 export const ReceiveAiAssistant = () => {
+  const router = useRouter();
+  const { serverId } = useServerIdStore();
+  const { meeting } = useServerJoinedTeam();
+
+  const onClickSummary = () => {
+    if (serverId) router.push(`/main/${serverId}/summary`);
+  };
+
+  const onClickFeedback = () => {
+    if (serverId) router.push(`/main/${serverId}/feedback`);
+  };
+
+  const onClickTeam = () => {
+    if (serverId) router.push(`/main/${serverId}`);
+  };
+
   return (
     <div className="min-w-[200px] fixed bottom-5 right-5 flex flex-col items-end gap-2 z-30">
       {/* 1. AI 도우미 팝업 카드 */}
       <div className="relative bg-[#1e1e1e]/90 backdrop-blur-md rounded-xl shadow-2xl border border-white/5 w-full overflow-hidden">
-        <div className="flex justify-between items-center border-b border-white/5">
+        <div className="flex justify-between items-center border-b border-white/5 pr-4">
           <div className="w-full text-gray-400 text-xs font-medium pt-3 px-4 pb-2">
             AI 도우미 - 리시브
           </div>
+          {meeting && (
+            <div className="w-2 h-2 rounded-full bg-red-600 animate-pulse mt-1" />
+          )}
         </div>
 
-        <div className="flex flex-col gap-3 text-center p-6 relative z-10">
-          <button
-            className="text-white hover:text-[#ff5c00] transition-colors"
-            style={{ ...typography.body.BodyB, color: colors.white[100] }}
-          >
-            요약 바로 보러 가기
-          </button>
-          <button
-            className="text-white hover:text-[#ff5c00] transition-colors"
-            style={{ ...typography.label.labelM, color: colors.gray[500] }}
-          >
-            피드백 바로 보러 가기
-          </button>
-          <button
-            className="text-white hover:text-[#ff5c00] transition-colors"
-            style={{ ...typography.label.labelM, color: colors.gray[500] }}
-          >
-            참여율 바로 보러 가기
-          </button>
-        </div>
+        {meeting ? (
+          <div className="flex flex-col gap-3 text-center p-8 relative z-10 min-h-[120px] justify-center">
+            <div
+              className="text-white font-bold"
+              style={{ ...typography.body.BodyB }}
+            >
+              회의 녹음 시작
+            </div>
+          </div>
+        ) : (
+          <div className="flex flex-col gap-3 text-center p-6 relative z-10">
+            <button
+              onClick={onClickSummary}
+              className="text-white hover:text-[#ff5c00] transition-colors"
+              style={{ ...typography.body.BodyB, color: colors.white[100] }}
+            >
+              요약 바로 보러 가기
+            </button>
+            <button
+              onClick={onClickFeedback}
+              className="text-white hover:text-[#ff5c00] transition-colors"
+              style={{ ...typography.label.labelM, color: colors.gray[500] }}
+            >
+              피드백 바로 보러 가기
+            </button>
+            <button
+              onClick={onClickTeam}
+              className="text-white hover:text-[#ff5c00] transition-colors"
+              style={{ ...typography.label.labelM, color: colors.gray[500] }}
+            >
+              참여율 바로 보러 가기
+            </button>
+          </div>
+        )}
 
         <div className="absolute -bottom-10 left-1/2 -translate-x-1/2 w-32 h-20 bg-[#ff5c00]/20 blur-[30px] rounded-full pointer-events-none" />
       </div>

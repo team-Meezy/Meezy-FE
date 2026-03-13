@@ -26,8 +26,8 @@ export function Header() {
   // 현재 로그인한 유저가 리더인지 확인
   const myMemberInfo = teamMembers?.find((m) => {
     const profileId =
-      profile?.userId ||
       profile?.id ||
+      profile?.userId ||
       profile?.user_id ||
       (profile as any)?.accountId;
     const memberUserId =
@@ -50,13 +50,22 @@ export function Header() {
 
   const isLeader = myMemberInfo?.role === 'LEADER';
 
+  useEffect(() => {
+    if (profile || teamMembers.length > 0) {
+      console.log('Header: [DEBUG] profile', profile);
+      console.log('Header: [DEBUG] teamMembersCount', teamMembers.length);
+      console.log('Header: [DEBUG] myMemberInfo', myMemberInfo);
+      console.log('Header: [DEBUG] isLeader', isLeader);
+    }
+  }, [profile, teamMembers, myMemberInfo, isLeader]);
+
   const checkActiveMeeting = useCallback(async () => {
     if (!currentTeamId || !profile) return;
 
     try {
       const activeMeetings = await getActiveMeetings(currentTeamId);
       const myId =
-        profile.userId || profile.id || profile.user_id || profile.accountId;
+        profile.id || profile.userId || profile.user_id || profile.accountId;
 
       if (!activeMeetings || !activeMeetings.meetingId) {
         if (!pathname.includes('/meeting')) {
@@ -133,23 +142,39 @@ export function Header() {
       // 회의 시작 또는 참가
       try {
         let res;
+        console.log(
+          `Header: [ACTION] ${
+            isLeader ? 'Starting' : 'Joining'
+          } meeting for team: ${currentTeamId}...`
+        );
         if (isLeader) {
-          // 리더는 회의 시작
           res = await startMeeting(currentTeamId);
         } else {
-          // 팀원은 회의 참가
           res = await joinMeeting(currentTeamId);
         }
 
-        setMeeting(true); // API 성공 시 즉시 상태 변경
+        console.log(
+          `Header: [DEBUG] ${isLeader ? 'start' : 'join'}Meeting response:`,
+          res
+        );
+        setMeeting(true);
         if (res?.meetingId) {
           setMeetingId(res.meetingId);
-          console.log(res.meetingId, `${isLeader ? 'start' : 'join'}Meeting`);
+        } else {
+          console.warn(
+            `Header: [WARN] No meetingId returned from ${
+              isLeader ? 'start' : 'join'
+            }Meeting`
+          );
         }
         router.push(`/main/${currentTeamId}/meeting`);
-      } catch (error) {
-        console.log(`${isLeader ? 'start' : 'join'}Meeting error`, error);
-        alert(`${isLeader ? '회의 시작' : '회의 참가'}에 실패했습니다.`);
+      } catch (error: any) {
+        console.error(`${isLeader ? 'start' : 'join'}Meeting error:`, error);
+        const errorMsg =
+          error.response?.data?.message || error.message || '알 수 없는 에러';
+        alert(
+          `${isLeader ? '회의 시작' : '회의 참가'}에 실패했습니다: ${errorMsg}`
+        );
       }
     }
   };

@@ -1,3 +1,5 @@
+'use client';
+
 import { useState, useRef, useEffect } from 'react';
 import { useServerCreate } from '../context/ServerCreateProvider';
 import { uploadProfileImage } from '@org/shop-data';

@@ -11,7 +11,7 @@ export const setOauthProfile = async (
     password: password,
   };
   try {
-    const response = await privateApi.post('profile/setup', body);
+    const response = await privateApi.post('/profile/setup', body);
     return response.data;
   } catch (error) {
     throw error;

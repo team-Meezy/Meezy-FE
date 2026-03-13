@@ -4,21 +4,60 @@ import { useServerJoinedTeam, useProfile } from '../../context';
 import { useRouter, useParams, usePathname } from 'next/navigation';
 import {
   startMeeting,
+  joinMeeting,
   leaveMeeting,
   getActiveMeetings,
   uploadMeetingRecording,
 } from '@org/shop-data';
 import { useMeetingStore } from '@org/shop-data';
+import { useServerState } from '../../context';
 
 export function Header() {
   const { joined, setJoined, meeting, setMeeting } = useServerJoinedTeam();
   const { meetingId, setMeetingId } = useMeetingStore();
   const { profile } = useProfile();
+  const { teamMembers } = useServerState();
   const params = useParams();
   const router = useRouter();
   const pathname = usePathname();
 
   const currentTeamId = params.serverId as string;
+
+  // 현재 로그인한 유저가 리더인지 확인
+  const myMemberInfo = teamMembers?.find((m) => {
+    const profileId =
+      profile?.id ||
+      profile?.userId ||
+      profile?.user_id ||
+      (profile as any)?.accountId;
+    const memberUserId =
+      (m as any).userId ||
+      (m as any).user_id ||
+      (m as any).user?.id ||
+      (m as any).user?.userId ||
+      m.teamMemberId;
+
+    if (profileId && memberUserId && String(profileId) === String(memberUserId))
+      return true;
+    if (
+      m.name === profile?.name ||
+      m.name === profile?.userName ||
+      m.name === profile?.nickName
+    )
+      return true;
+    return false;
+  });
+
+  const isLeader = myMemberInfo?.role === 'LEADER';
+
+  useEffect(() => {
+    if (profile || teamMembers.length > 0) {
+      console.log('Header: [DEBUG] profile', profile);
+      console.log('Header: [DEBUG] teamMembersCount', teamMembers.length);
+      console.log('Header: [DEBUG] myMemberInfo', myMemberInfo);
+      console.log('Header: [DEBUG] isLeader', isLeader);
+    }
+  }, [profile, teamMembers, myMemberInfo, isLeader]);
 
   const checkActiveMeeting = useCallback(async () => {
     if (!currentTeamId || !profile) return;
@@ -26,7 +65,7 @@ export function Header() {
     try {
       const activeMeetings = await getActiveMeetings(currentTeamId);
       const myId =
-        profile.userId || profile.id || profile.user_id || profile.accountId;
+        profile.id || profile.userId || profile.user_id || profile.accountId;
 
       if (!activeMeetings || !activeMeetings.meetingId) {
         if (!pathname.includes('/meeting')) {
@@ -100,18 +139,42 @@ export function Header() {
         alert('회의 나가기에 실패했습니다.');
       }
     } else {
-      // 회의 시작
+      // 회의 시작 또는 참가
       try {
-        const res = await startMeeting(currentTeamId);
-        setMeeting(true); // API 성공 시 즉시 상태 변경
+        let res;
+        console.log(
+          `Header: [ACTION] ${
+            isLeader ? 'Starting' : 'Joining'
+          } meeting for team: ${currentTeamId}...`
+        );
+        if (isLeader) {
+          res = await startMeeting(currentTeamId);
+        } else {
+          res = await joinMeeting(currentTeamId);
+        }
+
+        console.log(
+          `Header: [DEBUG] ${isLeader ? 'start' : 'join'}Meeting response:`,
+          res
+        );
+        setMeeting(true);
         if (res?.meetingId) {
           setMeetingId(res.meetingId);
-          console.log(res.meetingId, 'meetingId.startMeeting');
+        } else {
+          console.warn(
+            `Header: [WARN] No meetingId returned from ${
+              isLeader ? 'start' : 'join'
+            }Meeting`
+          );
         }
         router.push(`/main/${currentTeamId}/meeting`);
-      } catch (error) {
-        console.log('startMeeting error', error);
-        alert('회의 시작에 실패했습니다.');
+      } catch (error: any) {
+        console.error(`${isLeader ? 'start' : 'join'}Meeting error:`, error);
+        const errorMsg =
+          error.response?.data?.message || error.message || '알 수 없는 에러';
+        alert(
+          `${isLeader ? '회의 시작' : '회의 참가'}에 실패했습니다: ${errorMsg}`
+        );
       }
     }
   };
@@ -146,7 +209,7 @@ export function Header() {
             }}
             onClick={() => onClickMeeting()}
           >
-            {meeting ? '회의 나가기' : '회의 시작'}
+            {meeting ? '회의 나가기' : isLeader ? '회의 시작' : '회의 참가'}
           </button>
         )}
         {profile?.profileImage ? (

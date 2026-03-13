@@ -4,12 +4,14 @@ import { useEffect } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { colors } from '../../design';
 import { useErrorStore, useLoginStore } from '@org/shop-data';
+import { useProfile } from '../../context';
 
 export function LoginCallbackClient() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const { generalError, setGeneralError } = useErrorStore();
   const { isProcessing, setIsProcessing } = useLoginStore();
+  const { refetchProfile } = useProfile();
 
   useEffect(() => {
     let timeoutId: NodeJS.Timeout | null = null;
@@ -29,14 +31,17 @@ export function LoginCallbackClient() {
         const isProfileCompleted = searchParams.get('isProfileCompleted');
 
         if (accessToken && refreshToken) {
+          console.log('OAuth Login Success (Callback Client):', {
+            accessToken,
+            refreshToken,
+            isProfileCompleted,
+          });
+
           localStorage.setItem('accessToken', accessToken);
           localStorage.setItem('refreshToken', refreshToken);
 
-          if (isProfileCompleted === 'false') {
-            router.push('/signUp');
-          } else {
-            router.push('/main');
-          }
+          refetchProfile();
+          router.push('/profile-setup');
           return;
         }
 

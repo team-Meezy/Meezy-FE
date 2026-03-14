@@ -203,7 +203,6 @@ export function ChatRoomPage() {
               </div>
             </div>
           ))}
-          ))}
         </div>
 
         {/* 새 메시지 알림 */}

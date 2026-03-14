@@ -1,7 +1,7 @@
 'use client';
 
 import { useRouter } from 'next/navigation';
-import { localLogin, useLoadingStore } from '@org/shop-data';
+import { localLogin, useLoadingStore, getTeams } from '@org/shop-data';
 import { useProfile } from '../context';
 
 interface LoginFlowParams {
@@ -73,7 +73,19 @@ export function useLoginFlow({
       }
 
       await refetchProfile();
-      validateSuccessStep();
+      
+      // 바로 팀으로 들어가게 하기 위해 팀 목록 조회
+      try {
+        const teams = await getTeams();
+        if (teams && teams.length > 0) {
+          router.push(`/main/${teams[0].teamId}`);
+        } else {
+          router.push('/main');
+        }
+      } catch (error) {
+        console.error('Failed to fetch teams after login:', error);
+        router.push('/main');
+      }
     } catch (error: any) {
       setLoading(false);
       const statusCode = error.response?.status || error.statusCode;

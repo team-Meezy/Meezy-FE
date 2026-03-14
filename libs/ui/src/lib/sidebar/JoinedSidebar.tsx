@@ -231,10 +231,18 @@ export function JoinedSidebar({
                       ...typography.body.BodyB,
                     }}
                   >
-                    <div
-                      className="rounded-full w-5 h-5 shrink-0"
-                      style={{ backgroundColor: colors.white[100] }}
-                    />
+                    {user.profileImage || (user as any).user?.profileImage ? (
+                      <img
+                        src={user.profileImage || (user as any).user?.profileImage}
+                        alt={currentUserName}
+                        className="rounded-full w-5 h-5 shrink-0 object-cover"
+                      />
+                    ) : (
+                      <div
+                        className="rounded-full w-5 h-5 shrink-0"
+                        style={{ backgroundColor: colors.white[100] }}
+                      />
+                    )}
 
                     <span
                       className="truncate"

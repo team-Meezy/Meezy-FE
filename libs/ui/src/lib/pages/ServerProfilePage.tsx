@@ -229,7 +229,15 @@ export function ServerProfilePage() {
                 className="flex gap-2 items-center justify-between px-4"
               >
                 <div className="flex gap-4 items-center">
-                  <div className="w-9 h-9 rounded-full bg-gray-800" />
+                  {user.profileImage ? (
+                    <img
+                      src={user.profileImage}
+                      alt={user.name}
+                      className="w-9 h-9 rounded-full object-cover"
+                    />
+                  ) : (
+                    <div className="w-9 h-9 rounded-full bg-gray-800" />
+                  )}
                   <div>{user.name}</div>
                 </div>
                 <button

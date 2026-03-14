@@ -161,9 +161,16 @@ export function ChatRoomPage() {
           style={{ backgroundColor: colors.black[100] }}
           onScroll={handleScroll}
         >
-          {messages.map((msg) => (
             <div key={msg.chatMessageId} className="flex gap-3">
-              <div className="w-10 h-10 rounded-full bg-[#D9D9D9] shrink-0" />
+              {msg.profileImage ? (
+                <img
+                  src={msg.profileImage}
+                  alt={msg.senderName}
+                  className="w-10 h-10 rounded-full shrink-0 object-cover"
+                />
+              ) : (
+                <div className="w-10 h-10 rounded-full bg-[#D9D9D9] shrink-0" />
+              )}
               <div className="flex flex-col gap-1.5 flex-1">
                 <div className="flex items-center gap-2">
                   <span style={{ ...typography.body.BodyB, color: '#FFFFFF' }}>

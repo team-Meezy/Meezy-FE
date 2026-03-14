@@ -161,6 +161,7 @@ export function ChatRoomPage() {
           style={{ backgroundColor: colors.black[100] }}
           onScroll={handleScroll}
         >
+          {messages.map((msg) => (
             <div key={msg.chatMessageId} className="flex gap-3">
               {msg.profileImage ? (
                 <img
@@ -201,6 +202,7 @@ export function ChatRoomPage() {
                 </div>
               </div>
             </div>
+          ))}
           ))}
         </div>
 

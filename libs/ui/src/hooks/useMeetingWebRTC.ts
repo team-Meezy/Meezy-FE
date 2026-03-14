@@ -180,7 +180,14 @@ export function useMeetingWebRTC(teamId: string, myId: string) {
       switch (event.type) {
         case 'participant_joined':
           if (event.userId && event.userId !== myId) {
-            connectToUser(event.userId);
+            // "Polite" 발송 전략: ID가 더 작은 쪽이 먼저 Offer를 보냄
+            // (또는 한쪽만 보내도록 규칙을 정함)
+            if (myId < event.userId) {
+              log(`polite initiation: sending offer to ${event.userId}`);
+              connectToUser(event.userId);
+            } else {
+              log(`polite initiation: waiting for offer from ${event.userId}`);
+            }
           }
           break;
         case 'participant_left':

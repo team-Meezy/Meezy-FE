@@ -33,6 +33,20 @@ export function AuthCodeInput() {
     }
   };
 
+  const handlePaste = (e: React.ClipboardEvent) => {
+    e.preventDefault();
+    const pastedData = e.clipboardData.getData('text').slice(0, LENGTH);
+    const digitsOnly = pastedData.replace(/\D/g, '').slice(0, LENGTH);
+
+    if (digitsOnly) {
+      setAuthCode(digitsOnly);
+      setGeneralError('');
+      // 마지막 입력창 또는 채워진 칸의 다음 칸으로 포커스 이동
+      const nextIndex = Math.min(digitsOnly.length, LENGTH - 1);
+      inputsRef.current[nextIndex]?.focus();
+    }
+  };
+
   return (
     <div className="flex flex-col gap-4">
       <div className="flex justify-between">
@@ -48,6 +62,7 @@ export function AuthCodeInput() {
             value={authCode[index] ?? ''}
             onChange={(e) => handleChange(index, e.target.value)}
             onKeyDown={(e) => handleKeyDown(index, e)}
+            onPaste={handlePaste}
             className={`
               w-16 h-16
               rounded-lg

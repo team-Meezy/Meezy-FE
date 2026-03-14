@@ -11,6 +11,7 @@ export interface Message {
   chatMessageId: string;
   chatRoomId: string;
   senderName: string;
+  profileImage?: string;
   content: string;
   createdAt: string;
 }

@@ -34,6 +34,7 @@ interface TeamMember {
   teamMemberId: string;
   name: string;
   role: string;
+  profileImage?: string;
   team_id?: number;
 }
 

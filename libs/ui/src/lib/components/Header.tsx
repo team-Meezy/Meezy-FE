@@ -9,14 +9,15 @@ import {
   getActiveMeetings,
   uploadMeetingRecording,
 } from '@org/shop-data';
-import { useMeetingStore } from '@org/shop-data';
+import { useMeetingStore, useLoadingStore } from '@org/shop-data';
 import { useServerState } from '../../context';
 
 export function Header() {
   const { joined, setJoined, meeting, setMeeting } = useServerJoinedTeam();
-  const { meetingId, setMeetingId } = useMeetingStore();
+  const { meetingId, setMeetingId, isUploading } = useMeetingStore();
   const { profile } = useProfile();
   const { teamMembers } = useServerState();
+  const { setLoading, setLoadingState } = useLoadingStore();
   const params = useParams();
   const router = useRouter();
   const pathname = usePathname();

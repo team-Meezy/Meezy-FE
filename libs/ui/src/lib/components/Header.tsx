@@ -100,6 +100,17 @@ export function Header() {
     checkActiveMeeting();
   }, [pathname, checkActiveMeeting]); // checkActiveMeeting은 이제 훨씬 안정적임
 
+  // 업로드 완료 후 자동 이동 처리
+  useEffect(() => {
+    if (meeting === false && isUploading === false && pathname.includes('/meeting')) {
+      const now = new Date().toLocaleTimeString();
+      console.log(`[${now}] Header: [AUTO] Upload completed, navigating now.`);
+      setLoading(false);
+      setLoadingState('');
+      router.push(`/main/${currentTeamId}`);
+    }
+  }, [meeting, isUploading, pathname, currentTeamId, router]);
+
   const onClickMain = () => {
     router.push(`/main/${currentTeamId}`);
   };
@@ -112,30 +123,21 @@ export function Header() {
   const onClickMeeting = async () => {
     if (meeting) {
       // 회의 나가기
-      // 회의 종료 시 녹음 중지 및 업로드 이벤트를 발생시킵니다.
       const now = new Date().toLocaleTimeString();
-      console.log(
-        `[${now}] Header: [EXIT] Dispatching meezy:stop-and-upload. current meetingId: ${meetingId}`
-      );
+      console.log(`[${now}] Header: [EXIT] Starting exit flow...`);
+      setLoading(true);
+      setLoadingState('회의 내용을 저장 중입니다...');
       window.dispatchEvent(new CustomEvent('meezy:stop-and-upload'));
 
       try {
         console.log(`[${now}] Header: [EXIT] Calling leaveMeeting...`);
         await leaveMeeting(currentTeamId);
-        setMeeting(false); // API 성공 시 즉시 상태 변경
-
-        // [중요] 업로드 처리를 위해 더 충분히 대기 (5초)
-        console.log(
-          `[${now}] Header: [EXIT] Waiting 5s for upload to complete...`
-        );
-        await new Promise((resolve) => setTimeout(resolve, 5000));
-
-        console.log(
-          `[${new Date().toLocaleTimeString()}] Header: [EXIT] Navigating back to main`
-        );
-        router.push(`/main/${currentTeamId}`);
+        setMeeting(false); 
+        // 이제 자동 내비게이션 Effect가 isUploading이 false가 되면 처리합니다.
       } catch (error) {
         console.log('leaveMeeting error', error);
+        setLoading(false);
+        setLoadingState('');
         alert('회의 나가기에 실패했습니다.');
       }
     } else {

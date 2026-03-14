@@ -30,7 +30,7 @@ export function useMeetingWebRTC(teamId: string, myId: string) {
   const analyserRef = useRef<AnalyserNode | null>(null);
   const animationFrameIdRef = useRef<number | null>(null);
   const isVADInitializingRef = useRef(false);
-  const { meetingId } = useMeetingStore();
+  const { meetingId, setIsUploading } = useMeetingStore();
   const { sendVoiceActivity } = useMeetingVoiceActivity(meetingId, myId);
 
   // Recording Refs
@@ -393,6 +393,7 @@ export function useMeetingWebRTC(teamId: string, myId: string) {
   useEffect(() => {
     const handleStopAndUpload = async () => {
       log('[EVENT] meezy:stop-and-upload start');
+      setIsUploading(true);
       const tId = teamIdRef.current;
       const mId = meetingIdRef.current;
       const recorder = mediaRecorderRef.current;
@@ -469,6 +470,8 @@ export function useMeetingWebRTC(teamId: string, myId: string) {
         }
       } catch (err) {
         log('[ERROR] handleStopAndUpload task failed', err);
+      } finally {
+        setIsUploading(false);
       }
 
       // Clean up tracks always at the end

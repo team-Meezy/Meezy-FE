@@ -64,7 +64,22 @@ export function TeamSidebar({ onOpenModal }: SidebarProps) {
           m.user?.id ||
           m.user?.userId ||
           m.teamMemberId;
-        return String(memberUserId) === String(profileId);
+
+        if (
+          profileId &&
+          memberUserId &&
+          String(profileId) === String(memberUserId)
+        )
+          return true;
+
+        if (
+          m.name === profile?.name ||
+          m.name === profile?.userName ||
+          m.name === profile?.nickName
+        )
+          return true;
+
+        return false;
       });
 
       if (!myMember) {

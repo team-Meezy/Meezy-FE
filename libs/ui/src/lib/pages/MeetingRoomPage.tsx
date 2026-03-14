@@ -27,8 +27,11 @@ export const MeetingRoomPage = () => {
     localStream,
     remoteStreams,
     isSpeaking,
+    isRecording,
     connectToUser,
     initLocalMedia,
+    startRecording,
+    stopRecording,
   } = useMeetingWebRTC(currentTeamId, myId || '');
   const localVideoRef = useRef<HTMLVideoElement | null>(null);
 
@@ -113,7 +116,15 @@ export const MeetingRoomPage = () => {
   };
 
   return (
-    <div className="flex-1 flex flex-col h-full min-h-0 bg-[#121212] overflow-hidden">
+    <div className="flex-1 flex flex-col h-full min-h-0 bg-[#121212] overflow-hidden relative">
+      {/* 녹음 상태 인디케이터 */}
+      {isRecording && (
+        <div className="absolute top-6 left-6 z-50 flex items-center gap-2 bg-black/50 px-3 py-1.5 rounded-full border border-red-500/30 backdrop-blur-sm">
+          <div className="w-2 h-2 rounded-full bg-red-500 animate-pulse" />
+          <span className="text-red-500 text-xs font-bold tracking-wider">REC</span>
+        </div>
+      )}
+
       <div className="flex-1 flex flex-col items-center justify-center p-4 md:p-8 min-h-0">
         {totalParticipants === 1 ? (
           <div className="w-full h-full flex items-center justify-center max-w-6xl mx-auto">
@@ -196,6 +207,21 @@ export const MeetingRoomPage = () => {
             height={22}
           />
         </button>
+
+        {/* 녹음 제어 버튼 */}
+        <button
+          className={`p-3 ml-2 rounded-full transition-all shadow-lg ${
+            isRecording ? 'bg-red-500/20 hover:bg-red-500/30' : 'hover:bg-[#333]'
+          }`}
+          onClick={() => (isRecording ? stopRecording() : startRecording())}
+        >
+          <div
+            className={`w-5 h-5 rounded-full border-2 ${
+              isRecording ? 'bg-red-500 border-red-500' : 'border-white/70'
+            }`}
+          />
+        </button>
+
         <button className="absolute right-8 text-white/40 hover:text-white">
           <span className="text-2xl font-extralight tracking-tighter cursor-pointer">
             ⛶

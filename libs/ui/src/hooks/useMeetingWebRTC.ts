@@ -30,7 +30,7 @@ export function useMeetingWebRTC(teamId: string, myId: string) {
   const analyserRef = useRef<AnalyserNode | null>(null);
   const animationFrameIdRef = useRef<number | null>(null);
   const isVADInitializingRef = useRef(false);
-  const { meetingId, setIsUploading } = useMeetingStore();
+  const { meetingId, setIsUploading, isRecording, setIsRecording } = useMeetingStore();
   const { sendVoiceActivity } = useMeetingVoiceActivity(meetingId, myId);
 
   // Recording Refs
@@ -253,6 +253,7 @@ export function useMeetingWebRTC(teamId: string, myId: string) {
       };
 
       recorder.start(1000); // 1s chunks
+      setIsRecording(true);
       log('MediaRecorder SUCCESS. state:', recorder.state);
       log('MIME Type selected:', recorder.mimeType);
     } catch (e) {
@@ -273,6 +274,7 @@ export function useMeetingWebRTC(teamId: string, myId: string) {
           );
         };
         fallbackRecorder.start(1000);
+        setIsRecording(true);
         log('Fallback MediaRecorder SUCCESS. state:', fallbackRecorder.state);
       } catch (fallbackError) {
         log(
@@ -281,7 +283,15 @@ export function useMeetingWebRTC(teamId: string, myId: string) {
         );
       }
     }
-  }, [log]);
+  }, [log, setIsRecording]);
+
+  const stopRecording = useCallback(() => {
+    log('stopRecording triggered manually');
+    if (mediaRecorderRef.current && mediaRecorderRef.current.state !== 'inactive') {
+      mediaRecorderRef.current.stop();
+      setIsRecording(false);
+    }
+  }, [log, setIsRecording]);
 
   const initLocalMedia = useCallback(async () => {
     log('initLocalMedia starting...');
@@ -511,7 +521,10 @@ export function useMeetingWebRTC(teamId: string, myId: string) {
     localStream,
     remoteStreams,
     isSpeaking,
+    isRecording,
     connectToUser,
     initLocalMedia,
+    startRecording,
+    stopRecording,
   };
 }

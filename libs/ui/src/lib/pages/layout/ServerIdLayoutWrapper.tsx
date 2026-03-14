@@ -20,7 +20,7 @@ export function ServerIdLayoutWrapper({
 }) {
   const { setChatRoom, setServerProfile, setTeamMembers, updateTeamMembers } =
     useServerState();
-  const { joined, setSelectedRoomId } = useServerJoinedTeam();
+  const { joined, setJoined, setSelectedRoomId } = useServerJoinedTeam();
   const { setServerId } = useServerIdStore();
   const params = useParams();
   const currentServerId = params.serverId as string;
@@ -31,6 +31,7 @@ export function ServerIdLayoutWrapper({
 
     // 전역 스토어도 동기화
     setServerId(currentServerId);
+    setJoined(true);
 
     const fetchMembers = async () => {
       try {

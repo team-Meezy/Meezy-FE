@@ -4,7 +4,7 @@ import { useRouter } from 'next/navigation';
 import { useServerIdStore } from '@org/shop-data';
 import { useServerJoinedTeam } from '../../context';
 import { colors, typography } from '../../design';
-import Image from 'next/image';
+import NextImage from 'next/image';
 import ReceiveAssistantIcon from '../../assets/Receive.png';
 
 export const ReceiveAiAssistant = () => {
@@ -80,7 +80,7 @@ export const ReceiveAiAssistant = () => {
         <div className="absolute inset-0 bg-[#ff5c00]/40 rounded-full transition-all" />
 
         {/* 실제 캐릭터 이미지 */}
-        <Image
+        <NextImage
           src={ReceiveAssistantIcon}
           alt="ReceiveAssistantIcon"
           width={70}

@@ -31,6 +31,7 @@ export function PasswordInput() {
           setGeneralError('');
         }}
         error={isPasswordError ? generalError : ''}
+        showPasswordToggle
       />
       <Input
         id="passwordConfirm"
@@ -43,6 +44,7 @@ export function PasswordInput() {
           setGeneralError('');
         }}
         error={isPasswordConfirmError ? generalError : ''}
+        showPasswordToggle
       />
     </div>
   );

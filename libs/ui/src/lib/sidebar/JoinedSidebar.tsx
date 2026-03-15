@@ -8,7 +8,7 @@ import { JoinedModal, UserKickModal } from '../modals';
 import { useRouter } from 'next/navigation';
 import { useServerIdStore } from '@org/shop-data';
 import { useServerState, useProfile } from '../../context';
-import { expelTeamMember } from '@org/shop-data';
+import { expelTeamMember, leaveTeam } from '@org/shop-data';
 import { getChatRooms } from '@org/shop-data';
 import { useChatStore } from '@org/shop-data';
 
@@ -57,11 +57,19 @@ export function JoinedSidebar({
     setModalType(null);
   };
 
-  const teamRoomMap = sidebarList.map((team) => ({
-    ...team,
-    rooms: team.type === 'ROOM' ? chatRooms : [],
-    users: team.type === 'MEMBER' ? teamMembers : [],
-  }));
+  const teamRoomMap = Array.isArray(sidebarList)
+    ? sidebarList.map((team) => ({
+        ...team,
+        rooms:
+          team.type === 'ROOM' ? (Array.isArray(chatRooms) ? chatRooms : []) : [],
+        users:
+          team.type === 'MEMBER'
+            ? Array.isArray(teamMembers)
+              ? teamMembers
+              : []
+            : [],
+      }))
+    : [];
   console.log(teamRoomMap, 'safdghsaz');
 
   const onContextMenu = (e: React.MouseEvent, contextMenuUserId: string) => {
@@ -130,6 +138,20 @@ export function JoinedSidebar({
     }
   };
 
+  const onLeaveTeam = async () => {
+    if (!serverId) return;
+    if (!confirm('정말로 팀을 나가시겠습니까?')) return;
+
+    try {
+      await leaveTeam(serverId);
+      alert('팀에서 나갔습니다.');
+      router.push('/main');
+    } catch (error) {
+      console.error('팀 나가기 실패:', error);
+      alert('팀 나가기에 실패했습니다.');
+    }
+  };
+
   const onClickServerProfile = () => {
     if (myMemberInfo?.role === 'LEADER') {
       router.push(`/main/${serverId}/ServerProfile`);
@@ -170,7 +192,7 @@ export function JoinedSidebar({
       </button>
       <div className="w-full h-[1px] bg-white/5 mt-5" />
       <div className="flex flex-col items-center flex-1 overflow-y-auto no-scrollbar w-full">
-        {teamRoomMap.map((team, index) => (
+        {Array.isArray(teamRoomMap) && teamRoomMap.map((team, index) => (
           <div key={`team-section-${team.team_id}-${index}`} className="w-full">
             {/* 팀 */}
             <div className="flex justify-center items-center gap-4 mt-5">
@@ -192,7 +214,7 @@ export function JoinedSidebar({
             </div>
 
             {/* 팀의 룸 */}
-            {team.rooms.map((room) => (
+            {Array.isArray(team.rooms) && team.rooms.map((room) => (
               <div
                 key={`room-${room.chatRoomId}`}
                 className="flex justify-center items-center gap-4"
@@ -211,7 +233,7 @@ export function JoinedSidebar({
             ))}
 
             {/* 팀의 사용자 */}
-            {team.users.map((user, userIdx) => {
+            {Array.isArray(team.users) && team.users.map((user, userIdx) => {
               const currentUserId =
                 user.teamMemberId || (user as any).user_id || userIdx;
               const currentUserName =
@@ -251,15 +273,20 @@ export function JoinedSidebar({
                       {currentUserName}
                     </span>
                   </div>
-                  {isLeader && contextMenuUserId === currentUserId && (
+                  {contextMenuUserId === currentUserId && (
                     <div
-                      className="mt-2 px-4 py-3 flex items-center justify-center rounded-lg transition-colors"
+                      className="mt-2 px-4 py-3 flex flex-col items-center justify-center rounded-lg transition-colors gap-2"
                       style={{
                         backgroundColor: colors.gray[800],
                         ...typography.label.labelB,
                       }}
                     >
-                      <button onClick={onKickUser}>내보내기</button>
+                      {isLeader && String(profile?.id || profile?.userId) !== String(currentUserId) && (
+                        <button onClick={onKickUser} className="text-red-500 hover:text-red-400 transition-colors">내보내기</button>
+                      )}
+                      {String(profile?.id || profile?.userId) === String(currentUserId) && (
+                        <button onClick={onLeaveTeam} className="text-gray-300 hover:text-white transition-colors">나가기</button>
+                      )}
                     </div>
                   )}
                 </div>

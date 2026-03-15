@@ -140,6 +140,8 @@ export function Header() {
         console.log(`[${now}] Header: [EXIT] Calling leaveMeeting...`);
         await leaveMeeting(currentTeamId);
         setMeeting(false); 
+        setMeetingId('');
+        setTeamId('');
         // 이제 자동 내비게이션 Effect가 isUploading이 false가 되면 처리합니다.
       } catch (error) {
         console.log('leaveMeeting error', error);

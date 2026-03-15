@@ -9,8 +9,8 @@ import {
 import { JoinedSidebar } from '../../sidebar';
 import { CalendarMockup, Header } from '../../components';
 import { ReceiveAiAssistant } from '../../components';
-import { useEffect } from 'react';
-import { useServerIdStore } from '@org/shop-data';
+import { useEffect, useCallback } from 'react';
+import { useServerIdStore, useTeamSocket } from '@org/shop-data';
 import { useParams, useRouter } from 'next/navigation';
 
 export function ServerIdLayoutWrapper({
@@ -18,8 +18,13 @@ export function ServerIdLayoutWrapper({
 }: {
   children: React.ReactNode;
 }) {
-  const { setChatRoom, setServerProfile, setTeamMembers, updateTeamMembers } =
-    useServerState();
+  const {
+    setChatRoom,
+    setServerProfile,
+    setTeamMembers,
+    updateTeamMembers,
+    updateChatRooms,
+  } = useServerState();
   const { joined, setJoined, setSelectedRoomId } = useServerJoinedTeam();
   const { setServerId } = useServerIdStore();
   const params = useParams();
@@ -50,6 +55,33 @@ export function ServerIdLayoutWrapper({
 
     fetchMembers();
   }, [currentServerId, setServerId, setTeamMembers, updateTeamMembers, router]);
+
+  const handleTeamEvent = useCallback(
+    (event: any) => {
+      if (
+        event.type === 'CHAT_ROOM_UPDATE' ||
+        event.category === 'CHAT_ROOM' ||
+        event.type === 'CHAT_ROOM_CREATED' ||
+        event.type === 'CHAT_ROOM_DELETED'
+      ) {
+        updateChatRooms(currentServerId);
+      } else if (
+        event.type === 'MEMBER_UPDATE' ||
+        event.category === 'MEMBER' ||
+        event.type === 'MEMBER_JOINED' ||
+        event.type === 'MEMBER_LEFT'
+      ) {
+        updateTeamMembers(currentServerId);
+      } else {
+        // Fallback for any other team events
+        updateChatRooms(currentServerId);
+        updateTeamMembers(currentServerId);
+      }
+    },
+    [currentServerId, updateChatRooms, updateTeamMembers]
+  );
+
+  useTeamSocket(currentServerId, handleTeamEvent);
 
   return (
     <div className="flex flex-1 overflow-hidden">

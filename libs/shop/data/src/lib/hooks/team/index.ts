@@ -8,3 +8,4 @@ export { getTeamMembers } from './use-get-team-members';
 export { createInviteCode } from './use-create-invite-code';
 export { joinTeamByCode } from './use-join-team-by-code';
 export { expelTeamMember } from './use-expel-team-member';
+export { useTeamSocket } from './use-team-socket';

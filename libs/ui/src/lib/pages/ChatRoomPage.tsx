@@ -24,12 +24,12 @@ export function ChatRoomPage() {
   const [input, setInput] = useState('');
   const [isDeleteModalOpen, setIsDeleteModalOpen] = useState(false);
   const [isRenameModalOpen, setIsRenameModalOpen] = useState(false);
-  const { messages, setMessages, addMessage, chatRooms, setChatRooms } =
+  const { messages, setMessages, addMessage, chatRooms } =
     useChatStore();
   const params = useParams();
   const router = useRouter();
   const { profile } = useProfile();
-  const { teamMembers } = useServerState();
+  const { teamMembers, updateChatRooms } = useServerState();
 
   // URL에서 teamId 및 chatRoomId 가져오기
   const currentTeamId = params.serverId as string;
@@ -116,12 +116,11 @@ export function ChatRoomPage() {
   const handleDeleteRoom = async () => {
     try {
       await deleteChatRoom(currentTeamId, currentRoomId);
-      // 삭제 후 목록 갱신
-      const freshRooms = await getChatRooms(currentTeamId);
-      setChatRooms(freshRooms);
+      // 삭제 후 중앙 집중화된 업데이트 함수 호출
+      const freshRooms = await updateChatRooms(currentTeamId);
       setIsDeleteModalOpen(false);
       // 삭제 후 첫 번째 방으로 이동하거나 메인으로 이동
-      if (freshRooms.length > 0) {
+      if (freshRooms && freshRooms.length > 0) {
         router.push(`/main/${currentTeamId}/${freshRooms[0].chatRoomId}`);
       } else {
         router.push(`/main/${currentTeamId}`);
@@ -136,8 +135,7 @@ export function ChatRoomPage() {
     try {
       await updateChatRoomName(currentTeamId, currentRoomId, newName);
       // 목록 갱신
-      const freshRooms = await getChatRooms(currentTeamId);
-      setChatRooms(freshRooms);
+      await updateChatRooms(currentTeamId);
       setIsRenameModalOpen(false);
     } catch (error) {
       console.error('채널 이름 변경 실패:', error);

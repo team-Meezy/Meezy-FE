@@ -5,6 +5,7 @@ import {
   ServerJoinedTeamProvider,
   ServerStateProvider,
   ProfileProvider,
+  MeetingProvider,
 } from '../../../context';
 import { LoadingOverlay } from '../../components';
 
@@ -20,7 +21,9 @@ export function RootLayoutWrapper({ children }: { children: React.ReactNode }) {
         <ServerCreateProvider>
           <ServerJoinedTeamProvider>
             <ServerStateProvider>
-              <ProfileProvider>{children}</ProfileProvider>
+              <ProfileProvider>
+                <MeetingProvider>{children}</MeetingProvider>
+              </ProfileProvider>
               <LoadingOverlay />
             </ServerStateProvider>
           </ServerJoinedTeamProvider>

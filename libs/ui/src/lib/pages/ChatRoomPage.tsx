@@ -18,7 +18,7 @@ import {
 } from '@org/shop-data';
 import { useParams, useRouter } from 'next/navigation';
 import { DeleteRoomModal, RenameRoomModal } from '../modals';
-import { useProfile } from '../../context';
+import { useProfile, useServerState } from '../../context';
 
 export function ChatRoomPage() {
   const [input, setInput] = useState('');
@@ -29,6 +29,7 @@ export function ChatRoomPage() {
   const params = useParams();
   const router = useRouter();
   const { profile } = useProfile();
+  const { teamMembers } = useServerState();
 
   // URL에서 teamId 및 chatRoomId 가져오기
   const currentTeamId = params.serverId as string;
@@ -45,6 +46,33 @@ export function ChatRoomPage() {
   const myId =
     profile?.userId || profile?.id || profile?.user_id || profile?.accountId;
   const { sendChatActivity } = useMeetingChatActivity(meetingId, myId || '');
+
+  // 현재 로그인한 유저가 리더인지 확인
+  const myMemberInfo = teamMembers?.find((m) => {
+    const profileId =
+      profile?.id ||
+      profile?.userId ||
+      profile?.user_id ||
+      (profile as any)?.accountId;
+    const memberUserId =
+      (m as any).userId ||
+      (m as any).user_id ||
+      (m as any).user?.id ||
+      (m as any).user?.userId ||
+      m.teamMemberId;
+
+    if (profileId && memberUserId && String(profileId) === String(memberUserId))
+      return true;
+    if (
+      m.name === profile?.name ||
+      m.name === profile?.userName ||
+      m.name === profile?.nickName
+    )
+      return true;
+    return false;
+  });
+
+  const isLeader = myMemberInfo?.role === 'LEADER';
 
   // 현재 방 이름 찾기
   const currentRoom = chatRooms.find(
@@ -135,22 +163,24 @@ export function ChatRoomPage() {
           <Image src={Shrap} alt="shrap" className="w-4" />
           <span className="text-white">{roomName}</span>
         </div>
-        <div className="flex items-center gap-2">
-          <button
-            onClick={() => setIsRenameModalOpen(true)}
-            className="text-xs px-2 py-1 rounded hover:bg-white/10 transition-colors"
-            style={{ color: colors.gray[400] }}
-          >
-            변경
-          </button>
-          <button
-            onClick={() => setIsDeleteModalOpen(true)}
-            className="text-xs px-2 py-1 rounded hover:bg-white/10 transition-colors"
-            style={{ color: colors.system.error[500] }}
-          >
-            삭제
-          </button>
-        </div>
+        {isLeader && (
+          <div className="flex items-center gap-2">
+            <button
+              onClick={() => setIsRenameModalOpen(true)}
+              className="text-xs px-2 py-1 rounded hover:bg-white/10 transition-colors"
+              style={{ color: colors.gray[400] }}
+            >
+              변경
+            </button>
+            <button
+              onClick={() => setIsDeleteModalOpen(true)}
+              className="text-xs px-2 py-1 rounded hover:bg-white/10 transition-colors"
+              style={{ color: colors.system.error[500] }}
+            >
+              삭제
+            </button>
+          </div>
+        )}
       </div>
 
       {/* 채팅 영역 */}

@@ -113,7 +113,11 @@ export function Header() {
   }, [meeting, isUploading, pathname, currentTeamId, router]);
 
   const onClickMain = () => {
-    router.push(`/main/${currentTeamId}`);
+    if (currentTeamId) {
+      router.push(`/main/${currentTeamId}`);
+    } else {
+      router.push('/main');
+    }
   };
 
   const onClickMypage = () => {

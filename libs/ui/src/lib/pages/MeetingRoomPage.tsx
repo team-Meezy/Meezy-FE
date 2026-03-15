@@ -48,20 +48,22 @@ export const MeetingRoomPage = () => {
     const fetchParticipants = async () => {
       try {
         const res = await getActiveMeetings(currentTeamId);
-        if (res?.participants) {
+        if (res?.participants && Array.isArray(res.participants)) {
           setParticipants(res.participants);
 
           // 나보다 먼저 들어와 있는 사람들에게 Offer 보내기
-          res.participants.forEach((p: any) => {
-            const pId = p.userId || p.id || p.user_id;
-            if (pId !== myId) {
-              // 내 ID가 상대방보다 작을 때만 Offer 시작 (Glare 방지)
-              if (myId < pId) {
-                console.log(`Initial polite initiation: sending offer to ${pId}`);
-                connectToUser(pId);
+          if (Array.isArray(res.participants)) {
+            res.participants.forEach((p: any) => {
+              const pId = p.userId || p.id || p.user_id;
+              if (pId !== myId) {
+                // 내 ID가 상대방보다 작을 때만 Offer 시작 (Glare 방지)
+                if (myId < pId) {
+                  console.log(`Initial polite initiation: sending offer to ${pId}`);
+                  connectToUser(pId);
+                }
               }
-            }
-          });
+            });
+          }
         }
       } catch (error) {
         console.error('Failed to fetch participants:', error);
@@ -107,7 +109,7 @@ export const MeetingRoomPage = () => {
     }
   };
 
-  const totalParticipants = 1 + remoteStreams.length;
+  const totalParticipants = 1 + (Array.isArray(remoteStreams) ? remoteStreams.length : 0);
 
   const getGridCols = () => {
     if (totalParticipants === 1) return 'grid-cols-1';
@@ -155,12 +157,12 @@ export const MeetingRoomPage = () => {
             </div>
 
             {/* 모든 참가자(나 제외) */}
-            {remoteStreams.map((rs) => {
+            {Array.isArray(remoteStreams) && remoteStreams.map((rs) => {
               const pId = rs.userId;
-              const pInfo = participants.find((p) => {
+              const pInfo = Array.isArray(participants) ? participants.find((p) => {
                 const id = p.userId || p.id || p.user_id;
                 return String(id) === String(pId);
-              });
+              }) : null;
 
               return (
                 <div key={pId} className="w-full h-full min-h-0 col-span-1">

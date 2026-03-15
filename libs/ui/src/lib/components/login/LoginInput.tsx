@@ -45,7 +45,7 @@ export const LoginInput = ({
           onChange={(e) => onChange(e.target.value)}
           placeholder={placeholder}
           style={{
-            color: colors.gray[500],
+            color: colors.white[100],
             backgroundColor: colors.gray[900],
             ...typography.body.BodyM,
           }}

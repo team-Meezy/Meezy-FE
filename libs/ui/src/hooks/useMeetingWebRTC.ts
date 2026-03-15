@@ -391,13 +391,14 @@ export function useMeetingWebRTC(teamId: string, myId: string) {
       recorderState: mediaRecorderRef.current?.state,
     });
     if (
+      meetingId &&
       localStream &&
       (!mediaRecorderRef.current ||
         mediaRecorderRef.current.state === 'inactive')
     ) {
       startRecording();
     }
-  }, [localStream, startRecording, log]);
+  }, [localStream, startRecording, log, meetingId]);
 
   // Main Event Handler for Upload
   useEffect(() => {
@@ -503,7 +504,7 @@ export function useMeetingWebRTC(teamId: string, myId: string) {
   }, [log]);
 
   useEffect(() => {
-    if (myId) initLocalMedia();
+    if (myId && meetingId && teamId) initLocalMedia();
     return () => {
       if (
         mediaRecorderRef.current &&
@@ -515,7 +516,7 @@ export function useMeetingWebRTC(teamId: string, myId: string) {
       pcs.current.forEach((pc) => pc.close());
       pcs.current.clear();
     };
-  }, [myId, initLocalMedia]);
+  }, [myId, initLocalMedia, meetingId, teamId]);
 
   return {
     localStream,

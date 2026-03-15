@@ -76,7 +76,7 @@ export function Header() {
         return;
       }
 
-      const isParticipant = activeMeetings.participants?.some(
+      const isParticipant = Array.isArray(activeMeetings.participants) && activeMeetings.participants.some(
         (p: any) => (p.userId || p.id || p.user_id) === myId
       );
 

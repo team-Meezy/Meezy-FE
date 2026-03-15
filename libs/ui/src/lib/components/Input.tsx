@@ -94,7 +94,7 @@ export const Input = forwardRef<HTMLInputElement, InputProps>(
               ...typography.body.BodyM,
               backgroundColor: colors.gray[900],
               borderColor: error ? colors.system.error[500] : colors.gray[800],
-              color: props.value ? colors.gray[100] : colors.gray[500],
+              color: colors.white[100],
             }}
           />
 

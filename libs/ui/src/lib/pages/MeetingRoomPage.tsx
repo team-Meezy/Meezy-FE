@@ -110,7 +110,7 @@ export const MeetingRoomPage = () => {
   const totalParticipants = 1 + remoteStreams.length;
 
   const getGridCols = () => {
-    if (totalParticipants <= 2) return 'grid-cols-1';
+    if (totalParticipants === 1) return 'grid-cols-1';
     return 'grid-cols-2';
   };
 
@@ -155,29 +155,27 @@ export const MeetingRoomPage = () => {
             </div>
 
             {/* 모든 참가자(나 제외) */}
-            {participants
-              .filter((p) => {
-                const pId = p.userId || p.id || p.user_id;
-                return pId !== myId;
-              })
-              .map((p) => {
-                const pId = p.userId || p.id || p.user_id;
-                const remoteStream = remoteStreams.find((rs) => rs.userId === pId);
+            {remoteStreams.map((rs) => {
+              const pId = rs.userId;
+              const pInfo = participants.find((p) => {
+                const id = p.userId || p.id || p.user_id;
+                return String(id) === String(pId);
+              });
 
-                return (
-                  <div key={pId} className="w-full h-full min-h-0 col-span-1">
-                    <VideoCard
-                      name={p.name || '참가자'}
-                      isSpeaking={false} // 필요 시 VAD 정보 연동
-                      isMike={true} // 필요 시 실제 상태 연동
-                      isKamera={true} // 필요 시 실제 상태 연동
-                      videoStream={remoteStream?.stream}
-                      onMikeClick={() => {}}
-                      onKameraClick={() => {}}
-                    />
-                  </div>
-                );
-              })}
+              return (
+                <div key={pId} className="w-full h-full min-h-0 col-span-1">
+                  <VideoCard
+                    name={pInfo?.name || '참가자'}
+                    isSpeaking={false} // 필요 시 VAD 정보 연동
+                    isMike={true} // 필요 시 실제 상태 연동
+                    isKamera={true} // 필요 시 실제 상태 연동
+                    videoStream={rs.stream}
+                    onMikeClick={() => {}}
+                    onKameraClick={() => {}}
+                  />
+                </div>
+              );
+            })}
           </div>
         )}
       </div>

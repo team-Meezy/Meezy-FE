@@ -8,8 +8,8 @@ import {
   useMemo,
   type ReactNode,
 } from 'react';
-import { getTeams, getTeamMembers } from '@org/shop-data';
-import { useTeamStore } from '@org/shop-data';
+import { getTeams, getTeamMembers, getChatRooms } from '@org/shop-data';
+import { useTeamStore, useChatStore } from '@org/shop-data';
 
 const ServerStateContext = createContext<{
   chatRoom: boolean;
@@ -28,6 +28,7 @@ const ServerStateContext = createContext<{
   setContextMenuUserId: React.Dispatch<React.SetStateAction<string | null>>;
   updateTeams: () => Promise<void>;
   updateTeamMembers: (id: string) => Promise<void>;
+  updateChatRooms: (id: string) => Promise<any[]>;
 } | null>(null);
 
 interface TeamMember {
@@ -65,6 +66,7 @@ export function ServerStateProvider({ children }: { children: ReactNode }) {
     null
   );
   const { setTeams } = useTeamStore();
+  const { setChatRooms } = useChatStore();
 
   const updateTeams = useCallback(async () => {
     try {
@@ -86,6 +88,20 @@ export function ServerStateProvider({ children }: { children: ReactNode }) {
     }
   }, []);
 
+  const updateChatRooms = useCallback(
+    async (id: string) => {
+      try {
+        const data = await getChatRooms(id);
+        setChatRooms(data);
+        return data;
+      } catch (error) {
+        console.error('Failed to update chat rooms:', error);
+        throw error;
+      }
+    },
+    [setChatRooms]
+  );
+
   const value = useMemo(
     () => ({
       chatRoom,
@@ -102,6 +118,7 @@ export function ServerStateProvider({ children }: { children: ReactNode }) {
       contextMenuUserId,
       setContextMenuUserId,
       updateTeamMembers,
+      updateChatRooms,
     }),
     [
       chatRoom,
@@ -112,6 +129,7 @@ export function ServerStateProvider({ children }: { children: ReactNode }) {
       inviteCode,
       contextMenuUserId,
       updateTeamMembers,
+      updateChatRooms,
     ]
   );
 

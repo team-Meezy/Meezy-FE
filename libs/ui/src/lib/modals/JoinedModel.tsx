@@ -8,7 +8,7 @@ import { useModalStore, useErrorStore } from '@org/shop-data';
 import { useServerIdStore } from '@org/shop-data';
 import { createInviteCode } from '@org/shop-data';
 import { useServerState } from '../../context';
-import { createChatRoom, getChatRooms } from '@org/shop-data';
+import { createChatRoom } from '@org/shop-data';
 import { useChatStore } from '@org/shop-data';
 
 interface JoinedModalProps {
@@ -22,8 +22,7 @@ export function JoinedModal({ isOpen, type, onClose }: JoinedModalProps) {
   const { generalError, setGeneralError } = useErrorStore();
   const { setJoined } = useServerJoinedTeam();
   const { serverId } = useServerIdStore();
-  const { inviteCode, setInviteCode } = useServerState();
-  const { chatRooms, setChatRooms } = useChatStore();
+  const { inviteCode, setInviteCode, updateChatRooms } = useServerState();
 
   useEffect(() => {
     setMounted(true);
@@ -70,10 +69,9 @@ export function JoinedModal({ isOpen, type, onClose }: JoinedModalProps) {
 
     try {
       await createChatRoom(serverId, valueToValidate);
-      // 생성 성공 후, 서버에서 최신 목록을 다시 가져와서 스토어 업데이트 (무한 렌더링 방지 및 데이터 정확도 확보)
-      const freshRooms = await getChatRooms(serverId);
-      setChatRooms(freshRooms);
-      console.log('Channels updated from server after creation');
+      // 생성 성공 후, 중앙 집중화된 업데이트 함수 호출
+      await updateChatRooms(serverId);
+      console.log('Channels updated via centralized function after creation');
     } catch (e: any) {
       console.error('Channel creation failed:', e);
       if (e.response?.data?.message) {

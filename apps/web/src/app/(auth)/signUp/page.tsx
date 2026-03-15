@@ -25,9 +25,14 @@ function SignUpContent() {
 
       localStorage.setItem('accessToken', accessToken);
       localStorage.setItem('refreshToken', refreshToken);
-
+ 
       refetchProfile();
-      router.replace('/profile-setup');
+      
+      if (isProfileCompleted === 'true') {
+        router.replace('/main');
+      } else {
+        router.replace('/profile-setup');
+      }
     }
   }, [searchParams, router]);
 

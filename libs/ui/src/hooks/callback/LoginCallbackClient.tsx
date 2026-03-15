@@ -41,7 +41,12 @@ export function LoginCallbackClient() {
           localStorage.setItem('refreshToken', refreshToken);
 
           refetchProfile();
-          router.push('/profile-setup');
+          
+          if (isProfileCompleted === 'true') {
+            router.push('/main');
+          } else {
+            router.push('/profile-setup');
+          }
           return;
         }
 

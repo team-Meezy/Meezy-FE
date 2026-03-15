@@ -7,8 +7,7 @@ import Nokamera from '../../assets/Nokamera.svg';
 import Mike from '../../assets/mike.svg';
 import NoMike from '../../assets/NoMike.svg';
 import Kamera from '../../assets/Kamera.svg';
-import { useMeetingWebRTC } from '../../hooks';
-import { useServerJoinedTeam, useProfile } from '../../context';
+import { useServerJoinedTeam, useProfile, useMeeting } from '../../context';
 import { useParams } from 'next/navigation';
 import { getActiveMeetings } from '@org/shop-data';
 
@@ -32,7 +31,7 @@ export const MeetingRoomPage = () => {
     initLocalMedia,
     startRecording,
     stopRecording,
-  } = useMeetingWebRTC(currentTeamId, myId || '');
+  } = useMeeting();
   const localVideoRef = useRef<HTMLVideoElement | null>(null);
 
   // 로컬 스트림 연결

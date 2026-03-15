@@ -14,7 +14,7 @@ import { useServerState } from '../../context';
 
 export function Header() {
   const { joined, setJoined, meeting, setMeeting } = useServerJoinedTeam();
-  const { meetingId, setMeetingId, isUploading } = useMeetingStore();
+  const { meetingId, setMeetingId, setTeamId, isUploading } = useMeetingStore();
   const { profile } = useProfile();
   const { teamMembers } = useServerState();
   const { setLoading, setLoadingState } = useLoadingStore();
@@ -82,10 +82,12 @@ export function Header() {
 
       if (isParticipant) {
         setMeetingId(activeMeetings.meetingId);
+        setTeamId(currentTeamId);
         setMeeting(true);
       } else {
         if (!pathname.includes('/meeting')) {
           setMeetingId(activeMeetings.meetingId);
+          setTeamId(currentTeamId);
           setMeeting(false);
         }
       }
@@ -167,6 +169,7 @@ export function Header() {
         setMeeting(true);
         if (res?.meetingId) {
           setMeetingId(res.meetingId);
+          setTeamId(currentTeamId);
         } else {
           console.warn(
             `Header: [WARN] No meetingId returned from ${

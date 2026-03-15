@@ -1,6 +1,6 @@
 'use client';
 
-import { Header, CalendarMockup } from '../../components';
+import { Header, CalendarMockup, MiniMeetingOverlay } from '../../components';
 import { TeamSidebar } from '../../sidebar';
 import { ServerModal } from '../../modals';
 import { useServerJoinedTeam } from '../../../context';
@@ -34,6 +34,7 @@ export function MainLayoutWrapper({ children }: { children: React.ReactNode }) {
       </div>
 
       <ServerModal isOpen={isModalOpen} onClose={() => setIsModalOpen(false)} />
+      <MiniMeetingOverlay />
     </div>
   );
 }

@@ -8,7 +8,7 @@ import { JoinedModal, UserKickModal } from '../modals';
 import { useRouter } from 'next/navigation';
 import { useServerIdStore } from '@org/shop-data';
 import { useServerState, useProfile } from '../../context';
-import { expelTeamMember } from '@org/shop-data';
+import { expelTeamMember, leaveTeam } from '@org/shop-data';
 import { getChatRooms } from '@org/shop-data';
 import { useChatStore } from '@org/shop-data';
 
@@ -251,15 +251,20 @@ export function JoinedSidebar({
                       {currentUserName}
                     </span>
                   </div>
-                  {isLeader && contextMenuUserId === currentUserId && (
+                  {contextMenuUserId === currentUserId && (
                     <div
-                      className="mt-2 px-4 py-3 flex items-center justify-center rounded-lg transition-colors"
+                      className="mt-2 px-4 py-3 flex flex-col items-center justify-center rounded-lg transition-colors gap-2"
                       style={{
                         backgroundColor: colors.gray[800],
                         ...typography.label.labelB,
                       }}
                     >
-                      <button onClick={onKickUser}>내보내기</button>
+                      {isLeader && String(profile?.id || profile?.userId) !== String(currentUserId) && (
+                        <button onClick={onKickUser} className="text-red-500 hover:text-red-400 transition-colors">내보내기</button>
+                      )}
+                      {String(profile?.id || profile?.userId) === String(currentUserId) && (
+                        <button onClick={onLeaveTeam} className="text-gray-300 hover:text-white transition-colors">나가기</button>
+                      )}
                     </div>
                   )}
                 </div>

@@ -27,7 +27,10 @@ export function ServerIdLayoutWrapper({
   const router = useRouter();
 
   useEffect(() => {
-    if (!currentServerId) return;
+    if (!currentServerId || currentServerId === 'undefined') {
+      router.push('/main');
+      return;
+    }
 
     // 전역 스토어도 동기화
     setServerId(currentServerId);

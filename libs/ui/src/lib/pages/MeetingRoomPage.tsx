@@ -207,20 +207,6 @@ export const MeetingRoomPage = () => {
           />
         </button>
 
-        {/* 녹음 제어 버튼 */}
-        <button
-          className={`p-3 ml-2 rounded-full transition-all shadow-lg ${
-            isRecording ? 'bg-red-500/20 hover:bg-red-500/30' : 'hover:bg-[#333]'
-          }`}
-          onClick={() => (isRecording ? stopRecording() : startRecording())}
-        >
-          <div
-            className={`w-5 h-5 rounded-full border-2 ${
-              isRecording ? 'bg-red-500 border-red-500' : 'border-white/70'
-            }`}
-          />
-        </button>
-
         <button className="absolute right-8 text-white/40 hover:text-white">
           <span className="text-2xl font-extralight tracking-tighter cursor-pointer">
             ⛶

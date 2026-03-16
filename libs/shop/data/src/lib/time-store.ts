@@ -10,7 +10,7 @@ interface TimeState {
 
 export const useTimeStore = create<TimeState>()((set) => ({
   // 초기값
-  remainingTime: 180,
+  remainingTime: 300,
 
   // 액션
   setRemainingTime: (time: number | ((prev: number) => number)) =>

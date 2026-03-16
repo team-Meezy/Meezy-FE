@@ -4,7 +4,7 @@ import { useEffect } from 'react';
 import { colors } from '../design';
 import { useTimeStore } from '@org/shop-data';
 
-const initialTime = 180;
+const initialTime = 300;
 
 export function useTime() {
   const { remainingTime, setRemainingTime } = useTimeStore();

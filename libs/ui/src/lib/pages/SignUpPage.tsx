@@ -67,7 +67,7 @@ export function SignUpPage() {
                   ...typography.title.TitleB,
                 }}
               >
-                인증 시간이 종료되었습니다.
+                인증코드 유효시간이 초과되었습니다.
               </span>
             </div>
           ) : (

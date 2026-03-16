@@ -1,4 +1,4 @@
-import { useEffect, useCallback, useState } from 'react';
+import { useEffect, useCallback, useState, useRef } from 'react';
 import { colors, typography } from '../../design';
 import { useServerJoinedTeam, useProfile } from '../../context';
 import { useRouter, useParams, usePathname } from 'next/navigation';
@@ -23,8 +23,24 @@ export function Header() {
   const pathname = usePathname();
 
   const [hasActiveMeeting, setHasActiveMeeting] = useState(false);
+  const [isSyncing, setIsSyncing] = useState(false);
 
   const currentTeamId = params.serverId as string;
+
+  const pathnameRef = useRef(pathname);
+  useEffect(() => {
+    pathnameRef.current = pathname;
+  }, [pathname]);
+
+  const meetingRef = useRef(meeting);
+  useEffect(() => {
+    meetingRef.current = meeting;
+  }, [meeting]);
+
+  const isUploadingRef = useRef(isUploading);
+  useEffect(() => {
+    isUploadingRef.current = isUploading;
+  }, [isUploading]);
 
   // 현재 로그인한 유저가 리더인지 확인
   const myMemberInfo = teamMembers?.find((m) => {
@@ -66,13 +82,23 @@ export function Header() {
     if (!currentTeamId || !profile) return;
 
     try {
+      setIsSyncing(true);
       const activeMeetings = await getActiveMeetings(currentTeamId);
       const myId =
         profile.id || profile.userId || profile.user_id || profile.accountId;
+      const currentPath = pathnameRef.current;
+
+      const now = new Date().toLocaleTimeString();
+      console.log(
+        `[${now}] Header: checkActiveMeeting response`,
+        activeMeetings
+      );
 
       if (!activeMeetings || !activeMeetings.meetingId) {
         setHasActiveMeeting(false);
-        if (!pathname.includes('/meeting')) {
+        // 서버 동기화 지연일 수 있으므로 로컬에서 참여 중(`meetingRef.current === true`)이라면 
+        // 즉각적으로 종료하지 않음 (단, 회의 밖일 때만 적용됨)
+        if (!meetingRef.current && !currentPath.includes('/meeting')) {
           setMeetingId('');
           setMeeting(false);
         }
@@ -86,24 +112,39 @@ export function Header() {
           (p: any) => (p.userId || p.id || p.user_id) === myId
         );
 
+      console.log(
+        `[${now}] Header: isParticipant: ${isParticipant}, pathname: ${currentPath}`
+      );
+
       // 이미 참여 중인 경우에만 상태 유지
       if (isParticipant) {
         setMeetingId(activeMeetings.meetingId);
         setTeamId(currentTeamId);
         setMeeting(true);
       } else {
-        // 참여 중이 아니면 무조건 false (자동 참여 방지)
-        setMeeting(false);
-        // 여기서 setMeetingId/setTeamId를 부르지 않아야 useMeetingWebRTC가 미디어를 켜지 않음
+        // 서버에서 참여자가 아니라고 해도, 로컬에서 주도적으로 참여 중(`meetingRef.current === true`)이라면
+        // 서버의 참여자 목록 동기화가 지연된 것일 수 있으므로 함부로 로컬 상태를 끄지 않습니다.
+        if (!meetingRef.current && !currentPath.includes('/meeting')) {
+          console.log(
+            `[${now}] Header: Not participant, not on meeting, and not active locally. Resetting.`
+          );
+          setMeeting(false);
+          setMeetingId('');
+        }
       }
     } catch (error) {
       console.log('Header: getActiveMeetings error', error);
       setHasActiveMeeting(false);
+    } finally {
+      setIsSyncing(false);
     }
-  }, [currentTeamId, !!profile, pathname]);
+  }, [currentTeamId, !!profile]);
 
   useEffect(() => {
     if (pathname.includes('/meeting') && !meeting) {
+      console.log(
+        'Header: On meeting page but meeting state is false, setting to true.'
+      );
       setMeeting(true);
     }
     checkActiveMeeting();
@@ -113,9 +154,6 @@ export function Header() {
   useEffect(() => {
     const handleUnload = () => {
       if (meeting && currentTeamId) {
-        // 동기적으로 호출하기 위해 beacon 사용을 고려하거나,
-        // 간단한 fetch 호출 (브라우저가 중단할 수 있음)
-        // 하지만 여기서는 leaveMeeting API를 최대한 호출 시도
         leaveMeeting(currentTeamId).catch(() => {});
       }
     };
@@ -127,19 +165,33 @@ export function Header() {
   }, [meeting, currentTeamId]);
 
   // 업로드 완료 후 자동 이동 처리
+  // 이 로직이 '복귀' 시 레이스 컨디션을 유발하므로 isSyncing 상태와 수동 조작 우선순위를 고려합니다.
   useEffect(() => {
+    let timeoutId: any;
     if (
+      !isSyncing && // 싱크 중이 아닐 때만 판단
       meeting === false &&
       isUploading === false &&
       pathname.includes('/meeting')
     ) {
-      const now = new Date().toLocaleTimeString();
-      console.log(`[${now}] Header: [AUTO] Upload completed, navigating now.`);
-      setLoading(false);
-      setLoadingState('');
-      router.push(`/main/${currentTeamId}`);
+      timeoutId = setTimeout(() => {
+        if (
+          meetingRef.current === false &&
+          isUploadingRef.current === false &&
+          pathnameRef.current.includes('/meeting')
+        ) {
+          const now = new Date().toLocaleTimeString();
+          console.log(
+            `[${now}] Header: [AUTO] No active meeting detected on meeting page, navigating back to dashboard.`
+          );
+          setLoading(false);
+          setLoadingState('');
+          router.push(`/main/${currentTeamId}`);
+        }
+      }, 500);
     }
-  }, [meeting, isUploading, pathname, currentTeamId, router]);
+    return () => clearTimeout(timeoutId);
+  }, [meeting, isUploading, pathname, currentTeamId, router, isSyncing, setLoading, setLoadingState]);
 
   const onClickMain = () => {
     if (currentTeamId) {
@@ -169,7 +221,13 @@ export function Header() {
         setMeeting(false);
         setMeetingId('');
         setTeamId('');
-        // 이제 자동 내비게이션 Effect가 isUploading이 false가 되면 처리합니다.
+        
+        // 만약 미팅 페이지가 아닌 곳(대시보드 등)에서 '나가기'를 눌렀다면
+        // 자동라우팅 Effect가 발동하지 않으므로 여기서 로딩 상태를 해제해야 합니다.
+        if (!pathname.includes('/meeting')) {
+            setLoading(false);
+            setLoadingState('');
+        }
       } catch (error) {
         console.log('leaveMeeting error', error);
         setLoading(false);

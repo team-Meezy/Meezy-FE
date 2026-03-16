@@ -180,7 +180,7 @@ export function useSignupFlow() {
     try {
       setLoading(true);
       await requestEmailVerification(email);
-      setRemainingTime(180);
+      setRemainingTime(300);
     } catch (error: any) {
       const statusCode = error.response?.status || error.statusCode;
       if (statusCode === 429) {
@@ -198,7 +198,7 @@ export function useSignupFlow() {
   const handleNext = async () => {
     if (step === 1 && (await validateEmailStep())) {
       setStep(step + 1);
-      setRemainingTime(180);
+      setRemainingTime(300);
     } else if (step === 2 && (await validateAuthCodeStep())) {
       setStep(step + 1);
     } else if (step === 3 && validateIdStep()) {

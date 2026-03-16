@@ -20,14 +20,8 @@ export function MiniMeetingOverlay() {
   
   const videoRef = useRef<HTMLVideoElement | null>(null);
 
-  // Conditions to show overlay:
-  // 1. Meeting must be active (meetingId exists)
-  // 2. We must NOT be on the meeting page itself
-  const isMeetingPage = pathname.includes('/meeting');
-  if (!meetingId || isMeetingPage) return null;
-
   // Determine whose video to show (prioritize remote speakers, otherwise local)
-  const activeRemote = remoteStreams[0]?.stream;
+  const activeRemote = remoteStreams?.[0]?.stream;
   const displayStream = activeRemote || localStream;
   const displayName = activeRemote ? (remoteStreams[0]?.name || '참가자') : '나';
 
@@ -36,6 +30,12 @@ export function MiniMeetingOverlay() {
       videoRef.current.srcObject = displayStream;
     }
   }, [displayStream]);
+
+  // Conditions to show overlay:
+  // 1. Meeting must be active (meetingId exists)
+  // 2. We must NOT be on the meeting page itself
+  const isMeetingPage = pathname.includes('/meeting');
+  if (!meetingId || isMeetingPage) return null;
 
   const toggleMike = () => {
     if (localStream) {

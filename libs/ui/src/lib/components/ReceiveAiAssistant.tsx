@@ -2,7 +2,7 @@
 
 import { useRouter } from 'next/navigation';
 import { useServerIdStore } from '@org/shop-data';
-import { useServerJoinedTeam } from '../../context';
+import { useServerJoinedTeam, useMeeting } from '../../context';
 import { colors, typography } from '../../design';
 import NextImage from 'next/image';
 import ReceiveAssistantIcon from '../../assets/Receive.png';
@@ -11,6 +11,7 @@ export const ReceiveAiAssistant = () => {
   const router = useRouter();
   const { serverId } = useServerIdStore();
   const { meeting } = useServerJoinedTeam();
+  const { isRecording, startRecording, stopRecording } = useMeeting();
 
   const onClickSummary = () => {
     if (serverId) router.push(`/main/${serverId}/summary`);
@@ -39,12 +40,13 @@ export const ReceiveAiAssistant = () => {
 
         {meeting ? (
           <div className="flex flex-col gap-3 text-center p-8 relative z-10 min-h-[120px] justify-center">
-            <div
-              className="text-white font-bold"
+            <button
+              onClick={() => (isRecording ? stopRecording() : startRecording())}
+              className="text-white hover:text-[#ff5c00] transition-colors"
               style={{ ...typography.body.BodyB }}
             >
-              회의 녹음 시작
-            </div>
+              {isRecording ? '회의 녹음 중지' : '회의 녹음 시작'}
+            </button>
           </div>
         ) : (
           <div className="flex flex-col gap-3 text-center p-6 relative z-10">

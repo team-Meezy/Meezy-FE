@@ -1,4 +1,4 @@
-import { useEffect, useCallback } from 'react';
+import { useEffect, useCallback, useState } from 'react';
 import { colors, typography } from '../../design';
 import { useServerJoinedTeam, useProfile } from '../../context';
 import { useRouter, useParams, usePathname } from 'next/navigation';
@@ -21,6 +21,8 @@ export function Header() {
   const params = useParams();
   const router = useRouter();
   const pathname = usePathname();
+
+  const [hasActiveMeeting, setHasActiveMeeting] = useState(false);
 
   const currentTeamId = params.serverId as string;
 
@@ -69,6 +71,7 @@ export function Header() {
         profile.id || profile.userId || profile.user_id || profile.accountId;
 
       if (!activeMeetings || !activeMeetings.meetingId) {
+        setHasActiveMeeting(false);
         if (!pathname.includes('/meeting')) {
           setMeetingId('');
           setMeeting(false);
@@ -76,36 +79,60 @@ export function Header() {
         return;
       }
 
-      const isParticipant = Array.isArray(activeMeetings.participants) && activeMeetings.participants.some(
-        (p: any) => (p.userId || p.id || p.user_id) === myId
-      );
+      setHasActiveMeeting(true);
+      const isParticipant =
+        Array.isArray(activeMeetings.participants) &&
+        activeMeetings.participants.some(
+          (p: any) => (p.userId || p.id || p.user_id) === myId
+        );
 
+      // 이미 참여 중인 경우에만 상태 유지
       if (isParticipant) {
         setMeetingId(activeMeetings.meetingId);
         setTeamId(currentTeamId);
         setMeeting(true);
       } else {
-        if (!pathname.includes('/meeting')) {
-          setMeetingId(activeMeetings.meetingId);
-          setTeamId(currentTeamId);
-          setMeeting(false);
-        }
+        // 참여 중이 아니면 무조건 false (자동 참여 방지)
+        setMeeting(false);
+        // 여기서 setMeetingId/setTeamId를 부르지 않아야 useMeetingWebRTC가 미디어를 켜지 않음
       }
     } catch (error) {
       console.log('Header: getActiveMeetings error', error);
+      setHasActiveMeeting(false);
     }
-  }, [currentTeamId, !!profile, pathname]); // profile 객체 전체 대신 존재 여부만 체크
+  }, [currentTeamId, !!profile, pathname]);
 
   useEffect(() => {
     if (pathname.includes('/meeting') && !meeting) {
       setMeeting(true);
     }
     checkActiveMeeting();
-  }, [pathname, checkActiveMeeting]); // checkActiveMeeting은 이제 훨씬 안정적임
+  }, [pathname, checkActiveMeeting]);
+
+  // 브라우저 종료/종료 시 세션 정리
+  useEffect(() => {
+    const handleUnload = () => {
+      if (meeting && currentTeamId) {
+        // 동기적으로 호출하기 위해 beacon 사용을 고려하거나,
+        // 간단한 fetch 호출 (브라우저가 중단할 수 있음)
+        // 하지만 여기서는 leaveMeeting API를 최대한 호출 시도
+        leaveMeeting(currentTeamId).catch(() => {});
+      }
+    };
+
+    window.addEventListener('beforeunload', handleUnload);
+    return () => {
+      window.removeEventListener('beforeunload', handleUnload);
+    };
+  }, [meeting, currentTeamId]);
 
   // 업로드 완료 후 자동 이동 처리
   useEffect(() => {
-    if (meeting === false && isUploading === false && pathname.includes('/meeting')) {
+    if (
+      meeting === false &&
+      isUploading === false &&
+      pathname.includes('/meeting')
+    ) {
       const now = new Date().toLocaleTimeString();
       console.log(`[${now}] Header: [AUTO] Upload completed, navigating now.`);
       setLoading(false);
@@ -139,7 +166,7 @@ export function Header() {
       try {
         console.log(`[${now}] Header: [EXIT] Calling leaveMeeting...`);
         await leaveMeeting(currentTeamId);
-        setMeeting(false); 
+        setMeeting(false);
         setMeetingId('');
         setTeamId('');
         // 이제 자동 내비게이션 Effect가 isUploading이 false가 되면 처리합니다.
@@ -216,7 +243,9 @@ export function Header() {
               color: colors.white[100],
               backgroundColor: meeting
                 ? colors.system.error[500]
-                : colors.primary[500],
+                : isLeader || hasActiveMeeting
+                ? colors.primary[500]
+                : colors.gray[500],
               ...typography.body.BodyM,
             }}
             onClick={() => onClickMeeting()}

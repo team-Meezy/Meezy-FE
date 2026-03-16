@@ -18,7 +18,7 @@ interface ParticipantStream {
   name?: string;
 }
 
-export function useMeetingWebRTC(teamId: string, myId: string) {
+export function useMeetingWebRTC(teamId: string, myId: string, isActive: boolean) {
   const [localStream, setLocalStream] = useState<MediaStream | null>(null);
   const [remoteStreams, setRemoteStreams] = useState<ParticipantStream[]>([]);
   const [isSpeaking, setIsSpeaking] = useState(false);
@@ -391,6 +391,7 @@ export function useMeetingWebRTC(teamId: string, myId: string) {
       recorderState: mediaRecorderRef.current?.state,
     });
     if (
+      isActive &&
       meetingId &&
       localStream &&
       (!mediaRecorderRef.current ||
@@ -398,7 +399,7 @@ export function useMeetingWebRTC(teamId: string, myId: string) {
     ) {
       startRecording();
     }
-  }, [localStream, startRecording, log, meetingId]);
+  }, [localStream, startRecording, log, meetingId, isActive]);
 
   // Main Event Handler for Upload
   useEffect(() => {
@@ -504,7 +505,7 @@ export function useMeetingWebRTC(teamId: string, myId: string) {
   }, [log]);
 
   useEffect(() => {
-    if (myId && meetingId && teamId) initLocalMedia();
+    if (myId && meetingId && teamId && isActive) initLocalMedia();
     return () => {
       if (
         mediaRecorderRef.current &&

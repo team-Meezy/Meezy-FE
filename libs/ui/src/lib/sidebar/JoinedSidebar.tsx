@@ -202,7 +202,7 @@ export function JoinedSidebar({
               >
                 {team.room_name}
               </div>
-              {isLeader && (
+              {isLeader ? (
                 <button
                   onClick={() => {
                     onOpenModal(team.type);
@@ -210,6 +210,8 @@ export function JoinedSidebar({
                 >
                   <Image src={JoinedPlus} alt="addRoom" className="w-5" />
                 </button>
+              ) : (
+                <div className="w-5 invisible" />
               )}
             </div>
 

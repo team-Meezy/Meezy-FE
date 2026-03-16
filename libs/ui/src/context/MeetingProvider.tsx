@@ -4,6 +4,7 @@ import React, { createContext, useContext, useMemo } from 'react';
 import { useMeetingWebRTC } from '../hooks/useMeetingWebRTC';
 import { useMeetingStore } from '@org/shop-data';
 import { useProfile } from './ProfileProvider';
+import { useServerJoinedTeam } from './ServerJoinedTeamProvider';
 
 interface MeetingContextType {
   localStream: MediaStream | null;
@@ -23,9 +24,11 @@ export function MeetingProvider({ children }: { children: React.ReactNode }) {
   const { profile } = useProfile();
   const myId = profile?.userId || profile?.id || profile?.user_id || profile?.accountId;
 
+  const { meeting } = useServerJoinedTeam();
+
   // Only activate WebRTC if there is an active meeting and we have our ID
   // We use teamId from the store (set by Header or other triggers)
-  const webrtc = useMeetingWebRTC(teamId, myId || '');
+  const webrtc = useMeetingWebRTC(teamId, myId || '', meeting);
 
   const value = useMemo(() => ({
     ...webrtc

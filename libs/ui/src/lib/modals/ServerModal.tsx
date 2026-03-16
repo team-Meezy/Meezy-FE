@@ -84,54 +84,61 @@ export function ServerModal({ isOpen, onClose }: ServerModalProps) {
       
       try {
         const res = await createTeam(serverName, localImageFile);
-        console.log(res);
-        await updateTeams();
-        if (res && (res.teamId || res.id)) {
-          const newTeamId = res.teamId || res.id;
+        console.log('createTeam response:', res);
+        
+        // teamId, team_id, id 중 있는 것을 사용 (추가적인 세이프가드)
+        const newTeamId = res?.teamId || res?.team_id || res?.id;
 
-          // 상태 업데이트 및 즉시 이동
-          setServerId(newTeamId);
+        if (newTeamId) {
+          const stringId = String(newTeamId);
+          // 상태 업데이트 및 즉시 이동 (최우선)
+          setServerId(stringId);
           setJoined(true);
-          router.push(`/main/${newTeamId}`);
+          router.push(`/main/${stringId}`);
           onClose();
 
           // 백그라운드에서 목록 동기화
           updateTeams();
           return;
+        } else {
+          console.error('No teamId found in response:', res);
+          setGeneralError('팀 생성 정보가 올바르지 않습니다.');
         }
       } catch (e: any) {
-        console.log(e.response?.data?.message || '팀 생성 실패');
+        const msg = e.response?.data?.message || '팀 생성 실패';
+        console.error(msg, e);
+        setGeneralError(msg);
       }
-    } else if (!createModal) {
+    } else {
+      // 가입 로직 (!createModal)
       try {
-        // 전체 URL이 입력되었을 경우 코드만 추출 (예: https://.../5a87eb01 -> 5a87eb01)
         const extractedCode = serverLink.split('/').pop() || serverLink;
-
         const res = await joinTeamByCode(extractedCode);
-        console.log(res, '팀 가입 시도 결과');
-        await updateTeams();
-        if (res && (res.teamId || res.id)) {
-          const newTeamId = res.teamId || res.id;
+        console.log('joinTeamByCode response:', res);
 
-          // 상태 업데이트 및 즉시 이동
-          setServerId(newTeamId);
+        const newTeamId = res?.teamId || res?.team_id || res?.id;
+
+        if (newTeamId) {
+          const stringId = String(newTeamId);
+          // 상태 업데이트 및 즉시 이동 (최우선)
+          setServerId(stringId);
           setJoined(true);
-          router.push(`/main/${newTeamId}`);
+          router.push(`/main/${stringId}`);
           onClose();
 
           // 백그라운드에서 목록 동기화
           updateTeams();
           return;
+        } else {
+          console.error('No teamId found in response:', res);
+          setGeneralError('팀 가입 정보가 올바르지 않습니다.');
         }
       } catch (e: any) {
-        console.log(e.response?.data?.message || '팀 가입 실패');
+        const msg = e.response?.data?.message || '팀 가입 실패';
+        console.error(msg, e);
+        setGeneralError(msg);
       }
     }
-
-    handleTeamClick();
-    setJoined(true);
-
-    onClose();
   };
 
   if (!isOpen || !mounted) return null;

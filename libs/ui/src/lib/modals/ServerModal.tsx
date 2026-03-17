@@ -91,14 +91,14 @@ export function ServerModal({ isOpen, onClose }: ServerModalProps) {
 
         if (newTeamId) {
           const stringId = String(newTeamId);
-          // 상태 업데이트 및 즉시 이동 (최우선)
+          // 백그라운드에서 목록 동기화 (await 추가하여 먼저 상태 반영)
+          await updateTeams();
+
+          // 상태 업데이트 및 즉시 이동
           setServerId(stringId);
           setJoined(true);
           router.push(`/main/${stringId}`);
           onClose();
-
-          // 백그라운드에서 목록 동기화
-          updateTeams();
           return;
         } else {
           console.error('No teamId found in response:', res);
@@ -120,14 +120,14 @@ export function ServerModal({ isOpen, onClose }: ServerModalProps) {
 
         if (newTeamId) {
           const stringId = String(newTeamId);
-          // 상태 업데이트 및 즉시 이동 (최우선)
+          // 백그라운드에서 목록 동기화 (await 추가하여 먼저 상태 반영)
+          await updateTeams();
+
+          // 상태 업데이트 및 즉시 이동
           setServerId(stringId);
           setJoined(true);
           router.push(`/main/${stringId}`);
           onClose();
-
-          // 백그라운드에서 목록 동기화
-          updateTeams();
           return;
         } else {
           console.error('No teamId found in response:', res);

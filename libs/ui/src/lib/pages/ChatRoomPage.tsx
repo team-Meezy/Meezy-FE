@@ -189,48 +189,78 @@ export function ChatRoomPage() {
           style={{ backgroundColor: colors.black[100] }}
           onScroll={handleScroll}
         >
-          {messages.map((msg) => (
-            <div key={msg.chatMessageId} className="flex gap-3">
-              {msg.profileImage ? (
-                <img
-                  src={msg.profileImage}
-                  alt={msg.senderName}
-                  className="w-10 h-10 rounded-full shrink-0 object-cover"
-                />
-              ) : (
-                <div className="w-10 h-10 rounded-full bg-[#D9D9D9] shrink-0" />
-              )}
-              <div className="flex flex-col gap-1.5 flex-1">
-                <div className="flex items-center gap-2">
-                  <span style={{ ...typography.body.BodyB, color: '#FFFFFF' }}>
-                    {msg.senderName}
-                  </span>
-                  <span
+          {messages.map((msg) => {
+            const isMyMessage = msg.senderName === profile?.name || msg.senderName === profile?.userName || msg.senderName === profile?.nickName;
+
+            return (
+              <div
+                key={msg.chatMessageId}
+                className={`flex gap-3 w-full ${
+                  isMyMessage ? 'flex-row-reverse' : 'flex-row'
+                }`}
+              >
+                {/* 프로필 이미지 (내 메시지일 경우에는 숨기거나 오른쪽에 배치. 여기서는 동일하게 표시하되 방향만 반대로) */}
+                {msg.profileImage ? (
+                  <img
+                    src={msg.profileImage}
+                    alt={msg.senderName}
+                    className="w-10 h-10 rounded-full shrink-0 object-cover"
+                  />
+                ) : (
+                  <div className="w-10 h-10 rounded-full bg-[#D9D9D9] shrink-0" />
+                )}
+
+                <div
+                  className={`flex flex-col gap-1.5 max-w-[70%] ${
+                    isMyMessage ? 'items-end' : 'items-start'
+                  }`}
+                >
+                  <div
+                    className={`flex items-center gap-2 ${
+                      isMyMessage ? 'flex-row-reverse' : 'flex-row'
+                    }`}
+                  >
+                    <span
+                      style={{ ...typography.body.BodyB, color: '#FFFFFF' }}
+                    >
+                      {msg.senderName}
+                    </span>
+                    <span
+                      style={{
+                        ...typography.label.labelB,
+                        color: colors.gray[400],
+                      }}
+                    >
+                      {new Date(msg.createdAt).toLocaleTimeString([], {
+                        hour: '2-digit',
+                        minute: '2-digit',
+                      })}
+                    </span>
+                  </div>
+                  <div
+                    className="px-4 py-2 rounded-2xl"
                     style={{
-                      ...typography.label.labelB,
-                      color: colors.gray[400],
+                      backgroundColor: isMyMessage
+                        ? colors.primary[500]
+                        : colors.gray[800],
+                      borderTopRightRadius: isMyMessage ? '4px' : '16px',
+                      borderTopLeftRadius: isMyMessage ? '16px' : '4px',
                     }}
                   >
-                    {new Date(msg.createdAt).toLocaleTimeString([], {
-                      hour: '2-digit',
-                      minute: '2-digit',
-                    })}
-                  </span>
-                </div>
-                <div className="flex flex-col gap-1">
-                  <p
-                    style={{
-                      ...typography.body.BodyM,
-                      color: '#FFFFFF',
-                      opacity: 0.9,
-                    }}
-                  >
-                    {msg.content}
-                  </p>
+                    <p
+                      style={{
+                        ...typography.body.BodyM,
+                        color: isMyMessage ? '#FFFFFF' : '#E0E0E0',
+                        wordBreak: 'break-word',
+                      }}
+                    >
+                      {msg.content}
+                    </p>
+                  </div>
                 </div>
               </div>
-            </div>
-          ))}
+            );
+          })}
         </div>
 
         {/* 새 메시지 알림 */}

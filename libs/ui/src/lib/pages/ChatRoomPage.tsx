@@ -221,12 +221,10 @@ export function ChatRoomPage() {
                 {/* 프로필 이미지: 메시지의 이미지 -> 팀 멤버 이미지 -> 내 이미지 순서로 fallback */}
                 {(() => {
                   const imgUrl =
-                    msg.senderProfileImageUrl ||
+                    msg.profileImage ||
                     teamMembers.find((m) => m.name === msg.senderName)
-                      ?.profileImageUrl ||
-                    (isMyMessage
-                      ? profile?.profileImageUrl || profile?.profileImage
-                      : null);
+                      ?.profileImage ||
+                    (isMyMessage ? profile?.profileImage : null);
 
                   return imgUrl ? (
                     <img

@@ -31,11 +31,11 @@ const ServerStateContext = createContext<{
   updateChatRooms: (id: string) => Promise<any[]>;
 } | null>(null);
 
-interface TeamMember {
+export interface TeamMember {
   teamMemberId: string;
   name: string;
   role: string;
-  profileImageUrl?: string;
+  profileImage?: string;
   team_id?: number;
 }
 

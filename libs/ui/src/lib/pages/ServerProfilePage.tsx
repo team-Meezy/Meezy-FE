@@ -4,7 +4,7 @@ import { useState, useEffect } from 'react';
 import { colors, typography } from '../../design';
 import { useImg } from '../../hooks';
 import Image from 'next/image';
-import { useServerState, useServerJoinedTeam } from '../../context';
+import { useServerState, useServerJoinedTeam, type TeamMember } from '../../context';
 import { KickMember } from '../../assets/index.client';
 import { useRouter } from 'next/navigation';
 import { useServerIdStore } from '@org/shop-data';
@@ -30,7 +30,7 @@ export function ServerProfilePage() {
   const { setJoined } = useServerJoinedTeam();
   const { serverId, setServerId } = useServerIdStore();
   const [serverName, setServerName] = useState('');
-  const [users, setUsers] = useState(teamMembers);
+  const [users, setUsers] = useState<TeamMember[]>(teamMembers);
   const {
     previewUrl,
     localImageFile,

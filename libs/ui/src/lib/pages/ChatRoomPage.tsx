@@ -24,12 +24,12 @@ export function ChatRoomPage() {
   const [input, setInput] = useState('');
   const [isDeleteModalOpen, setIsDeleteModalOpen] = useState(false);
   const [isRenameModalOpen, setIsRenameModalOpen] = useState(false);
-  const { messages, setMessages, addMessage, chatRooms } =
-    useChatStore();
+  const { messages, setMessages, addMessage, chatRooms } = useChatStore();
   const params = useParams();
   const router = useRouter();
   const { profile } = useProfile();
-  const { teamMembers, updateChatRooms } = useServerState();
+  const { teamMembers, updateChatRooms, updateTeamMembers } =
+    useServerState();
 
   // URL에서 teamId 및 chatRoomId 가져오기
   const currentTeamId = params.serverId as string;
@@ -89,13 +89,29 @@ export function ChatRoomPage() {
     const apiChatMessages = async () => {
       try {
         const res = await getChatMessages(currentTeamId, currentRoomId);
+        console.log('📩 [ChatRoomPage] Loaded Messages:', res);
         setMessages(res);
       } catch (error) {
-        console.error('채팅 메시지 로드 실패:', error);
+        console.error('❌ [ChatRoomPage] 채팅 메시지 로드 실패:', error);
       }
     };
+
+    const apiTeamMembers = async () => {
+      try {
+        await updateTeamMembers(currentTeamId);
+      } catch (error) {
+        console.error('❌ [ChatRoomPage] 팀 멤버 로드 실패:', error);
+      }
+    };
+
     apiChatMessages();
-  }, [currentTeamId, currentRoomId, setMessages]);
+    apiTeamMembers();
+  }, [currentTeamId, currentRoomId, setMessages, updateTeamMembers]);
+
+  // 팀 멤버 데이터 변경 시 로그 출력
+  useEffect(() => {
+    console.log('👥 [ChatRoomPage] Current Team Members:', teamMembers);
+  }, [teamMembers]);
 
   const sendMessage = () => {
     if (input.trim() && currentRoomId) {
@@ -190,7 +206,18 @@ export function ChatRoomPage() {
           onScroll={handleScroll}
         >
           {messages.map((msg) => {
-            const isMyMessage = msg.senderName === profile?.name || msg.senderName === profile?.userName || msg.senderName === profile?.nickName;
+            const isMyMessage =
+              msg.senderName === profile?.name ||
+              msg.senderName === profile?.userName ||
+              msg.senderName === profile?.nickName;
+
+            // 로깅: 특정 조건에서만 출력 (너무 많으면 브라우저 느려짐)
+            if (!isMyMessage && messages.indexOf(msg) === 0) {
+              console.log('🔍 [ChatRoomPage] Debugging first other message:', {
+                msg,
+                teamMembers,
+              });
+            }
 
             return (
               <div
@@ -199,16 +226,88 @@ export function ChatRoomPage() {
                   isMyMessage ? 'flex-row-reverse' : 'flex-row'
                 }`}
               >
-                {/* 프로필 이미지 (내 메시지일 경우에는 숨기거나 오른쪽에 배치. 여기서는 동일하게 표시하되 방향만 반대로) */}
-                {msg.profileImage ? (
-                  <img
-                    src={msg.profileImage}
-                    alt={msg.senderName}
-                    className="w-10 h-10 rounded-full shrink-0 object-cover"
-                  />
-                ) : (
-                  <div className="w-10 h-10 rounded-full bg-[#D9D9D9] shrink-0" />
-                )}
+                {/* 프로필 이미지: 메시지 직접 데이터 -> 내 프로필 -> 팀 멤버 리스트 매칭 순서 */}
+                {(() => {
+                  // 1. 메시지 객체 자체에 이미지가 있는 경우 최우선
+                  const msgImg =
+                    msg.profileImage ||
+                    msg.senderProfileImageUrl ||
+                    msg.senderImage;
+                  if (msgImg) {
+                    return (
+                      <img
+                        src={msgImg}
+                        alt={msg.senderName}
+                        className="w-10 h-10 rounded-full shrink-0 object-cover"
+                      />
+                    );
+                  }
+
+                  // 2. 내 메시지인 경우 내 프로필 정보 사용
+                  if (isMyMessage) {
+                    const myImg = profile?.profileImage || profile?.profileImageUrl;
+                    if (myImg) {
+                      return (
+                        <img
+                          src={myImg}
+                          alt="my-profile"
+                          className="w-10 h-10 rounded-full shrink-0 object-cover"
+                        />
+                      );
+                    }
+                  }
+
+                  // 3. 팀 멤버 리스트에서 찾아보기
+                  const member = teamMembers.find((m) => {
+                    const mName = (
+                      m.name ||
+                      (m as any).user?.name ||
+                      (m as any).user?.userName ||
+                      (m as any).user?.nickName ||
+                      (m as any).user_name ||
+                      ''
+                    ).trim();
+                    const sName = (msg.senderName || '').trim();
+                    const isMatched =
+                      mName === sName ||
+                      (mName && sName && (mName.includes(sName) || sName.includes(mName)));
+
+                    return isMatched;
+                  });
+
+                  // 멤버의 이미지 필드 탐색 (가장 많이 발견되는 필드 순서)
+                  const memberImg =
+                    member?.profileImage ||
+                    member?.profileImageUrl ||
+                    (member as any).user?.profileImage ||
+                    (member as any).user?.profileImageUrl ||
+                    (member as any).user?.image ||
+                    (member as any).profile_image ||
+                    (member as any).user?.profile_image;
+
+                  if (!memberImg && member && !isMyMessage) {
+                    console.warn(`⚠️ [ChatRoomPage] Member found but NO image: ${msg.senderName}`, {
+                      member,
+                    });
+                  }
+
+                  if (memberImg) {
+                    return (
+                      <img
+                        src={memberImg}
+                        alt={msg.senderName}
+                        className="w-10 h-10 rounded-full shrink-0 object-cover"
+                      />
+                    );
+                  }
+
+                  // 4. 모두 없으면 이름 첫 글자 표시
+                  return (
+                    <div className="w-10 h-10 rounded-full bg-[#D9D9D9] shrink-0 flex items-center justify-center text-xs text-gray-600 font-bold">
+                      {msg.senderName?.[0]?.toUpperCase() || '?'}
+                    </div>
+                  );
+                })()}
 
                 <div
                   className={`flex flex-col gap-1.5 max-w-[70%] ${

@@ -253,9 +253,9 @@ export function JoinedSidebar({
                       ...typography.body.BodyB,
                     }}
                   >
-                    {user.profileImage || (user as any).user?.profileImage ? (
+                    {user.profileImageUrl || user.profileImage || (user as any).user?.profileImage ? (
                       <img
-                        src={user.profileImage || (user as any).user?.profileImage}
+                        src={user.profileImageUrl || user.profileImage || (user as any).user?.profileImage}
                         alt={currentUserName}
                         className="rounded-full w-5 h-5 shrink-0 object-cover"
                       />

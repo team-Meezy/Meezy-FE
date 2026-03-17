@@ -24,12 +24,12 @@ export function ChatRoomPage() {
   const [input, setInput] = useState('');
   const [isDeleteModalOpen, setIsDeleteModalOpen] = useState(false);
   const [isRenameModalOpen, setIsRenameModalOpen] = useState(false);
-  const { messages, setMessages, addMessage, chatRooms } =
-    useChatStore();
+  const { messages, setMessages, addMessage, chatRooms } = useChatStore();
   const params = useParams();
   const router = useRouter();
   const { profile } = useProfile();
-  const { teamMembers, updateChatRooms } = useServerState();
+  const { teamMembers, updateChatRooms, updateTeamMembers } =
+    useServerState();
 
   // URL에서 teamId 및 chatRoomId 가져오기
   const currentTeamId = params.serverId as string;
@@ -89,13 +89,29 @@ export function ChatRoomPage() {
     const apiChatMessages = async () => {
       try {
         const res = await getChatMessages(currentTeamId, currentRoomId);
+        console.log('📩 [ChatRoomPage] Loaded Messages:', res);
         setMessages(res);
       } catch (error) {
-        console.error('채팅 메시지 로드 실패:', error);
+        console.error('❌ [ChatRoomPage] 채팅 메시지 로드 실패:', error);
       }
     };
+
+    const apiTeamMembers = async () => {
+      try {
+        await updateTeamMembers(currentTeamId);
+      } catch (error) {
+        console.error('❌ [ChatRoomPage] 팀 멤버 로드 실패:', error);
+      }
+    };
+
     apiChatMessages();
-  }, [currentTeamId, currentRoomId, setMessages]);
+    apiTeamMembers();
+  }, [currentTeamId, currentRoomId, setMessages, updateTeamMembers]);
+
+  // 팀 멤버 데이터 변경 시 로그 출력
+  useEffect(() => {
+    console.log('👥 [ChatRoomPage] Current Team Members:', teamMembers);
+  }, [teamMembers]);
 
   const sendMessage = () => {
     if (input.trim() && currentRoomId) {
@@ -190,7 +206,10 @@ export function ChatRoomPage() {
           onScroll={handleScroll}
         >
           {messages.map((msg) => {
-            const isMyMessage = msg.senderName === profile?.name || msg.senderName === profile?.userName || msg.senderName === profile?.nickName;
+            const isMyMessage =
+              msg.senderName === profile?.name ||
+              msg.senderName === profile?.userName ||
+              msg.senderName === profile?.nickName;
 
             return (
               <div
@@ -199,16 +218,28 @@ export function ChatRoomPage() {
                   isMyMessage ? 'flex-row-reverse' : 'flex-row'
                 }`}
               >
-                {/* 프로필 이미지 (내 메시지일 경우에는 숨기거나 오른쪽에 배치. 여기서는 동일하게 표시하되 방향만 반대로) */}
-                {msg.profileImage ? (
-                  <img
-                    src={msg.profileImage}
-                    alt={msg.senderName}
-                    className="w-10 h-10 rounded-full shrink-0 object-cover"
-                  />
-                ) : (
-                  <div className="w-10 h-10 rounded-full bg-[#D9D9D9] shrink-0" />
-                )}
+                {/* 프로필 이미지: 메시지의 이미지 -> 팀 멤버 이미지 -> 내 이미지 순서로 fallback */}
+                {(() => {
+                  const imgUrl =
+                    msg.senderProfileImageUrl ||
+                    teamMembers.find((m) => m.name === msg.senderName)
+                      ?.profileImageUrl ||
+                    (isMyMessage
+                      ? profile?.profileImageUrl || profile?.profileImage
+                      : null);
+
+                  return imgUrl ? (
+                    <img
+                      src={imgUrl}
+                      alt={msg.senderName}
+                      className="w-10 h-10 rounded-full shrink-0 object-cover"
+                    />
+                  ) : (
+                    <div className="w-10 h-10 rounded-full bg-[#D9D9D9] shrink-0 flex items-center justify-center text-xs text-gray-600 font-bold">
+                      {msg.senderName?.[0]?.toUpperCase() || '?'}
+                    </div>
+                  );
+                })()}
 
                 <div
                   className={`flex flex-col gap-1.5 max-w-[70%] ${

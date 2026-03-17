@@ -311,9 +311,9 @@ export function Header() {
             {meeting ? '회의 나가기' : isLeader ? '회의 시작' : '회의 참가'}
           </button>
         )}
-        {profile?.profileImage ? (
+        {profile?.profileImageUrl || profile?.profileImage ? (
           <img
-            src={profile.profileImage}
+            src={profile.profileImageUrl || profile.profileImage}
             alt="profile"
             className="w-10 h-10 rounded-full cursor-pointer hover:opacity-80 transition-opacity object-cover"
             onClick={() => {

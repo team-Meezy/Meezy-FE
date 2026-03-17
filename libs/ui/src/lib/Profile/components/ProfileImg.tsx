@@ -32,8 +32,10 @@ export function ProfileImg() {
     }
   }, [localImageFile, silentRefetchProfile]);
 
-  // 새로 업로드한 이미지가 있으면 previewUrl, 없으면 서버의 profileImage 사용
-  const displayImage = previewUrl || profile?.profileImage;
+  // 새로 업로드한 이미지가 있으면 previewUrl, 없으면 서버의 이미지를 사용합니다.
+  // 명세에 따라 profileImageUrl 또는 기존 profileImage 필드를 참조합니다.
+  const displayImage =
+    previewUrl || profile?.profileImageUrl || profile?.profileImage;
 
   return (
     <section className="flex justify-between items-start">

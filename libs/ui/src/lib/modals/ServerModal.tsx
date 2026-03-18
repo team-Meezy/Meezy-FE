@@ -84,29 +84,34 @@ export function ServerModal({ isOpen, onClose }: ServerModalProps) {
       
       try {
         const res = await createTeam(serverName, localImageFile);
-        console.log('createTeam response:', res);
+        console.log('createTeam full response body:', res);
         
-        // teamId, team_id, id 중 있는 것을 사용 (추가적인 세이프가드)
-        const newTeamId = res?.teamId || res?.team_id || res?.id;
+        // res가 숫자나 문자열인 경우 (직접 ID 반환)
+        // res 내부의 다양한 ID 레이블
+        // res.data 내부의 다양한 ID 레이블
+        // res가 배열인 경우 첫 번째 요소의 ID
+        const newTeamId = 
+          (typeof res === 'number' || typeof res === 'string') ? res :
+          (res?.teamId || res?.team_id || res?.id || 
+           res?.data?.teamId || res?.data?.team_id || res?.data?.id ||
+           (Array.isArray(res) && (res[0]?.teamId || res[0]?.team_id || res[0]?.id)));
 
         if (newTeamId) {
           const stringId = String(newTeamId);
-          // 백그라운드에서 목록 동기화 (await 추가하여 먼저 상태 반영)
+          console.log('Found teamId:', stringId);
           await updateTeams();
 
-          // 상태 업데이트 및 즉시 이동
           setServerId(stringId);
           setJoined(true);
           router.push(`/main/${stringId}`);
-          onClose();
-          return;
-        } else {
-          console.error('No teamId found in response:', res);
           setGeneralError('팀 생성 정보가 올바르지 않습니다.');
+        } else {
+          console.error('No ID found in response structure:', JSON.stringify(res));
+          setGeneralError('서버에서 팀 식별정보를 찾을 수 없습니다.');
         }
       } catch (e: any) {
-        const msg = e.response?.data?.message || '팀 생성 실패';
-        console.error(msg, e);
+        const msg = e.response?.data?.message || e.message || '팀 생성 실패';
+        console.error('Team creation error detail:', e);
         setGeneralError(msg);
       }
     } else {
@@ -114,28 +119,31 @@ export function ServerModal({ isOpen, onClose }: ServerModalProps) {
       try {
         const extractedCode = serverLink.split('/').pop() || serverLink;
         const res = await joinTeamByCode(extractedCode);
-        console.log('joinTeamByCode response:', res);
+        console.log('joinTeamByCode full response body:', res);
 
-        const newTeamId = res?.teamId || res?.team_id || res?.id;
+        const newTeamId = 
+          (typeof res === 'number' || typeof res === 'string') ? res :
+          (res?.teamId || res?.team_id || res?.id || 
+           res?.data?.teamId || res?.data?.team_id || res?.data?.id ||
+           (Array.isArray(res) && (res[0]?.teamId || res[0]?.team_id || res[0]?.id)));
 
         if (newTeamId) {
           const stringId = String(newTeamId);
-          // 백그라운드에서 목록 동기화 (await 추가하여 먼저 상태 반영)
+          console.log('Found teamId:', stringId);
           await updateTeams();
 
-          // 상태 업데이트 및 즉시 이동
           setServerId(stringId);
           setJoined(true);
           router.push(`/main/${stringId}`);
           onClose();
           return;
         } else {
-          console.error('No teamId found in response:', res);
-          setGeneralError('팀 가입 정보가 올바르지 않습니다.');
+          console.error('No ID found in response structure:', JSON.stringify(res));
+          setGeneralError('서버에서 팀 식별정보를 찾을 수 없습니다.');
         }
       } catch (e: any) {
-        const msg = e.response?.data?.message || '팀 가입 실패';
-        console.error(msg, e);
+        const msg = e.response?.data?.message || e.message || '팀 가입 실패';
+        console.error('Team join error detail:', e);
         setGeneralError(msg);
       }
     }

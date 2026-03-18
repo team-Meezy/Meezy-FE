@@ -1,6 +1,6 @@
 'use client';
 
-import { useRouter } from 'next/navigation';
+import { useRouter, usePathname } from 'next/navigation';
 import { useServerIdStore } from '@org/shop-data';
 import { useServerJoinedTeam, useMeeting } from '../../context';
 import { colors, typography } from '../../design';
@@ -9,9 +9,19 @@ import ReceiveAssistantIcon from '../../assets/Receive.png';
 
 export const ReceiveAiAssistant = () => {
   const router = useRouter();
+  const pathname = usePathname();
   const { serverId } = useServerIdStore();
   const { meeting } = useServerJoinedTeam();
   const { isRecording, startRecording, stopRecording } = useMeeting();
+
+  const isSummary = pathname?.includes('/summary');
+  const isFeedback = pathname?.includes('/feedback');
+  // 참여율(메인)은 서버 ID는 있고 요약/피드백이 아닐 때로 간주
+  const isTeam =
+    !!serverId &&
+    !isSummary &&
+    !isFeedback &&
+    pathname?.includes(`/main/${serverId}`);
 
   const onClickSummary = () => {
     if (serverId) router.push(`/main/${serverId}/summary`);
@@ -53,21 +63,32 @@ export const ReceiveAiAssistant = () => {
             <button
               onClick={onClickSummary}
               className="text-white hover:text-[#ff5c00] transition-colors"
-              style={{ ...typography.body.BodyB, color: colors.white[100] }}
+              style={{
+                ...(isSummary ? typography.body.BodyB : typography.label.labelM),
+                color: isSummary ? colors.white[100] : colors.gray[500],
+              }}
             >
               요약 바로 보러 가기
             </button>
             <button
               onClick={onClickFeedback}
               className="text-white hover:text-[#ff5c00] transition-colors"
-              style={{ ...typography.label.labelM, color: colors.gray[500] }}
+              style={{
+                ...(isFeedback
+                  ? typography.body.BodyB
+                  : typography.label.labelM),
+                color: isFeedback ? colors.white[100] : colors.gray[500],
+              }}
             >
               피드백 바로 보러 가기
             </button>
             <button
               onClick={onClickTeam}
               className="text-white hover:text-[#ff5c00] transition-colors"
-              style={{ ...typography.label.labelM, color: colors.gray[500] }}
+              style={{
+                ...(isTeam ? typography.body.BodyB : typography.label.labelM),
+                color: isTeam ? colors.white[100] : colors.gray[500],
+              }}
             >
               참여율 바로 보러 가기
             </button>

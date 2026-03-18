@@ -211,16 +211,6 @@ export const MeetingRoomPage = () => {
 
   return (
     <div className="flex-1 flex flex-col h-full min-h-0 bg-[#121212] overflow-hidden relative">
-      {/* 녹음 상태 인디케이터 */}
-      {isRecording && (
-        <div className="absolute top-6 left-6 z-50 flex items-center gap-2 bg-black/50 px-3 py-1.5 rounded-full border border-red-500/30 backdrop-blur-sm">
-          <div className="w-2 h-2 rounded-full bg-red-500 animate-pulse" />
-          <span className="text-red-500 text-xs font-bold tracking-wider">
-            REC
-          </span>
-        </div>
-      )}
-
       <div className="flex-1 flex flex-col items-center justify-center p-4 md:p-8 min-h-0 space-y-4 max-w-6xl mx-auto w-full">
         {rows.map((row, rowIndex) => (
           <div

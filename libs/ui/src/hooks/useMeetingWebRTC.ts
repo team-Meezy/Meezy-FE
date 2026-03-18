@@ -425,13 +425,9 @@ export function useMeetingWebRTC(teamId: string, myId: string, isActive: boolean
     };
   }, [localStream, sendVoiceActivity]);
 
-  // Recording Auto-start Effect
+  // Recording Auto-start Effect - REMOVED (Recording should only start manually via assistant)
+  /*
   useEffect(() => {
-    log('Recording effect triggered', {
-      hasStream: !!localStream,
-      hasRecorder: !!mediaRecorderRef.current,
-      recorderState: mediaRecorderRef.current?.state,
-    });
     if (
       isActive &&
       meetingId &&
@@ -442,6 +438,7 @@ export function useMeetingWebRTC(teamId: string, myId: string, isActive: boolean
       startRecording();
     }
   }, [localStream, startRecording, log, meetingId, isActive]);
+  */
 
   // Main Event Handler for Upload
   useEffect(() => {

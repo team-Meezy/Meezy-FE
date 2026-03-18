@@ -95,7 +95,9 @@ export const ReceiveAiAssistant = () => {
               <span className="text-white text-[10px] font-bold tabular-nums">
                 {elapsedTime}
               </span>
-              <div className="w-2 h-2 rounded-full bg-red-600 animate-pulse" />
+              {isRecording && (
+                <div className="w-2 h-2 rounded-full bg-red-600 animate-pulse" />
+              )}
             </div>
           )}
         </div>

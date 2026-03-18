@@ -107,12 +107,33 @@ export function useMeetingWebRTC(teamId: string, myId: string, isActive: boolean
         });
       }
 
+      pc.onnegotiationneeded = async () => {
+        try {
+          if (pc.signalingState !== 'stable') return;
+          // Polite 발송: ID가 작을 때만 Offer 생성
+          if (myId < targetUserId) {
+            console.log(`[WebRTC] Negotiation needed, sending offer to ${targetUserId}`);
+            const offer = await pc.createOffer();
+            await pc.setLocalDescription(offer);
+            sendSignalRef.current?.(targetUserId, {
+              type: 'offer',
+              fromUserId: myId,
+              toUserId: targetUserId,
+              sdp: offer.sdp,
+            });
+          }
+        } catch (err) {
+          console.error('[WebRTC] Negotiation offer error:', err);
+        }
+      };
+
       pcs.current.set(targetUserId, pc);
       return pc;
     },
     [myId, removeParticipant]
   );
 
+  const sendSignalRef = useRef<any>(null);
   const onSignal = useCallback(
     async (signal: MeetingSignal) => {
       const {
@@ -157,6 +178,9 @@ export function useMeetingWebRTC(teamId: string, myId: string, isActive: boolean
   );
 
   const { sendSignal } = useMeetingSignal(teamId, myId, onSignal);
+  useEffect(() => {
+    sendSignalRef.current = sendSignal;
+  }, [sendSignal]);
 
   const connectToUser = useCallback(
     async (targetUserId: string) => {
@@ -304,6 +328,22 @@ export function useMeetingWebRTC(teamId: string, myId: string, isActive: boolean
       log('getUserMedia SUCCESS. stream tracks:', stream.getTracks().length);
       setLocalStream(stream);
       localStreamRef.current = stream;
+
+      // 🔥 레이스 컨디션 해결: 이미 생성된 PeerConnection이 있다면 트랙 추가
+      pcs.current.forEach((pc, targetId) => {
+        const senders = pc.getSenders();
+        stream.getTracks().forEach((track) => {
+          // 중복 추가 방지
+          if (!senders.find((s) => s.track === track)) {
+            log(`Adding late track to existing PC: ${targetId}`);
+            pc.addTrack(track, stream);
+          }
+        });
+
+        // Offer 재발송이 필요한 경우 (필요 시 negotiationneeded 이벤트 활용 가능)
+        // 여기서는 간단히 다시 offer를 보낼 수도 있음
+      });
+
       return stream;
     } catch (error) {
       log('[ERROR] initLocalMedia failed', error);

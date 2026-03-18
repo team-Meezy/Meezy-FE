@@ -72,10 +72,18 @@ export function ServerIdLayoutWrapper({
         event.type === 'MEMBER_LEFT'
       ) {
         updateTeamMembers(currentServerId);
+      } else if (
+        event.type === 'MEETING_STARTED' ||
+        event.type === 'MEETING_ENDED' ||
+        event.category === 'MEETING'
+      ) {
+        console.log('ServerIdLayoutWrapper: [EVENT] Meeting event received, triggering sync');
+        window.dispatchEvent(new CustomEvent('meezy:sync-meeting'));
       } else {
         // Fallback for any other team events
         updateChatRooms(currentServerId);
         updateTeamMembers(currentServerId);
+        window.dispatchEvent(new CustomEvent('meezy:sync-meeting'));
       }
     },
     [currentServerId, updateChatRooms, updateTeamMembers]

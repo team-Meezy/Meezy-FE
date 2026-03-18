@@ -6,12 +6,16 @@ interface MeetingState {
   teamId: string;
   isUploading: boolean;
   isRecording: boolean;
+  hasActiveMeeting: boolean;
+  startTime: string | null;
 
   // 액션 (action)
   setMeetingId: (value: string) => void;
   setTeamId: (value: string) => void;
   setIsUploading: (value: boolean) => void;
   setIsRecording: (value: boolean) => void;
+  setHasActiveMeeting: (value: boolean) => void;
+  setStartTime: (value: string | null) => void;
 }
 
 export const useMeetingStore = create<MeetingState>()((set) => ({
@@ -20,10 +24,14 @@ export const useMeetingStore = create<MeetingState>()((set) => ({
   teamId: '',
   isUploading: false,
   isRecording: false,
+  hasActiveMeeting: false,
+  startTime: null,
 
   // 액션
   setMeetingId: (value: string) => set({ meetingId: value }),
   setTeamId: (value: string) => set({ teamId: value }),
   setIsUploading: (value: boolean) => set({ isUploading: value }),
   setIsRecording: (value: boolean) => set({ isRecording: value }),
+  setHasActiveMeeting: (value: boolean) => set({ hasActiveMeeting: value }),
+  setStartTime: (value: string | null) => set({ startTime: value }),
 }));

@@ -14,7 +14,14 @@ import { useServerState } from '../../context';
 
 export function Header() {
   const { joined, setJoined, meeting, setMeeting } = useServerJoinedTeam();
-  const { meetingId, setMeetingId, setTeamId, isUploading } = useMeetingStore();
+  const {
+    meetingId,
+    setMeetingId,
+    setTeamId,
+    isUploading,
+    setHasActiveMeeting,
+    setStartTime,
+  } = useMeetingStore();
   const { profile } = useProfile();
   const { teamMembers } = useServerState();
   const { setLoading, setLoadingState } = useLoadingStore();
@@ -22,7 +29,7 @@ export function Header() {
   const router = useRouter();
   const pathname = usePathname();
 
-  const [hasActiveMeeting, setHasActiveMeeting] = useState(false);
+  const { hasActiveMeeting } = useMeetingStore();
   const [isSyncing, setIsSyncing] = useState(false);
 
   const currentTeamId = params.serverId as string;
@@ -96,6 +103,7 @@ export function Header() {
 
       if (!activeMeetings || !activeMeetings.meetingId) {
         setHasActiveMeeting(false);
+        setStartTime(null);
         // 서버 동기화 지연일 수 있으므로 로컬에서 참여 중(`meetingRef.current === true`)이라면 
         // 즉각적으로 종료하지 않음 (단, 회의 밖일 때만 적용됨)
         if (!meetingRef.current && !currentPath.includes('/meeting')) {
@@ -106,6 +114,10 @@ export function Header() {
       }
 
       setHasActiveMeeting(true);
+      const newStartTime = activeMeetings.startTime || activeMeetings.createdAt;
+      if (newStartTime) {
+        setStartTime(newStartTime);
+      }
       const isParticipant =
         Array.isArray(activeMeetings.participants) &&
         activeMeetings.participants.some(
@@ -149,6 +161,16 @@ export function Header() {
     }
     checkActiveMeeting();
   }, [pathname, checkActiveMeeting]);
+
+  // 외부(웹소켓 레이아웃 등)에서 싱크를 트리거할 수 있도록 이벤트 리스너 등록
+  useEffect(() => {
+    const handleSync = () => {
+      console.log('Header: [EVENT] meezy:sync-meeting received');
+      checkActiveMeeting();
+    };
+    window.addEventListener('meezy:sync-meeting', handleSync);
+    return () => window.removeEventListener('meezy:sync-meeting', handleSync);
+  }, [checkActiveMeeting]);
 
   // 브라우저 종료/종료 시 세션 정리
   useEffect(() => {
@@ -221,6 +243,7 @@ export function Header() {
         setMeeting(false);
         setMeetingId('');
         setTeamId('');
+        setStartTime(null);
         
         // 만약 미팅 페이지가 아닌 곳(대시보드 등)에서 '나가기'를 눌렀다면
         // 자동라우팅 Effect가 발동하지 않으므로 여기서 로딩 상태를 해제해야 합니다.
@@ -254,6 +277,8 @@ export function Header() {
           res
         );
         setMeeting(true);
+        setHasActiveMeeting(true);
+        setStartTime(new Date().toISOString());
         if (res?.meetingId) {
           setMeetingId(res.meetingId);
           setTeamId(currentTeamId);

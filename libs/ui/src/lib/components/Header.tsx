@@ -14,7 +14,13 @@ import { useServerState } from '../../context';
 
 export function Header() {
   const { joined, setJoined, meeting, setMeeting } = useServerJoinedTeam();
-  const { meetingId, setMeetingId, setTeamId, isUploading } = useMeetingStore();
+  const {
+    meetingId,
+    setMeetingId,
+    setTeamId,
+    isUploading,
+    setHasActiveMeeting,
+  } = useMeetingStore();
   const { profile } = useProfile();
   const { teamMembers } = useServerState();
   const { setLoading, setLoadingState } = useLoadingStore();
@@ -22,7 +28,7 @@ export function Header() {
   const router = useRouter();
   const pathname = usePathname();
 
-  const [hasActiveMeeting, setHasActiveMeeting] = useState(false);
+  const { hasActiveMeeting } = useMeetingStore();
   const [isSyncing, setIsSyncing] = useState(false);
 
   const currentTeamId = params.serverId as string;
@@ -149,6 +155,16 @@ export function Header() {
     }
     checkActiveMeeting();
   }, [pathname, checkActiveMeeting]);
+
+  // 외부(웹소켓 레이아웃 등)에서 싱크를 트리거할 수 있도록 이벤트 리스너 등록
+  useEffect(() => {
+    const handleSync = () => {
+      console.log('Header: [EVENT] meezy:sync-meeting received');
+      checkActiveMeeting();
+    };
+    window.addEventListener('meezy:sync-meeting', handleSync);
+    return () => window.removeEventListener('meezy:sync-meeting', handleSync);
+  }, [checkActiveMeeting]);
 
   // 브라우저 종료/종료 시 세션 정리
   useEffect(() => {

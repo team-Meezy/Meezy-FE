@@ -351,6 +351,7 @@ export function ChatRoomPage() {
                         ...typography.body.BodyM,
                         color: isMyMessage ? '#FFFFFF' : '#E0E0E0',
                         wordBreak: 'break-word',
+                        whiteSpace: 'pre-wrap',
                       }}
                     >
                       {msg.content}
@@ -377,16 +378,19 @@ export function ChatRoomPage() {
           </div>
         )}
 
-        {/* 입력창 */}
         <div className="shrink-0 px-4 py-4 bg-[#121212]">
           <div className="relative flex items-center">
-            <input
-              type="text"
-              className="w-full h-12 rounded-lg pl-4 pr-16 outline-none transition-all focus:ring-1 focus:ring-white/20"
+            <textarea
+              className="w-full min-h-[48px] max-h-32 rounded-lg pl-4 pr-16 py-3 outline-none transition-all focus:ring-1 focus:ring-white/20 resize-none no-scrollbar"
               placeholder={`# ${roomName}에 메시지 보내기`}
               value={input}
               onChange={(e) => setInput(e.target.value)}
-              onKeyDown={(e) => e.key === 'Enter' && sendMessage()}
+              onKeyDown={(e) => {
+                if (e.key === 'Enter' && !e.shiftKey) {
+                  e.preventDefault();
+                  sendMessage();
+                }
+              }}
               style={{
                 ...typography.body.BodyM,
                 backgroundColor: colors.gray[800],
@@ -396,7 +400,7 @@ export function ChatRoomPage() {
             <button
               onClick={sendMessage}
               disabled={!input.trim()}
-              className="absolute right-4 text-sm font-bold transition-opacity hover:opacity-80 active:opacity-60 disabled:opacity-30"
+              className="absolute right-4 bottom-6 text-sm font-bold transition-opacity hover:opacity-80 active:opacity-60 disabled:opacity-30"
               style={{ color: colors.primary[500] }}
             >
               전송

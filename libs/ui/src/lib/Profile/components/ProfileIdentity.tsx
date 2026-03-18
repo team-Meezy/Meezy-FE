@@ -4,18 +4,14 @@ import { colors, typography } from '../../../design';
 
 interface ProfileIdentityProps {
   userName: string;
-  setUserName: (name: string) => void;
   userId: string;
   userEmail: string;
-  handleSave: () => void;
 }
 
 export function ProfileIdentity({
   userName,
-  setUserName,
   userId,
   userEmail,
-  handleSave,
 }: ProfileIdentityProps) {
   return (
     <section className="flex flex-col gap-4">
@@ -28,8 +24,8 @@ export function ProfileIdentity({
           type="text"
           id="profile-name"
           value={userName}
-          onChange={(e) => setUserName(e.target.value)}
-          className="w-full max-w-lg h-10 px-4 rounded-lg outline-none border border-transparent focus:border-[#FF5C00] transition-all"
+          readOnly
+          className="w-full max-w-lg h-10 px-4 rounded-lg outline-none opacity-80 cursor-default"
           style={{
             backgroundColor: '#1C1C1E',
             color: '#FFFFFF',
@@ -63,7 +59,7 @@ export function ProfileIdentity({
 
       <div className="flex justify-between w-full">
         {/* 이메일 필드 */}
-        <div className="flex flex-col gap-3 min-w-[70%]">
+        <div className="flex flex-col gap-3 w-full">
           <label htmlFor="profile-email" style={{ ...typography.body.BodyB }}>
             이메일
           </label>
@@ -79,21 +75,6 @@ export function ProfileIdentity({
               ...typography.body.BodyM,
             }}
           />
-        </div>
-
-        {/* 저장하기 버튼 */}
-        <div className="flex justify-end w-full items-end">
-          <button
-            className="px-8 py-3 rounded-lg transition-all hover:scale-105 active:scale-95 shadow-lg shadow-orange-500/20"
-            style={{
-              backgroundColor: colors.primary[500],
-              color: colors.white[100],
-              ...typography.body.BodyB,
-            }}
-            onClick={handleSave}
-          >
-            저장하기
-          </button>
         </div>
       </div>
     </section>

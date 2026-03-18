@@ -104,7 +104,8 @@ export function ServerModal({ isOpen, onClose }: ServerModalProps) {
           setServerId(stringId);
           setJoined(true);
           router.push(`/main/${stringId}`);
-          setGeneralError('팀 생성 정보가 올바르지 않습니다.');
+          onClose();
+          return;
         } else {
           console.error('No ID found in response structure:', JSON.stringify(res));
           setGeneralError('서버에서 팀 식별정보를 찾을 수 없습니다.');

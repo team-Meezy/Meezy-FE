@@ -11,7 +11,7 @@ import {
   useServerState,
 } from '../../context';
 import { useModalStore, useErrorStore } from '@org/shop-data';
-import { createTeam, joinTeamByCode } from '@org/shop-data';
+import { createTeam, joinTeamByCode, getTeams } from '@org/shop-data';
 import { useServerIdStore } from '@org/shop-data';
 
 interface ServerModalProps {
@@ -90,15 +90,31 @@ export function ServerModal({ isOpen, onClose }: ServerModalProps) {
         // res 내부의 다양한 ID 레이블
         // res.data 내부의 다양한 ID 레이블
         // res가 배열인 경우 첫 번째 요소의 ID
-        const newTeamId = 
-          (typeof res === 'number' || typeof res === 'string') ? res :
+        let newTeamId = 
+          (typeof res === 'number' && res !== 0 || (typeof res === 'string' && res !== '')) ? res :
           (res?.teamId || res?.team_id || res?.id || 
            res?.data?.teamId || res?.data?.team_id || res?.data?.id ||
            (Array.isArray(res) && (res[0]?.teamId || res[0]?.team_id || res[0]?.id)));
 
+        // [Fallback] 응답에 ID가 없는 경우 (서버에서 생성은 되었으나 응답 바디가 비어있을 때)
+        if (!newTeamId) {
+          console.warn('No ID in response, attempting fallback lookup...');
+          const teams = await getTeams();
+          if (Array.isArray(teams)) {
+            // 이번에 새로 만든 서버 이름과 일치하는 팀 찾기
+            const found = teams.find((t: any) => t.teamName === serverName || t.name === serverName);
+            if (found) {
+              newTeamId = found.teamId || found.team_id || found.id;
+            } else if (teams.length > 0) {
+              // 찾지 못했다면 가장 최근 팀(첫 번째)으로 간주
+              newTeamId = teams[0].teamId || teams[0].team_id || teams[0].id;
+            }
+          }
+        }
+
         if (newTeamId) {
           const stringId = String(newTeamId);
-          console.log('Found teamId:', stringId);
+          console.log('Found teamId (including fallback):', stringId);
           await updateTeams();
 
           setServerId(stringId);
@@ -107,7 +123,7 @@ export function ServerModal({ isOpen, onClose }: ServerModalProps) {
           onClose();
           return;
         } else {
-          console.error('No ID found in response structure:', JSON.stringify(res));
+          console.error('No ID found even after fallback:', JSON.stringify(res));
           setGeneralError('서버에서 팀 식별정보를 찾을 수 없습니다.');
         }
       } catch (e: any) {
@@ -122,15 +138,24 @@ export function ServerModal({ isOpen, onClose }: ServerModalProps) {
         const res = await joinTeamByCode(extractedCode);
         console.log('joinTeamByCode full response body:', res);
 
-        const newTeamId = 
-          (typeof res === 'number' || typeof res === 'string') ? res :
+        let newTeamId = 
+          (typeof res === 'number' && res !== 0 || (typeof res === 'string' && res !== '')) ? res :
           (res?.teamId || res?.team_id || res?.id || 
            res?.data?.teamId || res?.data?.team_id || res?.data?.id ||
            (Array.isArray(res) && (res[0]?.teamId || res[0]?.team_id || res[0]?.id)));
 
+        // [Fallback] 가입 시에도 응답이 없으면 최신 팀 목록에서 첫 번째 것 사용
+        if (!newTeamId) {
+          console.warn('No ID in join response, attempting fallback lookup...');
+          const teams = await getTeams();
+          if (Array.isArray(teams) && teams.length > 0) {
+            newTeamId = teams[0].teamId || teams[0].team_id || teams[0].id;
+          }
+        }
+
         if (newTeamId) {
           const stringId = String(newTeamId);
-          console.log('Found teamId:', stringId);
+          console.log('Found teamId (including fallback):', stringId);
           await updateTeams();
 
           setServerId(stringId);
@@ -139,7 +164,7 @@ export function ServerModal({ isOpen, onClose }: ServerModalProps) {
           onClose();
           return;
         } else {
-          console.error('No ID found in response structure:', JSON.stringify(res));
+          console.error('No ID found even after fallback:', JSON.stringify(res));
           setGeneralError('서버에서 팀 식별정보를 찾을 수 없습니다.');
         }
       } catch (e: any) {

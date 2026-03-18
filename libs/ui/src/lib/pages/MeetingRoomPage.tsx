@@ -109,11 +109,20 @@ export const MeetingRoomPage = () => {
     }
   };
 
-  const totalParticipants = 1 + (Array.isArray(remoteStreams) ? remoteStreams.length : 0);
+  const others = Array.isArray(participants)
+    ? participants.filter((p) => {
+        const id = p.userId || p.id || p.user_id;
+        return String(id) !== String(myId);
+      })
+    : [];
+
+  const totalParticipants = 1 + others.length;
 
   const getGridCols = () => {
-    if (totalParticipants === 1) return 'grid-cols-1';
-    return 'grid-cols-2';
+    if (totalParticipants <= 1) return 'grid-cols-1';
+    if (totalParticipants <= 2) return 'grid-cols-1 md:grid-cols-2';
+    if (totalParticipants <= 4) return 'grid-cols-2';
+    return 'grid-cols-2 lg:grid-cols-3';
   };
 
   return (
@@ -157,21 +166,20 @@ export const MeetingRoomPage = () => {
             </div>
 
             {/* 모든 참가자(나 제외) */}
-            {Array.isArray(remoteStreams) && remoteStreams.map((rs) => {
-              const pId = rs.userId;
-              const pInfo = Array.isArray(participants) ? participants.find((p) => {
-                const id = p.userId || p.id || p.user_id;
-                return String(id) === String(pId);
-              }) : null;
+            {others.map((p) => {
+              const pId = p.userId || p.id || p.user_id;
+              const rs = Array.isArray(remoteStreams)
+                ? remoteStreams.find((s) => String(s.userId) === String(pId))
+                : null;
 
               return (
-                <div key={pId} className="w-full h-full min-h-0 col-span-1">
+                <div key={String(pId)} className="w-full h-full min-h-0 col-span-1">
                   <VideoCard
-                    name={pInfo?.name || '참가자'}
+                    name={p.name || '참가자'}
                     isSpeaking={false} // 필요 시 VAD 정보 연동
                     isMike={true} // 필요 시 실제 상태 연동
-                    isKamera={true} // 필요 시 실제 상태 연동
-                    videoStream={rs.stream}
+                    isKamera={!!rs?.stream} // 스트림이 있을 때만 카메라 켜진 것으로 표시
+                    videoStream={rs?.stream}
                     onMikeClick={() => {}}
                     onKameraClick={() => {}}
                   />

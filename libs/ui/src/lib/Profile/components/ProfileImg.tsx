@@ -4,7 +4,7 @@ import { colors, typography } from '../../../design';
 import { useImg } from '../../../hooks';
 import { useProfile } from '../../../context';
 import { useEffect } from 'react';
-import { uploadProfileImage } from '@org/shop-data';
+import { uploadProfileImage, deleteProfileImage } from '@org/shop-data';
 
 export function ProfileImg() {
   const {
@@ -31,6 +31,16 @@ export function ProfileImg() {
       upload();
     }
   }, [localImageFile, silentRefetchProfile]);
+
+  const handleDelete = async () => {
+    try {
+      handleDeleteImg(); // 로컬 상태 초기화
+      await deleteProfileImage(); // 서버 이미지 삭제
+      await silentRefetchProfile(); // 프로필 정보 갱신
+    } catch (e) {
+      console.error('프로필 이미지 삭제 실패', e);
+    }
+  };
 
   // 새로 업로드한 이미지가 있으면 previewUrl, 없으면 서버의 이미지를 사용합니다.
   // 명세에 따라 profileImageUrl 또는 기존 profileImage 필드를 참조합니다.
@@ -66,7 +76,7 @@ export function ProfileImg() {
           <button
             className="px-4 py-2 rounded-md bg-[#2C2C2E] hover:bg-[#3A3A3C] transition-colors"
             style={{ ...typography.body.BodyB, color: colors.gray[400] }}
-            onClick={handleDeleteImg}
+            onClick={handleDelete}
           >
             대표 이미지 삭제
           </button>

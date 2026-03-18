@@ -8,10 +8,12 @@ import Mike from '../../assets/mike.svg';
 import NoMike from '../../assets/NoMike.svg';
 import Kamera from '../../assets/Kamera.svg';
 import { useServerJoinedTeam, useProfile, useMeeting } from '../../context';
-import { useParams } from 'next/navigation';
-import { getActiveMeetings } from '@org/shop-data';
+import { useParams, useRouter } from 'next/navigation';
+import { getActiveMeetings, useMeetingEvents, MeetingEvent } from '@org/shop-data';
+import { useCallback } from 'react';
 
 export const MeetingRoomPage = () => {
+  const router = useRouter();
   const { profile } = useProfile();
   const params = useParams();
   const currentTeamId = params.serverId as string;
@@ -32,14 +34,6 @@ export const MeetingRoomPage = () => {
     startRecording,
     stopRecording,
   } = useMeeting();
-  const localVideoRef = useRef<HTMLVideoElement | null>(null);
-
-  // 로컬 스트림 연결
-  useEffect(() => {
-    if (localVideoRef.current && localStream) {
-      localVideoRef.current.srcObject = localStream;
-    }
-  }, [localStream]);
 
   // 참가자 목록 가져오기 및 초기 연결 시도
   useEffect(() => {
@@ -52,18 +46,15 @@ export const MeetingRoomPage = () => {
           setParticipants(res.participants);
 
           // 나보다 먼저 들어와 있는 사람들에게 Offer 보내기
-          if (Array.isArray(res.participants)) {
-            res.participants.forEach((p: any) => {
-              const pId = p.userId || p.id || p.user_id;
-              if (pId !== myId) {
-                // 내 ID가 상대방보다 작을 때만 Offer 시작 (Glare 방지)
-                if (myId < pId) {
-                  console.log(`Initial polite initiation: sending offer to ${pId}`);
-                  connectToUser(pId);
-                }
+          res.participants.forEach((p: any) => {
+            const pId = p.userId || p.id || p.user_id;
+            if (pId && String(pId) !== String(myId)) {
+              if (String(myId) < String(pId)) {
+                console.log(`Initial polite initiation: sending offer to ${pId}`);
+                connectToUser(pId);
               }
-            });
-          }
+            }
+          });
         }
       } catch (error) {
         console.error('Failed to fetch participants:', error);
@@ -71,11 +62,51 @@ export const MeetingRoomPage = () => {
     };
 
     fetchParticipants();
-
-    // 주기적으로 참가자 명단 갱신 (또는 소켓 이벤트 대기)
-    const interval = setInterval(fetchParticipants, 30000);
-    return () => clearInterval(interval);
   }, [currentTeamId, myId, connectToUser]);
+
+  const handleMeetingEvent = useCallback(
+    (event: MeetingEvent) => {
+      console.log('MeetingRoomPage: [EVENT]', event);
+      if (event.type === 'participant-joined') {
+        const pId = event.joinedUserId;
+        if (pId && pId !== myId) {
+          setParticipants((prev) => {
+            const exists = prev.some(
+              (p) => (p.userId || p.id || p.user_id) === pId
+            );
+            if (exists) return prev;
+            return [
+              ...prev,
+              {
+                userId: event.joinedUserId,
+                name: event.joinedUserName,
+                profileImageUrl: event.joinedUserProfileImageUrl,
+              },
+            ];
+          });
+
+          // Polite initiation
+          if (myId < pId) {
+            console.log(`Websocket polite initiation: sending offer to ${pId}`);
+            connectToUser(pId);
+          }
+        }
+      } else if (event.type === 'participant-left') {
+        const pId = event.leftUserId;
+        if (pId) {
+          setParticipants((prev) =>
+            prev.filter((p) => (p.userId || p.id || p.user_id) !== pId)
+          );
+        }
+      } else if (event.type === 'meeting-ended') {
+        alert('회의가 종료되었습니다.');
+        router.push(`/main/${currentTeamId}`);
+      }
+    },
+    [myId, currentTeamId, connectToUser]
+  );
+
+  useMeetingEvents(currentTeamId, handleMeetingEvent);
 
   const onMikeClick = async () => {
     if (localStream) {
@@ -112,18 +143,71 @@ export const MeetingRoomPage = () => {
   const others = Array.isArray(participants)
     ? participants.filter((p) => {
         const id = p.userId || p.id || p.user_id;
-        return String(id) !== String(myId);
+        const myIdentifier = String(myId);
+        const pIdentifier = String(id);
+        
+        // 내 ID와 일치하거나, 이름이 동일하면서 로컬 유저로 추정되는 경우 필터링
+        const isMeById = id && pIdentifier === myIdentifier;
+        const isMeByName = p.name === profile?.name || p.name?.includes('(나)');
+        
+        return !isMeById && !isMeByName;
       })
     : [];
 
-  const totalParticipants = 1 + others.length;
+  const allParticipants = [
+    {
+      id: myId,
+      name: `${profile?.name || '나'} (나)`,
+      isLocal: true,
+      stream: localStream,
+      isSpeaking: isSpeaking,
+      isMike: isMike,
+      isKamera: isKamera,
+      onMikeClick,
+      onKameraClick,
+    },
+    ...others.map((p) => {
+      const pId = p.userId || p.id || p.user_id;
+      const rs = Array.isArray(remoteStreams)
+        ? remoteStreams.find((s: any) => String(s.userId) === String(pId))
+        : null;
+      return {
+        id: pId,
+        name: p.name || '참가자',
+        isLocal: false,
+        stream: rs?.stream,
+        isSpeaking: false,
+        isMike: true,
+        isKamera: !!rs?.stream,
+        onMikeClick: () => {},
+        onKameraClick: () => {},
+      };
+    }),
+  ];
 
-  const getGridCols = () => {
-    if (totalParticipants <= 1) return 'grid-cols-1';
-    if (totalParticipants <= 2) return 'grid-cols-1 md:grid-cols-2';
-    if (totalParticipants <= 4) return 'grid-cols-2';
-    return 'grid-cols-2 lg:grid-cols-3';
+  const total = allParticipants.length;
+
+  // 행(Row)별 데이터 구성
+  const getRows = () => {
+    if (total <= 1) return [allParticipants];
+    if (total === 2) return [[allParticipants[0]], [allParticipants[1]]];
+    if (total === 3) return [allParticipants.slice(0, 2), [allParticipants[2]]];
+    if (total === 4) return [allParticipants.slice(0, 2), allParticipants.slice(2, 4)];
+    if (total === 5)
+      return [
+        allParticipants.slice(0, 2),
+        allParticipants.slice(2, 4),
+        [allParticipants[4]],
+      ];
+    // 6명 이상은 대략적으로 3개씩 끊음
+    const rows = [];
+    for (let i = 0; i < allParticipants.length; i += 3) {
+      rows.push(allParticipants.slice(i, i + 3));
+    }
+    return rows;
   };
+
+  const rows = getRows();
 
   return (
     <div className="flex-1 flex flex-col h-full min-h-0 bg-[#121212] overflow-hidden relative">
@@ -131,63 +215,33 @@ export const MeetingRoomPage = () => {
       {isRecording && (
         <div className="absolute top-6 left-6 z-50 flex items-center gap-2 bg-black/50 px-3 py-1.5 rounded-full border border-red-500/30 backdrop-blur-sm">
           <div className="w-2 h-2 rounded-full bg-red-500 animate-pulse" />
-          <span className="text-red-500 text-xs font-bold tracking-wider">REC</span>
+          <span className="text-red-500 text-xs font-bold tracking-wider">
+            REC
+          </span>
         </div>
       )}
 
-      <div className="flex-1 flex flex-col items-center justify-center p-4 md:p-8 min-h-0">
-        {totalParticipants === 1 ? (
-          <div className="w-full h-full flex items-center justify-center max-w-6xl mx-auto">
-            <VideoCard
-              name={`${profile?.name || '나'} (나)`}
-              isSpeaking={isSpeaking}
-              isMike={isMike}
-              isKamera={isKamera}
-              videoStream={localStream}
-              onMikeClick={onMikeClick}
-              onKameraClick={onKameraClick}
-            />
-          </div>
-        ) : (
+      <div className="flex-1 flex flex-col items-center justify-center p-4 md:p-8 min-h-0 space-y-4 max-w-6xl mx-auto w-full">
+        {rows.map((row, rowIndex) => (
           <div
-            className={`grid ${getGridCols()} gap-4 w-full h-full max-w-5xl mx-auto`}
+            key={rowIndex}
+            className="flex flex-1 w-full gap-4 items-center justify-center min-h-0"
           >
-            {/* 내 비디오 */}
-            <div className="w-full h-full min-h-0 col-span-1">
-              <VideoCard
-                name={`${profile?.name || '나'} (나)`}
-                isSpeaking={isSpeaking}
-                isMike={isMike}
-                isKamera={isKamera}
-                videoStream={localStream}
-                onMikeClick={onMikeClick}
-                onKameraClick={onKameraClick}
-              />
-            </div>
-
-            {/* 모든 참가자(나 제외) */}
-            {others.map((p) => {
-              const pId = p.userId || p.id || p.user_id;
-              const rs = Array.isArray(remoteStreams)
-                ? remoteStreams.find((s) => String(s.userId) === String(pId))
-                : null;
-
-              return (
-                <div key={String(pId)} className="w-full h-full min-h-0 col-span-1">
-                  <VideoCard
-                    name={p.name || '참가자'}
-                    isSpeaking={false} // 필요 시 VAD 정보 연동
-                    isMike={true} // 필요 시 실제 상태 연동
-                    isKamera={!!rs?.stream} // 스트림이 있을 때만 카메라 켜진 것으로 표시
-                    videoStream={rs?.stream}
-                    onMikeClick={() => {}}
-                    onKameraClick={() => {}}
-                  />
-                </div>
-              );
-            })}
+            {row.map((p) => (
+              <div key={String(p.id)} className="flex-1 h-full max-w-2xl min-h-0">
+                <VideoCard
+                  name={p.name}
+                  isSpeaking={p.isSpeaking}
+                  isMike={p.isMike}
+                  isKamera={p.isKamera}
+                  videoStream={p.stream}
+                  onMikeClick={p.onMikeClick}
+                  onKameraClick={p.onKameraClick}
+                />
+              </div>
+            ))}
           </div>
-        )}
+        ))}
       </div>
 
       {/* 하단 컨트롤 바 */}

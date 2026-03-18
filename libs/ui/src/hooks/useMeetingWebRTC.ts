@@ -202,25 +202,27 @@ export function useMeetingWebRTC(teamId: string, myId: string, isActive: boolean
     async (event: MeetingEvent) => {
       log('meeting event received', event);
       switch (event.type) {
-        case 'participant_joined':
-          if (event.userId && event.userId !== myId) {
+        case 'participant-joined':
+          if (event.joinedUserId && event.joinedUserId !== myId) {
             // "Polite" 발송 전략: ID가 더 작은 쪽이 먼저 Offer를 보냄
             // (또는 한쪽만 보내도록 규칙을 정함)
-            if (myId < event.userId) {
-              log(`polite initiation: sending offer to ${event.userId}`);
-              connectToUser(event.userId);
+            if (myId < event.joinedUserId) {
+              log(`polite initiation: sending offer to ${event.joinedUserId}`);
+              connectToUser(event.joinedUserId);
             } else {
-              log(`polite initiation: waiting for offer from ${event.userId}`);
+              log(`polite initiation: waiting for offer from ${event.joinedUserId}`);
             }
           }
           break;
-        case 'participant_left':
-          if (event.userId) {
-            removeParticipant(event.userId);
+        case 'participant-left':
+          if (event.leftUserId) {
+            removeParticipant(event.leftUserId);
           }
           break;
-        // meeting-ended 류 이벤트는 현재 MeetingEvent 타입에 없으므로,
-        // 서버에서 별도 타입을 추가하면 여기에 case를 확장.
+        case 'meeting-ended':
+          log('meeting-ended event received, cleaning up');
+          // MeetingRoomPage or layout handles redirection
+          break;
       }
     },
     [myId, removeParticipant, connectToUser, log]

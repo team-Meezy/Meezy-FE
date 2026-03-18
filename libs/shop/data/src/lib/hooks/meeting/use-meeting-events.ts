@@ -4,10 +4,13 @@ import SockJS from 'sockjs-client';
 import { BASE_URL } from '../axios';
 
 export interface MeetingEvent {
-  type: 'participant_joined' | 'participant_left';
-  userId: string;
-  userName: string;
-  timestamp: string;
+  type: 'participant-joined' | 'participant-left' | 'meeting-ended';
+  meetingId: string;
+  joinedUserId?: string;
+  joinedUserName?: string;
+  joinedUserProfileImageUrl?: string;
+  existingParticipantIds?: string[];
+  leftUserId?: string;
 }
 
 export function useMeetingEvents(

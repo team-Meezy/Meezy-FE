@@ -13,6 +13,7 @@ export default function WebRTC({ stream, isLocal }: WebRTCProps) {
   useEffect(() => {
     if (videoRef.current && stream) {
       videoRef.current.srcObject = stream;
+      void videoRef.current.play().catch(() => {});
     }
   }, [stream]);
 

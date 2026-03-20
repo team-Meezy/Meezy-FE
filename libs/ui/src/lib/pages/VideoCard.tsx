@@ -34,7 +34,7 @@ export const VideoCard = ({
       {videoStream && (
         <div
           className={`w-full h-full absolute inset-0 ${
-            isKamera ? '' : 'hidden'
+            isKamera ? '' : 'opacity-0 pointer-events-none'
           }`}
         >
           <WebRTC stream={videoStream} isLocal={name.includes('(나)')} />

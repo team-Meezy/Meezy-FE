@@ -86,8 +86,33 @@ export function useMeetingWebRTC(teamId: string, myId: string, isActive: boolean
 
       pc.ontrack = (event) => {
         setRemoteStreams((prev) => {
-          if (prev.find((ps) => ps.userId === targetUserId)) return prev;
-          return [...prev, { userId: targetUserId, stream: event.streams[0] }];
+          const incomingStream =
+            event.streams[0] ?? new MediaStream([event.track]);
+          const existingParticipant = prev.find(
+            (ps) => ps.userId === targetUserId
+          );
+
+          if (existingParticipant) {
+            const mergedStream = existingParticipant.stream;
+
+            incomingStream.getTracks().forEach((track) => {
+              const hasTrack = mergedStream
+                .getTracks()
+                .some((existingTrack) => existingTrack.id === track.id);
+
+              if (!hasTrack) {
+                mergedStream.addTrack(track);
+              }
+            });
+
+            return prev.map((participant) =>
+              participant.userId === targetUserId
+                ? { ...participant, stream: mergedStream }
+                : participant
+            );
+          }
+
+          return [...prev, { userId: targetUserId, stream: incomingStream }];
         });
       };
 

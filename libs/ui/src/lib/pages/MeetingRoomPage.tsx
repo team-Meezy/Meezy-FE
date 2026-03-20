@@ -35,6 +35,14 @@ export const MeetingRoomPage = () => {
     stopRecording,
   } = useMeeting();
 
+  const hasLiveVideoTrack = useCallback((stream?: MediaStream | null) => {
+    if (!stream) return false;
+
+    return stream
+      .getVideoTracks()
+      .some((track) => track.readyState === 'live');
+  }, []);
+
   // 참가자 목록 가져오기 및 초기 연결 시도
   useEffect(() => {
     if (!currentTeamId || !myId) return;
@@ -178,7 +186,7 @@ export const MeetingRoomPage = () => {
         stream: rs?.stream,
         isSpeaking: false,
         isMike: true,
-        isKamera: !!rs?.stream,
+        isKamera: hasLiveVideoTrack(rs?.stream),
         onMikeClick: () => {},
         onKameraClick: () => {},
       };

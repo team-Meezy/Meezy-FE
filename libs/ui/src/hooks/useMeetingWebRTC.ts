@@ -22,6 +22,8 @@ export function useMeetingWebRTC(teamId: string, myId: string, isActive: boolean
   const [localStream, setLocalStream] = useState<MediaStream | null>(null);
   const [remoteStreams, setRemoteStreams] = useState<ParticipantStream[]>([]);
   const [isSpeaking, setIsSpeaking] = useState(false);
+  const [remoteVoices, setRemoteVoices] = useState<Record<string, boolean>>({});
+  const remoteVoiceTimers = useRef<Record<string, NodeJS.Timeout>>({});
 
   const pcs = useRef<Map<string, RTCPeerConnection>>(new Map());
   const localStreamRef = useRef<MediaStream | null>(null);
@@ -31,7 +33,6 @@ export function useMeetingWebRTC(teamId: string, myId: string, isActive: boolean
   const animationFrameIdRef = useRef<number | null>(null);
   const isVADInitializingRef = useRef(false);
   const { meetingId, setIsUploading, isRecording, setIsRecording } = useMeetingStore();
-  const { sendVoiceActivity } = useMeetingVoiceActivity(meetingId, myId);
 
   // Recording Refs
   const mediaRecorderRef = useRef<MediaRecorder | null>(null);
@@ -226,6 +227,34 @@ export function useMeetingWebRTC(teamId: string, myId: string, isActive: boolean
   );
 
   const { sendSignal } = useMeetingSignal(teamId, myId, onSignal);
+
+  const onVoiceActivity = useCallback(
+    (activity: any) => {
+      const { userId, isSpeaking: speaking } = activity;
+      if (userId === myId) return;
+
+      if (speaking) {
+        setRemoteVoices((prev) => ({ ...prev, [userId]: true }));
+
+        if (remoteVoiceTimers.current[userId]) {
+          clearTimeout(remoteVoiceTimers.current[userId]);
+        }
+
+        remoteVoiceTimers.current[userId] = setTimeout(() => {
+          setRemoteVoices((prev) => ({ ...prev, [userId]: false }));
+          delete remoteVoiceTimers.current[userId];
+        }, 1500);
+      }
+    },
+    [myId]
+  );
+
+  const { sendVoiceActivity } = useMeetingVoiceActivity(
+    meetingId,
+    myId,
+    onVoiceActivity
+  );
+
   useEffect(() => {
     sendSignalRef.current = sendSignal;
   }, [sendSignal]);
@@ -448,7 +477,8 @@ export function useMeetingWebRTC(teamId: string, myId: string, isActive: boolean
           for (let i = 0; i < dataArray.length; i++) sum += dataArray[i];
           const average = sum / dataArray.length;
 
-          if (average > 15 && ctx && ctx.state === 'running') {
+          // threshold 15 -> 30으로 상향 (잡음 방지)
+          if (average > 30 && ctx && ctx.state === 'running') {
             setIsSpeaking(true);
             const now = Date.now();
             if (now - lastSentTime > 1000) {
@@ -623,6 +653,7 @@ export function useMeetingWebRTC(teamId: string, myId: string, isActive: boolean
     localStream,
     remoteStreams,
     isSpeaking,
+    remoteVoices,
     isRecording,
     connectToUser,
     initLocalMedia,

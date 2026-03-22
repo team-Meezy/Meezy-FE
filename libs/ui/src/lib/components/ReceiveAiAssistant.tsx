@@ -3,7 +3,7 @@
 import { usePathname, useRouter } from 'next/navigation';
 import { useMeetingStore, useServerIdStore } from '@org/shop-data';
 import { useEffect, useState } from 'react';
-import { useMeeting, useServerJoinedTeam } from '../../context';
+import { useMeeting, useServerJoinedTeam, useServerState, useProfile } from '../../context';
 import { colors, typography } from '../../design';
 import NextImage from 'next/image';
 import ReceiveAssistantIcon from '../../assets/Receive.png';
@@ -15,6 +15,34 @@ export const ReceiveAiAssistant = () => {
   const { meeting } = useServerJoinedTeam();
   const { isRecording, startRecording, stopRecording } = useMeeting();
   const { startTime, hasActiveMeeting } = useMeetingStore();
+  const { profile } = useProfile();
+  const { teamMembers } = useServerState();
+
+  const myMemberInfo = teamMembers?.find((m) => {
+    const profileId =
+      profile?.id ||
+      profile?.userId ||
+      profile?.user_id ||
+      (profile as any)?.accountId;
+    const memberUserId =
+      (m as any).userId ||
+      (m as any).user_id ||
+      (m as any).user?.id ||
+      (m as any).user?.userId ||
+      m.teamMemberId;
+
+    if (profileId && memberUserId && String(profileId) === String(memberUserId))
+      return true;
+    if (
+      m.name === profile?.name ||
+      m.name === profile?.userName ||
+      m.name === profile?.nickName
+    )
+      return true;
+    return false;
+  });
+
+  const isLeader = myMemberInfo?.role === 'LEADER';
 
   const [elapsedTime, setElapsedTime] = useState('00:00:00');
 
@@ -104,13 +132,22 @@ export const ReceiveAiAssistant = () => {
 
         {meeting ? (
           <div className="flex flex-col gap-3 text-center p-8 relative z-10 min-h-[120px] justify-center">
-            <button
-              onClick={() => (isRecording ? stopRecording() : startRecording())}
-              className="text-white hover:text-[#ff5c00] transition-colors"
-              style={{ ...typography.body.BodyB }}
-            >
-              {isRecording ? '회의 녹음 중지' : '회의 녹음 시작'}
-            </button>
+            {isLeader ? (
+              <button
+                onClick={() => (isRecording ? stopRecording() : startRecording())}
+                className="text-white hover:text-[#ff5c00] transition-colors"
+                style={{ ...typography.body.BodyB }}
+              >
+                {isRecording ? '회의 녹음 중지' : '회의 녹음 시작'}
+              </button>
+            ) : (
+              <div
+                className="text-white/60"
+                style={{ ...typography.body.BodyM }}
+              >
+                {isRecording ? '회의가 녹음 중입니다' : '리더가 녹음을 시작할 수 있습니다'}
+              </div>
+            )}
           </div>
         ) : (
           <div className="flex flex-col gap-3 text-center p-6 relative z-10">

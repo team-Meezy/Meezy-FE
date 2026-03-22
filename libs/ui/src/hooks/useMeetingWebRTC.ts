@@ -85,34 +85,43 @@ export function useMeetingWebRTC(teamId: string, myId: string, isActive: boolean
       };
 
       pc.ontrack = (event) => {
+        log(`[WebRTC] ontrack from ${targetUserId}: ${event.track.kind}`);
         setRemoteStreams((prev) => {
-          const incomingStream =
-            event.streams[0] ?? new MediaStream([event.track]);
           const existingParticipant = prev.find(
             (ps) => ps.userId === targetUserId
           );
 
           if (existingParticipant) {
-            const mergedStream = existingParticipant.stream;
+            // 🔥 중요: MediaStream 객체의 참조를 새로 생성해야 React가 변경을 감지하고 
+            // Video 요소의 srcObject를 갱신하여 오디오/비디오가 모두 정상 출력됩니다.
+            const newStream = new MediaStream(existingParticipant.stream.getTracks());
+            const incomingTracks = event.streams[0] 
+              ? event.streams[0].getTracks() 
+              : [event.track];
 
-            incomingStream.getTracks().forEach((track) => {
-              const hasTrack = mergedStream
+            incomingTracks.forEach((track) => {
+              const hasTrack = newStream
                 .getTracks()
                 .some((existingTrack) => existingTrack.id === track.id);
 
               if (!hasTrack) {
-                mergedStream.addTrack(track);
+                newStream.addTrack(track);
               }
             });
 
             return prev.map((participant) =>
               participant.userId === targetUserId
-                ? { ...participant, stream: mergedStream }
+                ? { ...participant, stream: newStream }
                 : participant
             );
           }
 
-          return [...prev, { userId: targetUserId, stream: incomingStream }];
+          // 첫 트랙인 경우에도 새로운 MediaStream으로 감싸서 관리
+          const firstStream = event.streams[0] 
+            ? new MediaStream(event.streams[0].getTracks()) 
+            : new MediaStream([event.track]);
+            
+          return [...prev, { userId: targetUserId, stream: firstStream }];
         });
       };
 

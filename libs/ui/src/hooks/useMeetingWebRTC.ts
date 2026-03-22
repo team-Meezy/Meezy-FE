@@ -135,18 +135,19 @@ export function useMeetingWebRTC(teamId: string, myId: string, isActive: boolean
       pc.onnegotiationneeded = async () => {
         try {
           if (pc.signalingState !== 'stable') return;
-          // Polite 발송: ID가 작을 때만 Offer 생성
-          if (myId < targetUserId) {
-            console.log(`[WebRTC] Negotiation needed, sending offer to ${targetUserId}`);
-            const offer = await pc.createOffer();
-            await pc.setLocalDescription(offer);
-            sendSignalRef.current?.(targetUserId, {
-              type: 'offer',
-              fromUserId: myId,
-              toUserId: targetUserId,
-              sdp: offer.sdp,
-            });
-          }
+          // [PATCH] 레이스 컨디션 해결을 위해 모든 참가자가 offer를 보낼 수 있도록 허용하되,
+          // onSignal 에서 "polite" 전략으로 glare(동시 오퍼) 충돌을 해결합니다.
+          // 또는, 안전하게 ID가 작은 쪽만 신규 트랙에 대한 오퍼를 보내도록 유지할 수 있지만,
+          // 이 경우 Impolite 사용자가 트랙을 추가했을 때 상대가 알 방법이 없으므로 오퍼를 보냅니다.
+          log(`[WebRTC] Negotiation needed for ${targetUserId}, sending offer`);
+          const offer = await pc.createOffer();
+          await pc.setLocalDescription(offer);
+          sendSignalRef.current?.(targetUserId, {
+            type: 'offer',
+            fromUserId: myId,
+            toUserId: targetUserId,
+            sdp: offer.sdp,
+          });
         } catch (err) {
           console.error('[WebRTC] Negotiation offer error:', err);
         }
@@ -174,6 +175,19 @@ export function useMeetingWebRTC(teamId: string, myId: string, isActive: boolean
 
       if (type === 'offer') {
         const pc = getOrCreatePC(fromUserId, false);
+        const polite = myId < fromUserId;
+        const offerCollision = pc.signalingState !== 'stable';
+
+        if (offerCollision && !polite) {
+          log(`[WebRTC] Glare detected, I am impolite, ignoring offer from ${fromUserId}`);
+          return;
+        }
+
+        if (offerCollision && polite) {
+          log(`[WebRTC] Glare detected, I am polite, rolling back to accept offer from ${fromUserId}`);
+          await pc.setLocalDescription({ type: 'rollback' } as any);
+        }
+
         await pc.setRemoteDescription(
           new RTCSessionDescription({ type: 'offer', sdp })
         );
@@ -228,14 +242,28 @@ export function useMeetingWebRTC(teamId: string, myId: string, isActive: boolean
       log('meeting event received', event);
       switch (event.type) {
         case 'participant-joined':
-          if (event.joinedUserId && event.joinedUserId !== myId) {
-            // "Polite" 발송 전략: ID가 더 작은 쪽이 먼저 Offer를 보냄
-            // (또는 한쪽만 보내도록 규칙을 정함)
+          // 1. 내가 접속했을 때: 이미 있는 참가자들(existingParticipantIds)에게 연결 시도
+          if (event.joinedUserId === myId && event.existingParticipantIds) {
+            log(`I joined. Connecting to existing participants: ${event.existingParticipantIds}`);
+            event.existingParticipantIds.forEach((pId) => {
+              if (pId !== myId) {
+                // Polite 발송 전략: ID가 더 작은 쪽이 먼저 Offer를 보냄
+                if (myId < pId) {
+                  log(`polite initiation (existing): sending offer to ${pId}`);
+                  connectToUser(pId);
+                } else {
+                  log(`polite initiation (existing): waiting for offer from ${pId}`);
+                }
+              }
+            });
+          }
+          // 2. 다른 사람이 접속했을 때: 해당 참가자에게 연결 시도
+          else if (event.joinedUserId && event.joinedUserId !== myId) {
             if (myId < event.joinedUserId) {
-              log(`polite initiation: sending offer to ${event.joinedUserId}`);
+              log(`polite initiation (newcomer): sending offer to ${event.joinedUserId}`);
               connectToUser(event.joinedUserId);
             } else {
-              log(`polite initiation: waiting for offer from ${event.joinedUserId}`);
+              log(`polite initiation (newcomer): waiting for offer from ${event.joinedUserId}`);
             }
           }
           break;
@@ -246,7 +274,6 @@ export function useMeetingWebRTC(teamId: string, myId: string, isActive: boolean
           break;
         case 'meeting-ended':
           log('meeting-ended event received, cleaning up');
-          // MeetingRoomPage or layout handles redirection
           break;
       }
     },

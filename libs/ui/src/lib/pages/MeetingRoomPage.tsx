@@ -40,10 +40,10 @@ export const MeetingRoomPage = () => {
 
     return stream
       .getVideoTracks()
-      .some((track) => track.readyState === 'live');
+      .some((track) => track.readyState === 'live' && track.enabled);
   }, []);
 
-  // 참가자 목록 가져오기 및 초기 연결 시도
+  // 참가자 목록 가져오기 (UI 리스트 업데이트 전용)
   useEffect(() => {
     if (!currentTeamId || !myId) return;
 
@@ -52,17 +52,7 @@ export const MeetingRoomPage = () => {
         const res = await getActiveMeetings(currentTeamId);
         if (res?.participants && Array.isArray(res.participants)) {
           setParticipants(res.participants);
-
-          // 나보다 먼저 들어와 있는 사람들에게 Offer 보내기
-          res.participants.forEach((p: any) => {
-            const pId = p.userId || p.id || p.user_id;
-            if (pId && String(pId) !== String(myId)) {
-              if (String(myId) < String(pId)) {
-                console.log(`Initial polite initiation: sending offer to ${pId}`);
-                connectToUser(pId);
-              }
-            }
-          });
+          // Signaling은 useMeetingWebRTC 내부에서 WebSocket 이벤트를 통해 자동 처리됨
         }
       } catch (error) {
         console.error('Failed to fetch participants:', error);
@@ -70,7 +60,7 @@ export const MeetingRoomPage = () => {
     };
 
     fetchParticipants();
-  }, [currentTeamId, myId, connectToUser]);
+  }, [currentTeamId, myId]);
 
   const handleMeetingEvent = useCallback(
     (event: MeetingEvent) => {
@@ -92,12 +82,6 @@ export const MeetingRoomPage = () => {
               },
             ];
           });
-
-          // Polite initiation
-          if (myId < pId) {
-            console.log(`Websocket polite initiation: sending offer to ${pId}`);
-            connectToUser(pId);
-          }
         }
       } else if (event.type === 'participant-left') {
         const pId = event.leftUserId;
@@ -111,7 +95,7 @@ export const MeetingRoomPage = () => {
         router.push(`/main/${currentTeamId}`);
       }
     },
-    [myId, currentTeamId, connectToUser]
+    [myId, currentTeamId, router]
   );
 
   useMeetingEvents(currentTeamId, handleMeetingEvent);
@@ -124,7 +108,6 @@ export const MeetingRoomPage = () => {
         setIsMike(audioTrack.enabled);
       }
     } else {
-      // 스트림이 없으면 다시 시도
       const stream = await initLocalMedia();
       if (stream) {
         setIsMike(true);
@@ -140,7 +123,6 @@ export const MeetingRoomPage = () => {
         setIsKamera(videoTrack.enabled);
       }
     } else {
-      // 스트림이 없으면 다시 시도
       const stream = await initLocalMedia();
       if (stream) {
         setIsKamera(true);

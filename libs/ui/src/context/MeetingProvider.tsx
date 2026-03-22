@@ -10,6 +10,7 @@ interface MeetingContextType {
   localStream: MediaStream | null;
   remoteStreams: any[];
   isSpeaking: boolean;
+  remoteVoices: Record<string, boolean>;
   isRecording: boolean;
   connectToUser: (targetUserId: string) => Promise<void>;
   initLocalMedia: () => Promise<MediaStream | null>;

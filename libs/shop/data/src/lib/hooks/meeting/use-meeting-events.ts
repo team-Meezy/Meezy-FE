@@ -1,4 +1,4 @@
-import { useEffect } from 'react';
+import { useEffect, useRef } from 'react';
 import { Client } from '@stomp/stompjs';
 import SockJS from 'sockjs-client';
 import { BASE_URL } from '../axios';
@@ -17,11 +17,17 @@ export function useMeetingEvents(
   teamId: string,
   onEvent: (event: MeetingEvent) => void
 ) {
+  const onEventRef = useRef(onEvent);
+
+  useEffect(() => {
+    onEventRef.current = onEvent;
+  }, [onEvent]);
+
   useEffect(() => {
     if (!teamId || !BASE_URL) return;
 
     const token = localStorage.getItem('accessToken');
-    const socketUrl = '/ws';
+    const socketUrl = `${BASE_URL}/ws`;
 
     console.log('Meeting Events SockJS Debug:', socketUrl);
 
@@ -30,7 +36,7 @@ export function useMeetingEvents(
         new SockJS(socketUrl, null, { transports: ['websocket'] }),
       connectHeaders: token
         ? {
-            Authorization: token,
+            Authorization: `Bearer ${token}`,
           }
         : {},
       reconnectDelay: 5000,
@@ -42,7 +48,7 @@ export function useMeetingEvents(
         client.subscribe(`/topic/meeting/${teamId}`, (message) => {
           const event: MeetingEvent = JSON.parse(message.body);
           console.log(`Meeting Event Received: ${event.type}`, event);
-          onEvent(event);
+          onEventRef.current(event);
         });
       },
       onStompError: (frame) => {
@@ -60,5 +66,5 @@ export function useMeetingEvents(
     return () => {
       client.deactivate();
     };
-  }, [teamId, onEvent]);
+  }, [teamId]);
 }

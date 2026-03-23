@@ -7,7 +7,6 @@ import {
   useMeetingVoiceActivity,
   useMeetingStore,
   uploadMeetingRecording,
-  SignalType,
   MeetingEvent,
   MeetingSignal,
 } from '@org/shop-data';
@@ -24,10 +23,14 @@ export function useMeetingWebRTC(teamId: string, myId: string, isActive: boolean
   const [isSpeaking, setIsSpeaking] = useState(false);
   const [remoteVoices, setRemoteVoices] = useState<Record<string, boolean>>({});
   const remoteVoiceTimers = useRef<Record<string, NodeJS.Timeout>>({});
+  const pendingIceCandidates = useRef<
+    Map<string, RTCIceCandidateInit[]>
+  >(new Map());
 
   const pcs = useRef<Map<string, RTCPeerConnection>>(new Map());
   const localStreamRef = useRef<MediaStream | null>(null);
   const speakingTimeoutRef = useRef<NodeJS.Timeout | null>(null);
+  const localSpeakingRef = useRef(false);
   const audioContextRef = useRef<AudioContext | null>(null);
   const analyserRef = useRef<AnalyserNode | null>(null);
   const animationFrameIdRef = useRef<number | null>(null);
@@ -52,17 +55,35 @@ export function useMeetingWebRTC(teamId: string, myId: string, isActive: boolean
     meetingIdRef.current = meetingId;
   }, [teamId, meetingId]);
 
+  const shouldInitiateOffer = useCallback((firstId: string, secondId: string) => {
+    return firstId.localeCompare(secondId, undefined, {
+      numeric: true,
+      sensitivity: 'base',
+    }) < 0;
+  }, []);
+
   const removeParticipant = useCallback((userId: string) => {
     const pc = pcs.current.get(userId);
     if (pc) {
       pc.close();
       pcs.current.delete(userId);
     }
+    if (remoteVoiceTimers.current[userId]) {
+      clearTimeout(remoteVoiceTimers.current[userId]);
+      delete remoteVoiceTimers.current[userId];
+    }
+    pendingIceCandidates.current.delete(userId);
+    setRemoteVoices((prev) => {
+      if (!(userId in prev)) return prev;
+      const next = { ...prev };
+      delete next[userId];
+      return next;
+    });
     setRemoteStreams((prev) => prev.filter((s) => s.userId !== userId));
   }, []);
 
   const getOrCreatePC = useCallback(
-    (targetUserId: string, isOfferer: boolean) => {
+    (targetUserId: string) => {
       if (pcs.current.has(targetUserId)) {
         return pcs.current.get(targetUserId)!;
       }
@@ -184,8 +205,8 @@ export function useMeetingWebRTC(teamId: string, myId: string, isActive: boolean
       if (toUserId !== myId) return;
 
       if (type === 'offer') {
-        const pc = getOrCreatePC(fromUserId, false);
-        const polite = myId < fromUserId;
+        const pc = getOrCreatePC(fromUserId);
+        const polite = shouldInitiateOffer(myId, fromUserId);
         const offerCollision = pc.signalingState !== 'stable';
 
         if (offerCollision && !polite) {
@@ -201,6 +222,12 @@ export function useMeetingWebRTC(teamId: string, myId: string, isActive: boolean
         await pc.setRemoteDescription(
           new RTCSessionDescription({ type: 'offer', sdp })
         );
+        const pendingCandidates =
+          pendingIceCandidates.current.get(fromUserId) ?? [];
+        for (const queuedCandidate of pendingCandidates) {
+          await pc.addIceCandidate(new RTCIceCandidate(queuedCandidate));
+        }
+        pendingIceCandidates.current.delete(fromUserId);
         const answer = await pc.createAnswer();
         await pc.setLocalDescription(answer);
         sendSignal(fromUserId, {
@@ -211,19 +238,31 @@ export function useMeetingWebRTC(teamId: string, myId: string, isActive: boolean
         });
       } else if (type === 'answer') {
         const pc = pcs.current.get(fromUserId);
-        if (pc)
+        if (pc) {
           await pc.setRemoteDescription(
             new RTCSessionDescription({ type: 'answer', sdp })
           );
+          const pendingCandidates =
+            pendingIceCandidates.current.get(fromUserId) ?? [];
+          for (const queuedCandidate of pendingCandidates) {
+            await pc.addIceCandidate(new RTCIceCandidate(queuedCandidate));
+          }
+          pendingIceCandidates.current.delete(fromUserId);
+        }
       } else if (type === 'ice-candidate') {
         const pc = pcs.current.get(fromUserId);
-        if (pc)
+        if (pc?.remoteDescription) {
           await pc.addIceCandidate(
             new RTCIceCandidate({ candidate, sdpMid, sdpMLineIndex })
           );
+        } else {
+          const queued = pendingIceCandidates.current.get(fromUserId) ?? [];
+          queued.push({ candidate, sdpMid, sdpMLineIndex });
+          pendingIceCandidates.current.set(fromUserId, queued);
+        }
       }
     },
-    [myId, getOrCreatePC]
+    [myId, getOrCreatePC, shouldInitiateOffer]
   );
 
   const { sendSignal } = useMeetingSignal(teamId, myId, onSignal);
@@ -244,6 +283,12 @@ export function useMeetingWebRTC(teamId: string, myId: string, isActive: boolean
           setRemoteVoices((prev) => ({ ...prev, [userId]: false }));
           delete remoteVoiceTimers.current[userId];
         }, 1500);
+      } else {
+        if (remoteVoiceTimers.current[userId]) {
+          clearTimeout(remoteVoiceTimers.current[userId]);
+          delete remoteVoiceTimers.current[userId];
+        }
+        setRemoteVoices((prev) => ({ ...prev, [userId]: false }));
       }
     },
     [myId]
@@ -262,17 +307,9 @@ export function useMeetingWebRTC(teamId: string, myId: string, isActive: boolean
   const connectToUser = useCallback(
     async (targetUserId: string) => {
       if (targetUserId === myId) return;
-      const pc = getOrCreatePC(targetUserId, true);
-      const offer = await pc.createOffer();
-      await pc.setLocalDescription(offer);
-      sendSignal(targetUserId, {
-        type: 'offer',
-        fromUserId: myId,
-        toUserId: targetUserId,
-        sdp: offer.sdp,
-      });
+      getOrCreatePC(targetUserId);
     },
-    [myId, getOrCreatePC, sendSignal]
+    [myId, getOrCreatePC]
   );
 
   const onMeetingEvent = useCallback(
@@ -286,7 +323,7 @@ export function useMeetingWebRTC(teamId: string, myId: string, isActive: boolean
             event.existingParticipantIds.forEach((pId) => {
               if (pId !== myId) {
                 // Polite 발송 전략: ID가 더 작은 쪽이 먼저 Offer를 보냄
-                if (myId < pId) {
+                if (shouldInitiateOffer(myId, pId)) {
                   log(`polite initiation (existing): sending offer to ${pId}`);
                   connectToUser(pId);
                 } else {
@@ -297,7 +334,7 @@ export function useMeetingWebRTC(teamId: string, myId: string, isActive: boolean
           }
           // 2. 다른 사람이 접속했을 때: 해당 참가자에게 연결 시도
           else if (event.joinedUserId && event.joinedUserId !== myId) {
-            if (myId < event.joinedUserId) {
+            if (shouldInitiateOffer(myId, event.joinedUserId)) {
               log(`polite initiation (newcomer): sending offer to ${event.joinedUserId}`);
               connectToUser(event.joinedUserId);
             } else {
@@ -315,7 +352,7 @@ export function useMeetingWebRTC(teamId: string, myId: string, isActive: boolean
           break;
       }
     },
-    [myId, removeParticipant, connectToUser, log]
+    [myId, removeParticipant, connectToUser, log, shouldInitiateOffer]
   );
 
   useMeetingEvents(teamId, onMeetingEvent);
@@ -412,7 +449,7 @@ export function useMeetingWebRTC(teamId: string, myId: string, isActive: boolean
   const initLocalMedia = useCallback(async () => {
     log('initLocalMedia starting...');
     try {
-      localStreamRef.current?.getTracks().forEach((track) => track.stop());
+      const previousStream = localStreamRef.current;
       const stream = await navigator.mediaDevices.getUserMedia({
         video: true,
         audio: true,
@@ -426,8 +463,12 @@ export function useMeetingWebRTC(teamId: string, myId: string, isActive: boolean
         const senders = pc.getSenders();
         stream.getTracks().forEach((track) => {
           // 중복 추가 방지
-          if (!senders.find((s) => s.track === track)) {
-            log(`Adding late track to existing PC: ${targetId}`);
+          const sender = senders.find((s) => s.track?.kind === track.kind);
+          if (sender) {
+            log(`Replacing ${track.kind} track on existing PC: ${targetId}`);
+            void sender.replaceTrack(track);
+          } else {
+            log(`Adding ${track.kind} track to existing PC: ${targetId}`);
             pc.addTrack(track, stream);
           }
         });
@@ -436,6 +477,7 @@ export function useMeetingWebRTC(teamId: string, myId: string, isActive: boolean
         // 여기서는 간단히 다시 offer를 보낼 수도 있음
       });
 
+      previousStream?.getTracks().forEach((track) => track.stop());
       return stream;
     } catch (error) {
       log('[ERROR] initLocalMedia failed', error);
@@ -468,29 +510,56 @@ export function useMeetingWebRTC(teamId: string, myId: string, isActive: boolean
         if (!analyserRef.current) return;
 
         const dataArray = new Uint8Array(analyserRef.current.frequencyBinCount);
-        let lastSentTime = 0;
 
         const checkVolume = () => {
           if (!analyserRef.current) return;
-          analyserRef.current.getByteFrequencyData(dataArray);
-          let sum = 0;
-          for (let i = 0; i < dataArray.length; i++) sum += dataArray[i];
-          const average = sum / dataArray.length;
+          
+          // 마이크 음소거 상태 확인
+          const isMuted = localStream.getAudioTracks().every(t => !t.enabled);
+          if (isMuted) {
+            if (localSpeakingRef.current) {
+              localSpeakingRef.current = false;
+              setIsSpeaking(false);
+              sendVoiceActivity(false);
+            }
+            if (speakingTimeoutRef.current) {
+              clearTimeout(speakingTimeoutRef.current);
+              speakingTimeoutRef.current = null;
+            }
+            animationFrameIdRef.current = requestAnimationFrame(checkVolume);
+            return;
+          }
 
-          // threshold 15 -> 30으로 상향 (잡음 방지)
-          if (average > 30 && ctx && ctx.state === 'running') {
-            setIsSpeaking(true);
-            const now = Date.now();
-            if (now - lastSentTime > 1000) {
-              sendVoiceActivity();
-              lastSentTime = now;
+          analyserRef.current.getByteFrequencyData(dataArray);
+          
+          // Peak volume detection (Math.max)
+          // 단순 평균보다는 피크 함량을 체크하는 것이 목소리 감지에 더 정교합니다.
+          const maxVolume = Math.max(...dataArray);
+
+          // threshold 70 (0~255 범위)
+          if (maxVolume > 70 && ctx && ctx.state === 'running') {
+            if (!localSpeakingRef.current) {
+              localSpeakingRef.current = true;
+              setIsSpeaking(true);
+              sendVoiceActivity(true);
             }
             if (speakingTimeoutRef.current)
               clearTimeout(speakingTimeoutRef.current);
             speakingTimeoutRef.current = setTimeout(
-              () => setIsSpeaking(false),
+              () => {
+                if (localSpeakingRef.current) {
+                  localSpeakingRef.current = false;
+                  setIsSpeaking(false);
+                  sendVoiceActivity(false);
+                }
+                speakingTimeoutRef.current = null;
+              },
               1000
             );
+          } else if (localSpeakingRef.current && !speakingTimeoutRef.current) {
+            localSpeakingRef.current = false;
+            setIsSpeaking(false);
+            sendVoiceActivity(false);
           }
           animationFrameIdRef.current = requestAnimationFrame(checkVolume);
         };
@@ -637,6 +706,11 @@ export function useMeetingWebRTC(teamId: string, myId: string, isActive: boolean
   useEffect(() => {
     if (myId && meetingId && teamId && isActive) initLocalMedia();
     return () => {
+      if (speakingTimeoutRef.current) {
+        clearTimeout(speakingTimeoutRef.current);
+        speakingTimeoutRef.current = null;
+      }
+      localSpeakingRef.current = false;
       if (
         mediaRecorderRef.current &&
         mediaRecorderRef.current.state !== 'inactive'
@@ -646,8 +720,9 @@ export function useMeetingWebRTC(teamId: string, myId: string, isActive: boolean
       localStreamRef.current?.getTracks().forEach((track) => track.stop());
       pcs.current.forEach((pc) => pc.close());
       pcs.current.clear();
+      pendingIceCandidates.current.clear();
     };
-  }, [myId, initLocalMedia, meetingId, teamId]);
+  }, [myId, initLocalMedia, meetingId, teamId, isActive]);
 
   return {
     localStream,

@@ -26,7 +26,7 @@ export const VideoCard = ({
     <div
       className={`relative bg-[#1e1e1e] rounded-2xl flex flex-col items-center justify-center overflow-hidden w-full h-full min-h-0 transition-all border ${
         isSpeaking
-          ? 'border-[#4ade80] shadow-[0_0_15px_rgba(74,222,128,0.3)]'
+          ? 'border-[#3b82f6] shadow-[0_0_18px_rgba(59,130,246,0.35)]'
           : 'border-white/5 shadow-lg'
       }`}
     >
@@ -46,7 +46,7 @@ export const VideoCard = ({
         <>
           <div
             className={`w-[20%] aspect-square max-w-[100px] min-w-[60px] rounded-full bg-[#d9d9d9] transition-all duration-300 ${
-              isSpeaking ? 'ring-4 ring-[#4ade80]' : 'ring-0'
+              isSpeaking ? 'ring-4 ring-[#3b82f6]' : 'ring-0'
             }`}
           />
           <span className="mt-4 text-white font-bold text-base md:text-lg">

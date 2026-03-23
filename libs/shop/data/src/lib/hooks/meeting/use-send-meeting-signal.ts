@@ -1,7 +1,7 @@
 import { useEffect, useRef } from 'react';
 import { Client } from '@stomp/stompjs';
 import SockJS from 'sockjs-client';
-import { WS_HOST, WS_PROTOCOL, BASE_URL } from '../axios';
+import { BASE_URL } from '../axios';
 
 export type SignalType = 'offer' | 'answer' | 'ice-candidate';
 
@@ -21,12 +21,17 @@ export function useMeetingSignal(
   onSignal: (signal: MeetingSignal) => void
 ) {
   const client = useRef<Client | null>(null);
+  const onSignalRef = useRef(onSignal);
+
+  useEffect(() => {
+    onSignalRef.current = onSignal;
+  }, [onSignal]);
 
   useEffect(() => {
     if (!teamId || !myId || !BASE_URL) return;
 
     const token = localStorage.getItem('accessToken');
-    const socketUrl = '/ws';
+    const socketUrl = `${BASE_URL}/ws`;
 
     console.log('Meeting Signaling SockJS Debug:', socketUrl);
 
@@ -35,7 +40,7 @@ export function useMeetingSignal(
         new SockJS(socketUrl, null, { transports: ['websocket'] }),
       connectHeaders: token
         ? {
-            Authorization: token,
+            Authorization: `Bearer ${token}`,
           }
         : {},
       reconnectDelay: 5000,
@@ -49,7 +54,7 @@ export function useMeetingSignal(
           `/user/queue/teams/${teamId}/meeting/signal`,
           (message) => {
             const signal = JSON.parse(message.body);
-            onSignal(signal);
+            onSignalRef.current(signal);
           }
         );
       },
@@ -66,7 +71,7 @@ export function useMeetingSignal(
     return () => {
       client.current?.deactivate();
     };
-  }, [teamId, myId, onSignal]);
+  }, [teamId, myId]);
 
   return {
     sendSignal: (toUserId: string, signal: any) => {

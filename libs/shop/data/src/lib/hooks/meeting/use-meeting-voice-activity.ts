@@ -14,12 +14,17 @@ export function useMeetingVoiceActivity(
   onActivity?: (activity: VoiceActivity) => void
 ) {
   const client = useRef<Client | null>(null);
+  const onActivityRef = useRef(onActivity);
+
+  useEffect(() => {
+    onActivityRef.current = onActivity;
+  }, [onActivity]);
 
   useEffect(() => {
     if (!meetingId || !BASE_URL) return;
 
     const token = localStorage.getItem('accessToken');
-    const socketUrl = '/ws';
+    const socketUrl = `${BASE_URL}/ws`;
 
     console.log('Voice Activity SockJS Debug:', socketUrl);
 
@@ -28,7 +33,7 @@ export function useMeetingVoiceActivity(
         new SockJS(socketUrl, null, { transports: ['websocket'] }),
       connectHeaders: token
         ? {
-            Authorization: token,
+            Authorization: `Bearer ${token}`,
           }
         : {},
       reconnectDelay: 5000,
@@ -38,12 +43,12 @@ export function useMeetingVoiceActivity(
           `STOMP Connected for Voice Activity (SockJS): ${meetingId}`
         );
 
-        if (onActivity) {
+        if (onActivityRef.current) {
           client.current?.subscribe(
             `/topic/meetings/${meetingId}/voice`,
             (message) => {
               const activity = JSON.parse(message.body);
-              onActivity(activity);
+              onActivityRef.current?.(activity);
             }
           );
         }
@@ -64,14 +69,14 @@ export function useMeetingVoiceActivity(
     return () => {
       client.current?.deactivate();
     };
-  }, [meetingId, onActivity]);
+  }, [meetingId]);
 
   return {
-    sendVoiceActivity: () => {
+    sendVoiceActivity: (isSpeaking: boolean) => {
       if (client.current?.connected && userId) {
         client.current.publish({
           destination: `/app/meetings/${meetingId}/voice`,
-          body: JSON.stringify({ userId, isSpeaking: true }),
+          body: JSON.stringify({ userId, isSpeaking }),
         });
       }
     },

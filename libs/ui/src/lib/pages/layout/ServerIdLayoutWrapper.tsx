@@ -58,25 +58,30 @@ export function ServerIdLayoutWrapper({
 
   const handleTeamEvent = useCallback(
     (event: any) => {
+      const eventType = String(event?.type || '').toUpperCase();
+      const eventCategory = String(event?.category || '').toUpperCase();
+
       if (
-        event.type === 'CHAT_ROOM_UPDATE' ||
-        event.category === 'CHAT_ROOM' ||
-        event.type === 'CHAT_ROOM_CREATED' ||
-        event.type === 'CHAT_ROOM_DELETED'
+        eventType === 'CHAT_ROOM_UPDATE' ||
+        eventType === 'CHAT_ROOM_CREATED' ||
+        eventType === 'CHAT_ROOM_DELETED' ||
+        eventCategory === 'CHAT_ROOM'
       ) {
         updateChatRooms(currentServerId);
       } else if (
-        event.type === 'MEMBER_UPDATE' ||
-        event.category === 'MEMBER' ||
-        event.type === 'MEMBER_JOINED' ||
-        event.type === 'MEMBER_LEFT'
+        eventType === 'MEMBER_UPDATE' ||
+        eventType === 'MEMBER_JOINED' ||
+        eventType === 'MEMBER_LEFT' ||
+        eventType === 'PARTICIPANT_JOINED' ||
+        eventType === 'PARTICIPANT_LEFT' ||
+        eventCategory === 'MEMBER'
       ) {
         updateTeamMembers(currentServerId);
         updateChatRooms(currentServerId);
       } else if (
-        event.type === 'MEETING_STARTED' ||
-        event.type === 'MEETING_ENDED' ||
-        event.category === 'MEETING'
+        eventType === 'MEETING_STARTED' ||
+        eventType === 'MEETING_ENDED' ||
+        eventCategory === 'MEETING'
       ) {
         console.log('ServerIdLayoutWrapper: [EVENT] Meeting event received, triggering sync');
         window.dispatchEvent(new CustomEvent('meezy:sync-meeting'));

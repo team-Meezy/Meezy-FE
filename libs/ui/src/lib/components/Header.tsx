@@ -11,6 +11,58 @@ import {
 import { colors, typography } from '../../design';
 import { useProfile, useServerJoinedTeam, useServerState } from '../../context';
 
+function normalizeText(value: unknown) {
+  return String(value ?? '')
+    .trim()
+    .toLowerCase();
+}
+
+function getProfileId(profile: any) {
+  return (
+    profile?.id ||
+    profile?.userId ||
+    profile?.user_id ||
+    profile?.accountId ||
+    profile?.memberId
+  );
+}
+
+function getMemberUserId(member: any) {
+  return (
+    member?.userId ||
+    member?.user_id ||
+    member?.id ||
+    member?.accountId ||
+    member?.memberId ||
+    member?.teamMemberId ||
+    member?.user?.id ||
+    member?.user?.userId ||
+    member?.user?.user_id ||
+    member?.user?.accountId ||
+    member?.user?.memberId
+  );
+}
+
+function getMemberRole(member: any) {
+  return String(
+    member?.role ||
+      member?.memberRole ||
+      member?.teamRole ||
+      member?.authority ||
+      member?.permission ||
+      ''
+  ).toUpperCase();
+}
+
+const LABEL_LEAVE_MEETING = '\uD68C\uC758 \uB098\uAC00\uAE30';
+const LABEL_START_MEETING = '\uD68C\uC758 \uC2DC\uC791';
+const LABEL_JOIN_MEETING = '\uD68C\uC758 \uCC38\uAC00';
+const MESSAGE_LEAVING_MEETING =
+  '\uD68C\uC758\uC5D0\uC11C \uB098\uAC00\uB294 \uC911\uC785\uB2C8\uB2E4...';
+const MESSAGE_LEAVE_FAILED =
+  '\uD68C\uC758 \uB098\uAC00\uAE30\uC5D0 \uC2E4\uD328\uD588\uC2B5\uB2C8\uB2E4.';
+const MESSAGE_UNKNOWN_ERROR = '\uC54C \uC218 \uC5C6\uB294 \uC624\uB958';
+
 export function Header() {
   const router = useRouter();
   const pathname = usePathname();
@@ -48,22 +100,19 @@ export function Header() {
     isUploadingRef.current = isUploading;
   }, [isUploading]);
 
-  const myProfileId =
-    profile?.id || profile?.userId || profile?.user_id || profile?.accountId;
-
-  const getMemberUserId = useCallback((member: any) => {
-    return (
-      member?.userId ||
-      member?.user_id ||
-      member?.id ||
-      member?.accountId ||
-      member?.user?.id ||
-      member?.user?.userId ||
-      member?.user?.user_id ||
-      member?.user?.accountId ||
-      member?.teamMemberId
-    );
-  }, []);
+  const myProfileId = getProfileId(profile);
+  const myNames = useMemo(
+    () =>
+      [
+        profile?.name,
+        (profile as any)?.userName,
+        (profile as any)?.nickName,
+        (profile as any)?.nickname,
+      ]
+        .map(normalizeText)
+        .filter(Boolean),
+    [profile]
+  );
 
   const myMemberInfo = useMemo(() => {
     return teamMembers?.find((member) => {
@@ -73,18 +122,33 @@ export function Header() {
         return String(myProfileId) === String(memberUserId);
       }
 
-      return (
-        member?.name === profile?.name ||
-        member?.name === (profile as any)?.userName ||
-        member?.name === (profile as any)?.nickName
-      );
-    });
-  }, [getMemberUserId, myProfileId, profile, teamMembers]);
+      const memberNames = [
+        member?.name,
+        member?.nickname,
+        member?.nickName,
+        member?.user?.name,
+        member?.user?.nickname,
+        member?.user?.nickName,
+      ]
+        .map(normalizeText)
+        .filter(Boolean);
 
-  const isLeader =
-    myMemberInfo?.role === 'LEADER' ||
-    myMemberInfo?.role === 'OWNER' ||
-    (!!currentTeamId && teamMembers.length === 1);
+      return memberNames.some((name) => myNames.includes(name));
+    });
+  }, [myNames, myProfileId, teamMembers]);
+
+  const isLeader = useMemo(() => {
+    const role = getMemberRole(myMemberInfo);
+
+    return (
+      role === 'LEADER' ||
+      role === 'OWNER' ||
+      role === 'ADMIN' ||
+      role === 'MASTER' ||
+      role === 'HOST' ||
+      (!!currentTeamId && teamMembers.length === 1)
+    );
+  }, [currentTeamId, myMemberInfo, teamMembers.length]);
 
   const checkActiveMeeting = useCallback(async () => {
     if (!currentTeamId || !profile) return;
@@ -92,6 +156,7 @@ export function Header() {
     try {
       setIsSyncing(true);
       setTeamId(currentTeamId);
+
       const activeMeeting = await getActiveMeetings(currentTeamId);
       const currentPath = pathnameRef.current;
 
@@ -113,16 +178,34 @@ export function Header() {
 
       const isParticipant =
         Array.isArray(activeMeeting.participants) &&
-        activeMeeting.participants.some(
-          (participant: any) =>
-            String(
-              participant.userId ||
-                participant.id ||
-                participant.user_id ||
-                participant.accountId ||
-                participant.teamMemberId
-            ) === String(myProfileId)
-        );
+        activeMeeting.participants.some((participant: any) => {
+          const participantId =
+            participant?.userId ||
+            participant?.id ||
+            participant?.user_id ||
+            participant?.accountId ||
+            participant?.teamMemberId ||
+            participant?.user?.id ||
+            participant?.user?.userId ||
+            participant?.user?.user_id;
+
+          if (myProfileId && participantId) {
+            return String(myProfileId) === String(participantId);
+          }
+
+          const participantNames = [
+            participant?.name,
+            participant?.nickname,
+            participant?.nickName,
+            participant?.user?.name,
+            participant?.user?.nickname,
+            participant?.user?.nickName,
+          ]
+            .map(normalizeText)
+            .filter(Boolean);
+
+          return participantNames.some((name) => myNames.includes(name));
+        });
 
       if (isParticipant) {
         setMeeting(true);
@@ -140,6 +223,7 @@ export function Header() {
     }
   }, [
     currentTeamId,
+    myNames,
     myProfileId,
     profile,
     setHasActiveMeeting,
@@ -191,7 +275,9 @@ export function Header() {
     }
 
     return () => {
-      if (timeoutId) clearTimeout(timeoutId);
+      if (timeoutId) {
+        clearTimeout(timeoutId);
+      }
     };
   }, [
     currentTeamId,
@@ -224,7 +310,8 @@ export function Header() {
     if (meeting) {
       try {
         setLoading(true);
-        setLoadingState('회의에서 나가는 중입니다...');
+        setLoadingState(MESSAGE_LEAVING_MEETING);
+
         await leaveMeeting(currentTeamId);
 
         setMeeting(false);
@@ -248,7 +335,7 @@ export function Header() {
         console.log('leaveMeeting error', error);
         setLoading(false);
         setLoadingState('');
-        alert('회의 나가기에 실패했습니다.');
+        alert(MESSAGE_LEAVE_FAILED);
         return;
       }
     }
@@ -272,12 +359,19 @@ export function Header() {
     } catch (error: any) {
       console.error(`${isLeader ? 'start' : 'join'}Meeting error:`, error);
       const errorMsg =
-        error.response?.data?.message || error.message || '알 수 없는 오류';
+        error?.response?.data?.message || error?.message || MESSAGE_UNKNOWN_ERROR;
+
       alert(
-        `${isLeader ? '회의 시작' : '회의 참가'}에 실패했습니다: ${errorMsg}`
+        `${isLeader ? LABEL_START_MEETING : LABEL_JOIN_MEETING}\uC5D0 \uC2E4\uD328\uD588\uC2B5\uB2C8\uB2E4: ${errorMsg}`
       );
     }
   };
+
+  const meetingButtonLabel = meeting
+    ? LABEL_LEAVE_MEETING
+    : isLeader
+    ? LABEL_START_MEETING
+    : LABEL_JOIN_MEETING;
 
   return (
     <header
@@ -309,7 +403,7 @@ export function Header() {
             }}
             onClick={onClickMeeting}
           >
-            {meeting ? '회의 나가기' : isLeader ? '회의 시작' : '회의 참가'}
+            {meetingButtonLabel}
           </button>
         )}
 

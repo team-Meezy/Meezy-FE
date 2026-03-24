@@ -9,7 +9,6 @@ import { useRouter } from 'next/navigation';
 import { useServerIdStore } from '@org/shop-data';
 import { useServerState, useProfile } from '../../context';
 import { expelTeamMember, leaveTeam } from '@org/shop-data';
-import { getChatRooms } from '@org/shop-data';
 import { useChatStore } from '@org/shop-data';
 
 interface JoinedSidebarProps {
@@ -43,6 +42,7 @@ export function JoinedSidebar({
     setTeamMembers,
     contextMenuUserId,
     setContextMenuUserId,
+    updateChatRooms,
   } = useServerState();
   const { profile } = useProfile();
   const { chatRooms, setChatRooms } = useChatStore();
@@ -110,12 +110,11 @@ export function JoinedSidebar({
     if (!serverId) return;
 
     const apiChatRooms = async () => {
-      const res = await getChatRooms(serverId);
-      console.log('chatRooms', chatRooms);
-      setChatRooms(res);
+      const res = await updateChatRooms(serverId);
+      console.log('chatRooms', res);
     };
     apiChatRooms();
-  }, [serverId]);
+  }, [serverId, updateChatRooms]);
 
   useEffect(() => {
     document.addEventListener('click', handleClickOutside);

@@ -77,7 +77,7 @@ export function useMeetingSignal(
     sendSignal: (toUserId: string, signal: any) => {
       if (client.current?.connected) {
         client.current.publish({
-          destination: `/app/teams/${teamId}/meeting/signal/${toUserId}`,
+          destination: `/app/teams/${teamId}/meeting/signal`,
           body: JSON.stringify(signal),
         });
       }

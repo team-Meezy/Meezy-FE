@@ -1,27 +1,31 @@
 import Image from 'next/image';
+import Kamera from '../../assets/Kamera.svg';
 import Mike from '../../assets/mike.svg';
 import NoMike from '../../assets/NoMike.svg';
-import Kamera from '../../assets/Kamera.svg';
 import Nokamera from '../../assets/Nokamera.svg';
 import WebRTC from './WebRTC';
 
-export const VideoCard = ({
-  name,
-  isSpeaking,
-  isMike,
-  isKamera,
-  videoStream,
-  onMikeClick,
-  onKameraClick,
-}: {
+type VideoCardProps = {
   name: string;
+  isLocal?: boolean;
   isSpeaking?: boolean;
   isMike: boolean;
   isKamera: boolean;
   videoStream?: MediaStream | null;
   onMikeClick: () => void;
   onKameraClick: () => void;
-}) => {
+};
+
+export const VideoCard = ({
+  name,
+  isLocal = false,
+  isSpeaking,
+  isMike,
+  isKamera,
+  videoStream,
+  onMikeClick,
+  onKameraClick,
+}: VideoCardProps) => {
   return (
     <div
       className={`relative bg-[#1e1e1e] rounded-2xl flex flex-col items-center justify-center overflow-hidden w-full h-full min-h-0 transition-all border ${
@@ -30,18 +34,16 @@ export const VideoCard = ({
           : 'border-white/5 shadow-lg'
       }`}
     >
-      {/* Video Area */}
       {videoStream && (
         <div
           className={`w-full h-full absolute inset-0 ${
             isKamera ? '' : 'opacity-0 pointer-events-none'
           }`}
         >
-          <WebRTC stream={videoStream} isLocal={name.includes('(나)')} />
+          <WebRTC stream={videoStream} isLocal={isLocal} />
         </div>
       )}
 
-      {/* Placeholder (Avatar) Area */}
       {(!videoStream || !isKamera) && (
         <>
           <div
@@ -54,6 +56,7 @@ export const VideoCard = ({
           </span>
         </>
       )}
+
       <div className="absolute bottom-4 left-4 flex gap-2 items-center bg-black/30 p-1.5 px-2 rounded-lg backdrop-blur-sm">
         <Image
           src={isMike ? Mike : NoMike}
@@ -67,8 +70,8 @@ export const VideoCard = ({
           src={isKamera ? Kamera : Nokamera}
           alt="Nokamera"
           width={14}
-          onClick={onKameraClick}
           height={14}
+          onClick={onKameraClick}
         />
       </div>
     </div>

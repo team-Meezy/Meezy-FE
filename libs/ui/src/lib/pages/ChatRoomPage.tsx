@@ -104,9 +104,24 @@ export function ChatRoomPage() {
       }
     };
 
+    const apiChatRooms = async () => {
+      try {
+        await updateChatRooms(currentTeamId);
+      } catch (error) {
+        console.error('Chat room list load failed:', error);
+      }
+    };
+
     apiChatMessages();
+    apiChatRooms();
     apiTeamMembers();
-  }, [currentTeamId, currentRoomId, setMessages, updateTeamMembers]);
+  }, [
+    currentTeamId,
+    currentRoomId,
+    setMessages,
+    updateChatRooms,
+    updateTeamMembers,
+  ]);
 
   // 팀 멤버 데이터 변경 시 로그 출력
   useEffect(() => {

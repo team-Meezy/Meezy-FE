@@ -32,6 +32,21 @@ export const MeetingRoomPage = () => {
   const { localStream, remoteStreams, isSpeaking, remoteVoices, initLocalMedia } =
     useMeeting();
 
+  const getParticipantId = useCallback((participant: any) => {
+    return participant?.userId || participant?.id || participant?.user_id;
+  }, []);
+
+  const isCurrentUser = useCallback(
+    (participant: any) => {
+      const participantId = getParticipantId(participant);
+      if (participantId) {
+        return String(participantId) === String(myId);
+      }
+      return participant?.name === profile?.name;
+    },
+    [getParticipantId, myId, profile?.name]
+  );
+
   const hasLiveVideoTrack = useCallback((stream?: MediaStream | null) => {
     if (!stream) return false;
 
@@ -72,9 +87,7 @@ export const MeetingRoomPage = () => {
           setParticipants((prev) => {
             const exists = prev.some(
               (participant) =>
-                String(
-                  participant.userId || participant.id || participant.user_id
-                ) === String(joinedId)
+                String(getParticipantId(participant)) === String(joinedId)
             );
 
             if (exists) return prev;
@@ -98,11 +111,7 @@ export const MeetingRoomPage = () => {
           setParticipants((prev) =>
             prev.filter(
               (participant) =>
-                String(
-                  participant.userId ||
-                    participant.id ||
-                    participant.user_id
-                ) !== String(leftId)
+                String(getParticipantId(participant)) !== String(leftId)
             )
           );
         }
@@ -114,7 +123,7 @@ export const MeetingRoomPage = () => {
         router.push(`/main/${currentTeamId}`);
       }
     },
-    [currentTeamId, myId, router]
+    [currentTeamId, getParticipantId, myId, router]
   );
 
   useMeetingEvents(currentTeamId, handleMeetingEvent);
@@ -151,11 +160,7 @@ export const MeetingRoomPage = () => {
     }
   };
 
-  const others = participants.filter(
-    (participant) =>
-      String(participant.userId || participant.id || participant.user_id) !==
-      String(myId)
-  );
+  const others = participants.filter((participant) => !isCurrentUser(participant));
 
   const remoteOnlyParticipants = remoteStreams.reduce<any[]>((acc, remote) => {
     const remoteId = String(remote.userId);
@@ -164,13 +169,14 @@ export const MeetingRoomPage = () => {
       return acc;
     }
 
-    const exists = others.some(
-      (participant) =>
-        String(participant.userId || participant.id || participant.user_id) ===
-        remoteId
+    const existsInParticipants = others.some(
+      (participant) => String(getParticipantId(participant)) === remoteId
+    );
+    const existsInAccumulator = acc.some(
+      (participant) => String(getParticipantId(participant)) === remoteId
     );
 
-    if (exists) {
+    if (existsInParticipants || existsInAccumulator) {
       return acc;
     }
 
@@ -187,6 +193,7 @@ export const MeetingRoomPage = () => {
     {
       id: myId,
       name: `${profile?.name || 'Me'} (Me)`,
+      isLocal: true,
       stream: localStream,
       isSpeaking,
       isMike,
@@ -195,8 +202,7 @@ export const MeetingRoomPage = () => {
       onKameraClick,
     },
     ...[...others, ...remoteOnlyParticipants].map((participant) => {
-      const participantId =
-        participant.userId || participant.id || participant.user_id;
+      const participantId = getParticipantId(participant);
       const remoteStream = remoteStreams.find(
         (stream) => String(stream.userId) === String(participantId)
       );
@@ -204,6 +210,7 @@ export const MeetingRoomPage = () => {
       return {
         id: participantId,
         name: participant.name || 'Participant',
+        isLocal: false,
         stream: remoteStream?.stream,
         isSpeaking: !!remoteVoices[String(participantId)],
         isMike: true,
@@ -254,6 +261,7 @@ export const MeetingRoomPage = () => {
               >
                 <VideoCard
                   name={participant.name}
+                  isLocal={participant.isLocal}
                   isSpeaking={participant.isSpeaking}
                   isMike={participant.isMike}
                   isKamera={participant.isKamera}

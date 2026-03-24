@@ -72,6 +72,7 @@ export function ServerIdLayoutWrapper({
         event.type === 'MEMBER_LEFT'
       ) {
         updateTeamMembers(currentServerId);
+        updateChatRooms(currentServerId);
       } else if (
         event.type === 'MEETING_STARTED' ||
         event.type === 'MEETING_ENDED' ||

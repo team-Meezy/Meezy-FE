@@ -74,19 +74,12 @@ export function Header() {
       }
 
       return (
-        member.name === profile?.name ||
-        member.name === profile?.userName ||
-        member.name === profile?.nickName
+        member?.name === profile?.name ||
+        member?.name === (profile as any)?.userName ||
+        member?.name === (profile as any)?.nickName
       );
     });
-  }, [
-    getMemberUserId,
-    myProfileId,
-    profile?.name,
-    profile?.nickName,
-    profile?.userName,
-    teamMembers,
-  ]);
+  }, [getMemberUserId, myProfileId, profile, teamMembers]);
 
   const isLeader =
     myMemberInfo?.role === 'LEADER' ||
@@ -123,7 +116,11 @@ export function Header() {
         activeMeeting.participants.some(
           (participant: any) =>
             String(
-              participant.userId || participant.id || participant.user_id
+              participant.userId ||
+                participant.id ||
+                participant.user_id ||
+                participant.accountId ||
+                participant.teamMemberId
             ) === String(myProfileId)
         );
 
@@ -153,11 +150,8 @@ export function Header() {
   ]);
 
   useEffect(() => {
-    if (pathname.includes('/meeting') && !meeting) {
-      setMeeting(true);
-    }
     void checkActiveMeeting();
-  }, [checkActiveMeeting, meeting, pathname, setMeeting]);
+  }, [checkActiveMeeting]);
 
   useEffect(() => {
     const handleSync = () => {
@@ -238,6 +232,7 @@ export function Header() {
         setMeetingId('');
         setTeamId('');
         setStartTime(null);
+        meetingRef.current = false;
 
         window.dispatchEvent(new CustomEvent('meezy:stop-and-upload'));
         window.dispatchEvent(new CustomEvent('meezy:sync-meeting'));

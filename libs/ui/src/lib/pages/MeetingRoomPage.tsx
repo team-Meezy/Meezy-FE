@@ -1,6 +1,6 @@
 'use client';
 
-import { useCallback, useEffect, useState } from 'react';
+import { useCallback, useEffect, useMemo, useState } from 'react';
 import Image from 'next/image';
 import { useParams, useRouter } from 'next/navigation';
 import {
@@ -32,19 +32,49 @@ export const MeetingRoomPage = () => {
   const { localStream, remoteStreams, isSpeaking, remoteVoices, initLocalMedia } =
     useMeeting();
 
-  const getParticipantId = useCallback((participant: any) => {
-    return participant?.userId || participant?.id || participant?.user_id;
+  const normalizeName = useCallback((name?: string | null) => {
+    return (name || '').trim().toLowerCase();
   }, []);
+
+  const getParticipantId = useCallback((participant: any) => {
+    return (
+      participant?.userId ||
+      participant?.id ||
+      participant?.user_id ||
+      participant?.accountId ||
+      participant?.teamMemberId ||
+      participant?.user?.id ||
+      participant?.user?.userId ||
+      participant?.user?.user_id
+    );
+  }, []);
+
+  const myComparableNames = useMemo(() => {
+    return [
+      profile?.name,
+      (profile as any)?.userName,
+      (profile as any)?.nickName,
+    ]
+      .map(normalizeName)
+      .filter(Boolean);
+  }, [normalizeName, profile]);
 
   const isCurrentUser = useCallback(
     (participant: any) => {
       const participantId = getParticipantId(participant);
-      if (participantId) {
+      if (participantId && myId) {
         return String(participantId) === String(myId);
       }
-      return participant?.name === profile?.name;
+
+      const participantName = normalizeName(
+        participant?.name ||
+          participant?.user?.name ||
+          participant?.userName ||
+          participant?.nickName
+      );
+      return myComparableNames.includes(participantName);
     },
-    [getParticipantId, myId, profile?.name]
+    [getParticipantId, myComparableNames, myId, normalizeName]
   );
 
   const hasLiveVideoTrack = useCallback((stream?: MediaStream | null) => {
@@ -68,6 +98,8 @@ export const MeetingRoomPage = () => {
         }
         if (Array.isArray(res?.participants)) {
           setParticipants(res.participants);
+        } else {
+          setParticipants([]);
         }
       } catch (error) {
         console.error('Failed to fetch participants:', error);
@@ -83,7 +115,8 @@ export const MeetingRoomPage = () => {
 
       if (event.type === 'participant-joined') {
         const joinedId = event.joinedUserId;
-        if (joinedId && joinedId !== myId) {
+
+        if (joinedId && String(joinedId) !== String(myId)) {
           setParticipants((prev) => {
             const exists = prev.some(
               (participant) =>
@@ -96,7 +129,7 @@ export const MeetingRoomPage = () => {
               ...prev,
               {
                 userId: joinedId,
-                name: event.joinedUserName || 'Participant',
+                name: event.joinedUserName || '참가자',
                 profileImageUrl: event.joinedUserProfileImageUrl,
               },
             ];
@@ -184,7 +217,7 @@ export const MeetingRoomPage = () => {
       ...acc,
       {
         userId: remote.userId,
-        name: 'Participant',
+        name: '참가자',
       },
     ];
   }, []);
@@ -192,7 +225,7 @@ export const MeetingRoomPage = () => {
   const allParticipants = [
     {
       id: myId,
-      name: `${profile?.name || 'Me'} (Me)`,
+      name: `${profile?.name || '나'} (나)`,
       isLocal: true,
       stream: localStream,
       isSpeaking,
@@ -208,8 +241,8 @@ export const MeetingRoomPage = () => {
       );
 
       return {
-        id: participantId,
-        name: participant.name || 'Participant',
+        id: participantId || participant.name,
+        name: participant.name || '참가자',
         isLocal: false,
         stream: remoteStream?.stream,
         isSpeaking: !!remoteVoices[String(participantId)],
@@ -219,7 +252,26 @@ export const MeetingRoomPage = () => {
         onKameraClick: () => {},
       };
     }),
-  ];
+  ].filter((participant, index, list) => {
+    if (participant.isLocal) return true;
+
+    if (participant.id != null && String(participant.id) === String(myId)) {
+      return false;
+    }
+
+    if (myComparableNames.includes(normalizeName(participant.name))) {
+      return false;
+    }
+
+    return (
+      index ===
+      list.findIndex(
+        (candidate) =>
+          String(candidate.id) === String(participant.id) &&
+          candidate.isLocal === participant.isLocal
+      )
+    );
+  });
 
   const total = allParticipants.length;
 

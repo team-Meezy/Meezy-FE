@@ -116,6 +116,7 @@ export function Header() {
 
   const myMemberInfo = useMemo(() => {
     return teamMembers?.find((member) => {
+      const memberData = member as any;
       const memberUserId = getMemberUserId(member);
 
       if (myProfileId && memberUserId) {
@@ -124,11 +125,11 @@ export function Header() {
 
       const memberNames = [
         member?.name,
-        member?.nickname,
-        member?.nickName,
-        member?.user?.name,
-        member?.user?.nickname,
-        member?.user?.nickName,
+        memberData?.nickname,
+        memberData?.nickName,
+        memberData?.user?.name,
+        memberData?.user?.nickname,
+        memberData?.user?.nickName,
       ]
         .map(normalizeText)
         .filter(Boolean);

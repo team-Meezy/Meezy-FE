@@ -51,14 +51,23 @@ export function Header() {
   const myProfileId =
     profile?.id || profile?.userId || profile?.user_id || profile?.accountId;
 
+  const getMemberUserId = useCallback((member: any) => {
+    return (
+      member?.userId ||
+      member?.user_id ||
+      member?.id ||
+      member?.accountId ||
+      member?.user?.id ||
+      member?.user?.userId ||
+      member?.user?.user_id ||
+      member?.user?.accountId ||
+      member?.teamMemberId
+    );
+  }, []);
+
   const myMemberInfo = useMemo(() => {
     return teamMembers?.find((member) => {
-      const memberUserId =
-        (member as any).userId ||
-        (member as any).user_id ||
-        (member as any).user?.id ||
-        (member as any).user?.userId ||
-        member.teamMemberId;
+      const memberUserId = getMemberUserId(member);
 
       if (myProfileId && memberUserId) {
         return String(myProfileId) === String(memberUserId);
@@ -70,9 +79,19 @@ export function Header() {
         member.name === profile?.nickName
       );
     });
-  }, [myProfileId, profile?.name, profile?.nickName, profile?.userName, teamMembers]);
+  }, [
+    getMemberUserId,
+    myProfileId,
+    profile?.name,
+    profile?.nickName,
+    profile?.userName,
+    teamMembers,
+  ]);
 
-  const isLeader = myMemberInfo?.role === 'LEADER';
+  const isLeader =
+    myMemberInfo?.role === 'LEADER' ||
+    myMemberInfo?.role === 'OWNER' ||
+    (!!currentTeamId && teamMembers.length === 1);
 
   const checkActiveMeeting = useCallback(async () => {
     if (!currentTeamId || !profile) return;
@@ -211,7 +230,7 @@ export function Header() {
     if (meeting) {
       try {
         setLoading(true);
-        setLoadingState('Leaving meeting...');
+        setLoadingState('회의에서 나가는 중입니다...');
         await leaveMeeting(currentTeamId);
 
         setMeeting(false);
@@ -234,7 +253,7 @@ export function Header() {
         console.log('leaveMeeting error', error);
         setLoading(false);
         setLoadingState('');
-        alert('Failed to leave the meeting.');
+        alert('회의 나가기에 실패했습니다.');
         return;
       }
     }
@@ -258,9 +277,9 @@ export function Header() {
     } catch (error: any) {
       console.error(`${isLeader ? 'start' : 'join'}Meeting error:`, error);
       const errorMsg =
-        error.response?.data?.message || error.message || 'Unknown error';
+        error.response?.data?.message || error.message || '알 수 없는 오류';
       alert(
-        `${isLeader ? 'Start meeting' : 'Join meeting'} failed: ${errorMsg}`
+        `${isLeader ? '회의 시작' : '회의 참가'}에 실패했습니다: ${errorMsg}`
       );
     }
   };
@@ -295,7 +314,7 @@ export function Header() {
             }}
             onClick={onClickMeeting}
           >
-            {meeting ? 'Leave Meeting' : isLeader ? 'Start Meeting' : 'Join Meeting'}
+            {meeting ? '회의 나가기' : isLeader ? '회의 시작' : '회의 참가'}
           </button>
         )}
 

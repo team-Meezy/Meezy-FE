@@ -14,7 +14,7 @@ export function useTeamSocket(teamId: string, onEvent?: (event: any) => void) {
     if (!teamId) return;
 
     const token = localStorage.getItem('accessToken');
-    const socketUrl = 'https://meezy.kr/ws-chat';
+    const socketUrl = 'https://api.meezy.kr/ws-chat';
 
     clientRef.current = new Client({
       webSocketFactory: () =>

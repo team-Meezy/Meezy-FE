@@ -18,12 +18,38 @@ interface ParticipantStream {
   name?: string;
 }
 
+function parseIceServerUrls(value?: string) {
+  return String(value ?? '')
+    .split(',')
+    .map((entry) => entry.trim())
+    .filter(Boolean);
+}
+
+function buildIceServers(): RTCIceServer[] {
+  const turnUrls = parseIceServerUrls(process.env.NEXT_PUBLIC_TURN_URLS);
+  const turnUsername = String(process.env.NEXT_PUBLIC_TURN_USERNAME ?? '').trim();
+  const turnCredential = String(process.env.NEXT_PUBLIC_TURN_CREDENTIAL ?? '').trim();
+
+  const iceServers: RTCIceServer[] = [{ urls: 'stun:stun.l.google.com:19302' }];
+
+  if (turnUrls.length > 0) {
+    iceServers.push({
+      urls: turnUrls,
+      username: turnUsername || undefined,
+      credential: turnCredential || undefined,
+    });
+  }
+
+  return iceServers;
+}
+
 export function useMeetingWebRTC(
   teamId: string,
   myId: string,
   localIds: string[],
   isActive: boolean
 ) {
+  const iceServers = useRef<RTCIceServer[]>(buildIceServers());
   const [localStream, setLocalStream] = useState<MediaStream | null>(null);
   const [remoteStreams, setRemoteStreams] = useState<ParticipantStream[]>([]);
   const [isSpeaking, setIsSpeaking] = useState(false);
@@ -168,11 +194,17 @@ export function useMeetingWebRTC(
 
       console.log(`Creating PeerConnection for: ${targetUserId}`);
       const pc = new RTCPeerConnection({
-        iceServers: [{ urls: 'stun:stun.l.google.com:19302' }],
+        iceServers: iceServers.current,
       });
+      log(`[WebRTC] ICE servers for ${targetUserId}`, iceServers.current);
 
       pc.onicecandidate = (event) => {
         if (event.candidate) {
+          log(`[WebRTC] local ICE candidate for ${targetUserId}`, {
+            candidate: event.candidate.candidate,
+            sdpMid: event.candidate.sdpMid,
+            sdpMLineIndex: event.candidate.sdpMLineIndex,
+          });
           sendSignal(targetUserId, {
             type: 'ice-candidate',
             fromUserId: myId,
@@ -182,6 +214,16 @@ export function useMeetingWebRTC(
             sdpMLineIndex: event.candidate.sdpMLineIndex ?? undefined,
           });
         }
+      };
+
+      pc.onicecandidateerror = (event) => {
+        log(`[WebRTC] ICE candidate error for ${targetUserId}`, {
+          address: event.address,
+          port: event.port,
+          url: event.url,
+          errorCode: event.errorCode,
+          errorText: event.errorText,
+        });
       };
 
       pc.ontrack = (event) => {
@@ -225,7 +267,26 @@ export function useMeetingWebRTC(
         });
       };
 
+      pc.oniceconnectionstatechange = () => {
+        log(
+          `[WebRTC] iceConnectionState for ${targetUserId}: ${pc.iceConnectionState}`
+        );
+      };
+
+      pc.onicegatheringstatechange = () => {
+        log(
+          `[WebRTC] iceGatheringState for ${targetUserId}: ${pc.iceGatheringState}`
+        );
+      };
+
+      pc.onsignalingstatechange = () => {
+        log(`[WebRTC] signalingState for ${targetUserId}: ${pc.signalingState}`);
+      };
+
       pc.onconnectionstatechange = () => {
+        log(
+          `[WebRTC] connectionState for ${targetUserId}: ${pc.connectionState}`
+        );
         if (
           pc.connectionState === 'disconnected' ||
           pc.connectionState === 'failed' ||
@@ -310,6 +371,7 @@ export function useMeetingWebRTC(
         await pc.setRemoteDescription(
           new RTCSessionDescription({ type: 'offer', sdp })
         );
+        log(`[WebRTC] remote offer applied from ${fromUserId}`);
         const pendingCandidates =
           pendingIceCandidates.current.get(fromUserId) ?? [];
         for (const queuedCandidate of pendingCandidates) {
@@ -318,6 +380,7 @@ export function useMeetingWebRTC(
         pendingIceCandidates.current.delete(fromUserId);
         const answer = await pc.createAnswer();
         await pc.setLocalDescription(answer);
+        log(`[WebRTC] local answer created for ${fromUserId}`);
         sendSignal(fromUserId, {
           type: 'answer',
           fromUserId: myId,
@@ -330,6 +393,7 @@ export function useMeetingWebRTC(
           await pc.setRemoteDescription(
             new RTCSessionDescription({ type: 'answer', sdp })
           );
+          log(`[WebRTC] remote answer applied from ${fromUserId}`);
           const pendingCandidates =
             pendingIceCandidates.current.get(fromUserId) ?? [];
           for (const queuedCandidate of pendingCandidates) {
@@ -338,15 +402,22 @@ export function useMeetingWebRTC(
           pendingIceCandidates.current.delete(fromUserId);
         }
       } else if (type === 'ice-candidate') {
+        log(`[WebRTC] remote ICE candidate received from ${fromUserId}`, {
+          candidate,
+          sdpMid,
+          sdpMLineIndex,
+        });
         const pc = pcs.current.get(fromUserId);
         if (pc?.remoteDescription) {
           await pc.addIceCandidate(
             new RTCIceCandidate({ candidate, sdpMid, sdpMLineIndex })
           );
+          log(`[WebRTC] remote ICE candidate applied from ${fromUserId}`);
         } else {
           const queued = pendingIceCandidates.current.get(fromUserId) ?? [];
           queued.push({ candidate, sdpMid, sdpMLineIndex });
           pendingIceCandidates.current.set(fromUserId, queued);
+          log(`[WebRTC] remote ICE candidate queued for ${fromUserId}`);
         }
       }
     },
@@ -595,6 +666,22 @@ export function useMeetingWebRTC(
         audio: true,
       });
       log('getUserMedia SUCCESS. stream tracks:', stream.getTracks().length);
+      log('[WebRTC] local stream track details', {
+        audioTracks: stream.getAudioTracks().map((track) => ({
+          id: track.id,
+          enabled: track.enabled,
+          readyState: track.readyState,
+          muted: track.muted,
+          label: track.label,
+        })),
+        videoTracks: stream.getVideoTracks().map((track) => ({
+          id: track.id,
+          enabled: track.enabled,
+          readyState: track.readyState,
+          muted: track.muted,
+          label: track.label,
+        })),
+      });
       setLocalStream(stream);
       localStreamRef.current = stream;
 

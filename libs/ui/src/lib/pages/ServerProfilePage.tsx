@@ -4,7 +4,11 @@ import { useState, useEffect } from 'react';
 import { colors, typography } from '../../design';
 import { useImg } from '../../hooks';
 import Image from 'next/image';
-import { useServerState, useServerJoinedTeam, type TeamMember } from '../../context';
+import {
+  useServerState,
+  useServerJoinedTeam,
+  type TeamMember,
+} from '../../context';
 import { KickMember } from '../../assets/index.client';
 import { useRouter } from 'next/navigation';
 import { useServerIdStore } from '@org/shop-data';
@@ -148,20 +152,20 @@ export function ServerProfilePage() {
 
   return (
     <div
-      className="flex-[3] min-h-screen p-5 flex flex-col gap-5 border border-white/5"
+      className="flex-1 min-h-screen p-12 md:p-20 lg:p-24 flex flex-col gap-10 overflow-y-auto no-scrollbar"
       style={{ backgroundColor: colors.black[100], color: '#FFFFFF' }}
     >
       {/* 탭 메뉴 */}
-      <div className="flex gap-3 border-b border-white/10 pb-2">
+      <div className="flex gap-6 border-b border-white/10 pb-4">
         <button
-          className="px-5 py-3 rounded-md"
+          className="px-8 py-4 rounded-xl transition-all font-bold"
           style={tapStyle(tab)}
           onClick={onTabProfile}
         >
           서버 프로필
         </button>
         <button
-          className="px-5 py-3 rounded-md"
+          className="px-8 py-4 rounded-xl transition-all font-bold"
           style={tapStyle(!tab)}
           onClick={onTabSettings}
         >
@@ -170,11 +174,11 @@ export function ServerProfilePage() {
       </div>
 
       {/* 헤더 섹션 */}
-      <section className="flex flex-col gap-4">
-        <h1 style={{ ...typography.title.sTitleB }}>
+      <section className="flex flex-col gap-6">
+        <h1 style={{ ...typography.title.TitleB, fontSize: '3rem' }}>
           {tab ? '서버 프로필' : '서버 설정'}
         </h1>
-        <p style={{ ...typography.body.BodyB, color: colors.gray[400] }}>
+        <p style={{ ...typography.body.BodyB, color: colors.gray[400], fontSize: '1.25rem' }}>
           {tab
             ? '공개적으로 보일 서버 프로필인 서버 이름, 서버 아이콘 등을 정해주세요!'
             : '서버의 전체적인 설정을 조정할 수 있습니다.'}
@@ -184,41 +188,41 @@ export function ServerProfilePage() {
       <hr className="border-white/10" />
 
       {/* 중앙 섹션 */}
-      <section className="flex flex-col gap-4">
-        <div className="flex flex-col gap-2">
-          <h2 style={{ ...typography.body.BodyB }}>
+      <section className="flex flex-col gap-8">
+        <div className="flex flex-col gap-3">
+          <h2 style={{ ...typography.body.BodyB, fontSize: '1.5rem' }}>
             {tab ? '이름' : '팀원 관리'}
           </h2>
           {!tab && (
-            <p style={{ ...typography.label.labelB, color: colors.gray[400] }}>
+            <p style={{ ...typography.label.labelB, color: colors.gray[400], fontSize: '1rem' }}>
               팀원을 내보낼 수 있습니다.
             </p>
           )}
         </div>
         {tab ? (
-          <div className="flex gap-3 items-center">
+          <div className="flex gap-6 items-center">
             <input
               type="text"
               value={serverName}
               onChange={(e) => setServerName(e.target.value)}
-              className="w-full max-w-sm h-12 px-4 rounded-lg outline-none focus:ring-2 focus:ring-orange-500 transition-all"
+              className="w-full max-w-xl h-16 px-8 rounded-2xl outline-none focus:ring-2 focus:ring-[#FF5C00] transition-all bg-[#1e1e1e] border border-white/5"
               style={{
-                backgroundColor: colors.gray[800],
                 color: '#FFFFFF',
                 ...typography.body.BodyM,
+                fontSize: '1.125rem'
               }}
             />
             <button
               onClick={handleUpdateServerName}
-              className="h-12 px-6 rounded-lg bg-[#FF5C00] hover:bg-[#E55200] transition-colors shrink-0"
-              style={{ ...typography.body.BodyB, color: '#FFFFFF' }}
+              className="h-16 px-10 rounded-2xl bg-[#FF5C00] hover:bg-[#E55200] transition-all shrink-0 font-bold text-lg shadow-[0_10px_40px_rgba(255,92,0,0.2)] active:scale-95"
+              style={{ color: '#FFFFFF' }}
             >
               저장
             </button>
           </div>
         ) : (
           <div
-            className="w-full max-h-[30vh] overflow-y-scroll flex flex-col gap-4 no-scrollbar"
+            className="w-full max-h-[50vh] overflow-y-scroll flex flex-col gap-6 no-scrollbar"
             style={{
               ...typography.body.BodyB,
             }}
@@ -226,19 +230,19 @@ export function ServerProfilePage() {
             {users.map((user) => (
               <div
                 key={user.teamMemberId}
-                className="flex gap-2 items-center justify-between px-4"
+                className="flex gap-4 items-center justify-between px-8 py-6 rounded-2xl bg-[#1e1e1e] border border-white/5 hover:bg-white/[0.02] transition-colors"
               >
-                <div className="flex gap-4 items-center">
+                <div className="flex gap-6 items-center">
                   {user.profileImage ? (
                     <img
                       src={user.profileImage}
                       alt={user.name}
-                      className="w-9 h-9 rounded-full object-cover"
+                      className="w-12 h-12 rounded-full object-cover border border-white/10"
                     />
                   ) : (
-                    <div className="w-9 h-9 rounded-full bg-gray-800" />
+                    <div className="w-12 h-12 rounded-full bg-gray-800 border border-white/5" />
                   )}
-                  <div>{user.name}</div>
+                  <div className="text-xl font-medium">{user.name}</div>
                 </div>
                 <button
                   onClick={() => {
@@ -246,12 +250,12 @@ export function ServerProfilePage() {
                     setContextMenuUserId(user.teamMemberId);
                     onKickUser(user.teamMemberId);
                   }}
-                  className="w-7 h-7"
+                  className="w-10 h-10 hover:bg-red-500/10 rounded-lg transition-colors flex items-center justify-center"
                 >
                   <Image
                     src={KickMember}
                     alt="kickMember"
-                    className="w-7 h-7"
+                    className="w-8 h-8 opacity-60 hover:opacity-100 transition-opacity"
                   />
                 </button>
               </div>
@@ -263,19 +267,21 @@ export function ServerProfilePage() {
       <hr className="border-white/10" />
 
       {/* 서버 footer 섹션 */}
-      <section className="flex flex-col gap-4">
-        <div className="flex justify-between items-start">
-          <div className="flex flex-col gap-2">
-            <h2 style={{ ...typography.body.BodyB }}>
+      <section className="flex flex-col gap-8">
+        <div className="flex justify-between items-start gap-12">
+          <div className="flex flex-col gap-4 flex-1">
+            <h2 style={{ ...typography.body.BodyB, fontSize: '1.5rem' }}>
               {tab ? '서버 대표 이미지 지정' : '서버 관리'}
             </h2>
 
             {tab ? (
-              <>
+              <div className="flex flex-col gap-6">
                 <p
                   style={{
                     ...typography.label.labelM,
                     color: colors.gray[400],
+                    fontSize: '1rem',
+                    lineHeight: '1.6'
                   }}
                 >
                   서버 대표 이미지를 정해주세요!
@@ -283,7 +289,7 @@ export function ServerProfilePage() {
                   최소 512 x 512 크기로 지정해주세요.
                 </p>
 
-                <div className="flex gap-3 mt-4">
+                <div className="flex gap-4 mt-2">
                   <input
                     ref={fileInputRef}
                     type="file"
@@ -293,45 +299,51 @@ export function ServerProfilePage() {
                   />
 
                   <button
-                    className="px-4 py-2.5 rounded-md bg-[#FF5C00] hover:bg-[#E55200] transition-colors"
-                    style={{ ...typography.body.BodyB, color: '#FFFFFF' }}
+                    className="px-8 py-4 rounded-2xl bg-[#FF5C00] hover:bg-[#E55200] transition-all font-bold shadow-[0_10px_40px_rgba(255,92,0,0.1)] active:scale-95"
+                    style={{ color: '#FFFFFF' }}
                     onClick={handleClickUpload}
                   >
-                    대표 이미지 업로드
+                    이미지 업로드
                   </button>
                   <button
-                    className="px-4 py-2.5 rounded-md bg-gray-800 hover:bg-gray-700 transition-colors"
+                    className="px-8 py-4 rounded-2xl bg-[#1e1e1e] hover:bg-[#2a2a2a] transition-all border border-white/5 font-bold"
                     style={{
-                      ...typography.body.BodyB,
                       color: colors.gray[400],
                     }}
                     onClick={handleDeleteImg}
                   >
-                    대표 이미지 삭제
+                    이미지 삭제
                   </button>
                 </div>
-              </>
+              </div>
             ) : (
               <div
-                className="flex px-3 py-2.5 rounded-md mt-1"
-                style={{
-                  ...typography.body.BodyB,
-                  backgroundColor: colors.gray[600],
-                }}
+                className="flex p-8 rounded-2xl mt-4 bg-red-500/5 border border-red-500/20 justify-between items-center"
               >
-                <button onClick={handleDeleteServer}>서버 삭제</button>
+                <div className="flex flex-col gap-1">
+                  <p className="text-xl font-bold text-red-500">서버 삭제</p>
+                  <p className="text-sm text-red-500/60">모든 데이터가 영구적으로 삭제됩니다. 주의하세요!</p>
+                </div>
+                <button 
+                  onClick={handleDeleteServer}
+                  className="px-8 py-3 rounded-xl bg-red-500 hover:bg-red-600 transition-all font-bold active:scale-95"
+                >
+                  서버 삭제
+                </button>
               </div>
             )}
           </div>
 
           {/* 이미지 미리보기 박스 */}
-          <div className="w-42 h-42 rounded-xl bg-[#D9D9D9] shrink-0">
-            {previewUrl && (
+          <div className="w-48 h-48 rounded-3xl bg-[#1e1e1e] border border-white/5 shrink-0 flex items-center justify-center overflow-hidden">
+            {previewUrl ? (
               <img
                 src={previewUrl}
                 alt="서버 대표 이미지 미리보기"
-                className="w-32 h-32 rounded-lg object-cover"
+                className="w-full h-full object-cover"
               />
+            ) : (
+              <div className="text-gray-700 font-bold tracking-widest">NO IMAGE</div>
             )}
           </div>
         </div>

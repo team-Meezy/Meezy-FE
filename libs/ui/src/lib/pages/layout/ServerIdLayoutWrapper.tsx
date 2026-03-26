@@ -10,7 +10,7 @@ import { JoinedSidebar } from '../../sidebar';
 import { CalendarMockup, Header } from '../../components';
 import { ReceiveAiAssistant } from '../../components';
 import { useEffect, useCallback } from 'react';
-import { useServerIdStore, useTeamSocket } from '@org/shop-data';
+import { useServerIdStore, useTeamSocket, useModalStore } from '@org/shop-data';
 import { useParams, useRouter } from 'next/navigation';
 
 export function ServerIdLayoutWrapper({
@@ -27,6 +27,7 @@ export function ServerIdLayoutWrapper({
   } = useServerState();
   const { joined, setJoined, setSelectedRoomId } = useServerJoinedTeam();
   const { setServerId } = useServerIdStore();
+  const { isSidebarOpen, setIsSidebarOpen } = useModalStore();
   const params = useParams();
   const currentServerId = params.serverId as string;
   const router = useRouter();
@@ -83,7 +84,9 @@ export function ServerIdLayoutWrapper({
         eventType === 'MEETING_ENDED' ||
         eventCategory === 'MEETING'
       ) {
-        console.log('ServerIdLayoutWrapper: [EVENT] Meeting event received, triggering sync');
+        console.log(
+          'ServerIdLayoutWrapper: [EVENT] Meeting event received, triggering sync'
+        );
         window.dispatchEvent(new CustomEvent('meezy:sync-meeting'));
       } else {
         // Fallback for any other team events
@@ -98,7 +101,21 @@ export function ServerIdLayoutWrapper({
   useTeamSocket(currentServerId, handleTeamEvent);
 
   return (
-    <div className="flex flex-1 overflow-hidden">
+    <div className="flex flex-1 overflow-hidden relative">
+      {/* Mobile Drawer (JoinedSidebar focus) - Offset by TeamSidebar width */}
+      {isSidebarOpen && (
+        <div className="lg:hidden fixed top-0 bottom-0 left-[80px] z-[100] w-[200px] bg-[#0c0c0c] animate-in slide-in-from-left duration-300">
+          <JoinedSidebar
+            className="!flex !w-full"
+            setChatRoom={setChatRoom}
+            setSelectedRoomId={setSelectedRoomId}
+            setServerProfile={setServerProfile}
+            sidebarList={sidebarList}
+            roomsrcList={roomsrcList}
+          />
+        </div>
+      )}
+
       <JoinedSidebar
         setChatRoom={setChatRoom}
         setSelectedRoomId={setSelectedRoomId}
@@ -112,7 +129,7 @@ export function ServerIdLayoutWrapper({
         <div className="flex flex-1 overflow-hidden">
           {children}
           {joined && (
-            <aside className="max-w-[270px] bg-[#111111] border border-white/5 p-6 flex flex-col gap-10">
+            <aside className="hidden xl:flex w-full max-w-[270px] bg-[#111111] border border-white/5 p-6 flex flex-col gap-10 shrink-0">
               <CalendarMockup />
               <ReceiveAiAssistant />
             </aside>

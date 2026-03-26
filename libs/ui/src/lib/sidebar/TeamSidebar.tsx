@@ -11,9 +11,10 @@ import { useTeamStore, getTeamMembers, expelTeamMember } from '@org/shop-data';
 
 interface SidebarProps {
   onOpenModal?: () => void;
+  className?: string;
 }
 
-export function TeamSidebar({ onOpenModal }: SidebarProps) {
+export function TeamSidebar({ onOpenModal, className }: SidebarProps) {
   const { setJoined } = useServerJoinedTeam();
   const [alarm, setAlarm] = useState(false);
   const router = useRouter();
@@ -104,7 +105,7 @@ export function TeamSidebar({ onOpenModal }: SidebarProps) {
 
   return (
     <nav
-      className="w-[100px] max-w-[80px] h-screen flex flex-col items-center"
+      className={`hidden lg:flex w-[100px] max-w-[80px] h-screen flex-col items-center shrink-0 ${className || ''}`}
       style={{
         backgroundColor: colors.gray[900],
       }}

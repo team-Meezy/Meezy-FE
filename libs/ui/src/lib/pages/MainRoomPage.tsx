@@ -96,17 +96,18 @@ export function MainRoomPage() {
 
   return (
     <main
-      className="flex-[3] border border-white/5 flex flex-col items-center justify-center p-10 gap-3"
+      className="flex-1 flex flex-col items-center justify-center p-12 md:p-20 lg:p-24 gap-8 overflow-y-auto no-scrollbar"
       style={{ backgroundColor: colors.black[100] }}
     >
       {/* 회의 참여율 섹션 */}
-      <section className="w-full bg-[#1e1e1e] rounded-3xl p-12 flex items-center justify-around">
-        <ParticipationChart size={chartSize} percentage={ratePercent ?? 0} />
-        <div className="flex flex-col gap-3 p-10">
+      <section className="w-full bg-[#1e1e1e] rounded-[48px] p-12 md:p-20 flex flex-col md:flex-row items-center justify-around gap-12 border border-white/5 shadow-2xl">
+        <ParticipationChart size={chartSize + 40} percentage={ratePercent ?? 0} />
+        <div className="flex flex-col gap-8 p-6 md:p-12">
           <h1
-            className="text-white leading-snug"
+            className="text-white leading-tight"
             style={{
               ...typography.title.TitleB,
+              fontSize: '3rem'
             }}
           >
             {displayName}님의 가장 최근{' '}
@@ -116,14 +117,14 @@ export function MainRoomPage() {
             <span className="text-[#ff5c00]">{ratePercent ?? '--'}%</span>{' '}
             입니다!
           </h1>
-          <p className="text-gray-500 text-sm">
+          <p className="text-gray-400 text-xl leading-relaxed">
             참여율 기준은 회의 중 말의 빈도수가 얼마나
             <br /> 많았는지 리시브가 체크하여 반영됩니다.
           </p>
         </div>
       </section>
       {/* 회의 피드백 섹션 */}
-      <div className="w-full grid grid-cols-2 gap-5">
+      <div className="w-full grid grid-cols-1 md:grid-cols-2 gap-8">
         <DashboardCard
           title="회의 피드백"
           description={

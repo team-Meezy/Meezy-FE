@@ -41,11 +41,18 @@ export function useMeetingWebRTC(
   const analyserRef = useRef<AnalyserNode | null>(null);
   const animationFrameIdRef = useRef<number | null>(null);
   const isVADInitializingRef = useRef(false);
-  const { meetingId, setIsUploading, isRecording, setIsRecording } = useMeetingStore();
+  const {
+    meetingId,
+    setIsUploading,
+    isRecording,
+    setIsRecording,
+    setStartTime,
+  } = useMeetingStore();
 
   // Recording Refs
   const mediaRecorderRef = useRef<MediaRecorder | null>(null);
   const recordedChunksRef = useRef<Blob[]>([]);
+  const recordingStartedAtRef = useRef<string | null>(null);
 
   const teamIdRef = useRef(teamId);
   const meetingIdRef = useRef(meetingId);
@@ -104,7 +111,54 @@ export function useMeetingWebRTC(
       localStreamRef.current = null;
     }
     setLocalStream(null);
+    setIsRecording(false);
+    setStartTime(null);
+    recordingStartedAtRef.current = null;
+  }, [setIsRecording, setStartTime]);
+
+  const getMeetingParticipantIds = useCallback(async () => {
+    const activeMeeting = await getActiveMeetings(teamIdRef.current);
+    if (!Array.isArray(activeMeeting?.participants)) return [];
+
+    return activeMeeting.participants
+      .map((participant: any) =>
+        String(
+          participant?.teamMemberId ||
+            participant?.memberId ||
+            participant?.userId ||
+            participant?.user_id ||
+            participant?.accountId ||
+            participant?.id ||
+            participant?.user?.id ||
+            participant?.user?.userId ||
+            participant?.user?.user_id ||
+            ''
+        ).trim()
+      )
+      .filter(
+        (participantId: string) =>
+          participantId && !localIdsRef.current.includes(participantId)
+      );
   }, []);
+
+  const broadcastRecordingState = useCallback(
+    async (type: 'recording-started' | 'recording-stopped', startedAt?: string) => {
+      try {
+        const participantIds = await getMeetingParticipantIds();
+        participantIds.forEach((participantId: string) => {
+          sendSignalRef.current?.(participantId, {
+            type,
+            fromUserId: myId,
+            toUserId: participantId,
+            startedAt,
+          });
+        });
+      } catch (error) {
+        log('[WARN] recording state broadcast failed', error);
+      }
+    },
+    [getMeetingParticipantIds, log, myId]
+  );
 
   const getOrCreatePC = useCallback(
     (targetUserId: string) => {
@@ -228,7 +282,17 @@ export function useMeetingWebRTC(
       } = signal;
       if (!localIdsRef.current.includes(String(toUserId))) return;
 
-      if (type === 'offer') {
+      if (type === 'recording-started') {
+        recordingStartedAtRef.current = signal.startedAt || new Date().toISOString();
+        setIsRecording(true);
+        setStartTime(recordingStartedAtRef.current);
+        return;
+      } else if (type === 'recording-stopped') {
+        recordingStartedAtRef.current = null;
+        setIsRecording(false);
+        setStartTime(null);
+        return;
+      } else if (type === 'offer') {
         const pc = getOrCreatePC(fromUserId);
         const polite = shouldInitiateOffer(myId, fromUserId);
         const offerCollision = pc.signalingState !== 'stable';
@@ -286,7 +350,7 @@ export function useMeetingWebRTC(
         }
       }
     },
-    [myId, getOrCreatePC, shouldInitiateOffer]
+    [getOrCreatePC, myId, setIsRecording, setStartTime, shouldInitiateOffer]
   );
 
   const { sendSignal } = useMeetingSignal(teamId, myId, onSignal);
@@ -327,6 +391,17 @@ export function useMeetingWebRTC(
   useEffect(() => {
     sendSignalRef.current = sendSignal;
   }, [sendSignal]);
+
+  useEffect(() => {
+    if (!isRecording || !meetingId || !teamId || !mediaRecorderRef.current) return;
+
+    const startedAt = recordingStartedAtRef.current || new Date().toISOString();
+    const intervalId = setInterval(() => {
+      void broadcastRecordingState('recording-started', startedAt);
+    }, 3000);
+
+    return () => clearInterval(intervalId);
+  }, [broadcastRecordingState, isRecording, meetingId, teamId]);
 
   const connectToUser = useCallback(
     async (targetUserId: string) => {
@@ -392,31 +467,11 @@ export function useMeetingWebRTC(
   useEffect(() => {
     if (!teamId || !meetingId || !isActive) return;
 
-    const getParticipantId = (participant: any) =>
-      String(
-        participant?.teamMemberId ||
-          participant?.memberId ||
-          participant?.userId ||
-          participant?.user_id ||
-          participant?.accountId ||
-          participant?.id ||
-          participant?.user?.id ||
-          participant?.user?.userId ||
-          participant?.user?.user_id ||
-          ''
-      ).trim();
-
     const syncParticipants = async () => {
       try {
-        const activeMeeting = await getActiveMeetings(teamId);
-        const participantIds = Array.isArray(activeMeeting?.participants)
-          ? activeMeeting.participants
-              .map((participant: any) => getParticipantId(participant))
-              .filter(Boolean)
-          : [];
+        const participantIds = await getMeetingParticipantIds();
 
         participantIds.forEach((participantId: string) => {
-          if (localIdsRef.current.includes(participantId)) return;
           if (pcs.current.has(participantId)) return;
           void connectToUser(participantId);
         });
@@ -431,7 +486,7 @@ export function useMeetingWebRTC(
     }, 3000);
 
     return () => clearInterval(intervalId);
-  }, [connectToUser, isActive, log, meetingId, teamId]);
+  }, [connectToUser, getMeetingParticipantIds, isActive, log, meetingId, teamId]);
 
   const startRecording = useCallback(() => {
     log('startRecording entry point');
@@ -462,7 +517,9 @@ export function useMeetingWebRTC(
       }
     }
 
+    const startedAt = new Date().toISOString();
     try {
+      recordingStartedAtRef.current = startedAt;
       const recorder = new MediaRecorder(localStreamRef.current, {
         mimeType: selectedMimeType || undefined,
       });
@@ -483,6 +540,8 @@ export function useMeetingWebRTC(
 
       recorder.start(1000); // 1s chunks
       setIsRecording(true);
+      setStartTime(startedAt);
+      void broadcastRecordingState('recording-started', startedAt);
       log('MediaRecorder SUCCESS. state:', recorder.state);
       log('MIME Type selected:', recorder.mimeType);
     } catch (e) {
@@ -504,6 +563,8 @@ export function useMeetingWebRTC(
         };
         fallbackRecorder.start(1000);
         setIsRecording(true);
+        setStartTime(startedAt);
+        void broadcastRecordingState('recording-started', startedAt);
         log('Fallback MediaRecorder SUCCESS. state:', fallbackRecorder.state);
       } catch (fallbackError) {
         log(
@@ -512,15 +573,18 @@ export function useMeetingWebRTC(
         );
       }
     }
-  }, [log, setIsRecording]);
+  }, [broadcastRecordingState, log, setIsRecording, setStartTime]);
 
   const stopRecording = useCallback(() => {
     log('stopRecording triggered manually');
     if (mediaRecorderRef.current && mediaRecorderRef.current.state !== 'inactive') {
       mediaRecorderRef.current.stop();
-      setIsRecording(false);
     }
-  }, [log, setIsRecording]);
+    setIsRecording(false);
+    setStartTime(null);
+    recordingStartedAtRef.current = null;
+    void broadcastRecordingState('recording-stopped');
+  }, [broadcastRecordingState, log, setIsRecording, setStartTime]);
 
   const initLocalMedia = useCallback(async () => {
     log('initLocalMedia starting...');

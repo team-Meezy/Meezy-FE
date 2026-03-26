@@ -3,7 +3,12 @@ import { Client } from '@stomp/stompjs';
 import SockJS from 'sockjs-client';
 import { BASE_URL } from '../axios';
 
-export type SignalType = 'offer' | 'answer' | 'ice-candidate';
+export type SignalType =
+  | 'offer'
+  | 'answer'
+  | 'ice-candidate'
+  | 'recording-started'
+  | 'recording-stopped';
 
 export interface MeetingSignal {
   type: SignalType;
@@ -13,6 +18,7 @@ export interface MeetingSignal {
   candidate?: string;
   sdpMid?: string;
   sdpMLineIndex?: number;
+  startedAt?: string;
 }
 
 export function useMeetingSignal(

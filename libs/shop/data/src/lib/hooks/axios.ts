@@ -55,8 +55,8 @@ const getWsHost = () => {
   if (typeof window !== 'undefined' && window.location.host) {
     return window.location.host;
   }
-  // Fallback to meezy.kr if we're in a known environment but can't find host
-  return 'meezy.kr';
+  // Fallback to api.meezy.kr if we're in a known environment but can't find host
+  return 'api.meezy.kr';
 };
 
 export const WS_HOST = getWsHost();
@@ -73,7 +73,7 @@ if (typeof window !== 'undefined') {
     window.location.hostname.includes('meezy.kr')
   ) {
     console.error(
-      '🔴 [Meezy] INSECURE CONTEXT DETECTED! Audio processing (VAD) and secure WebSockets will likely be blocked by the browser on http://meezy.kr. Please use https://meezy.kr'
+      '🔴 [Meezy] INSECURE CONTEXT DETECTED! Audio processing (VAD) and secure WebSockets will likely be blocked by the browser on http://api.meezy.kr. Please use https://api.meezy.kr'
     );
   }
 }

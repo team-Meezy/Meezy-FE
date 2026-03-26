@@ -11,7 +11,7 @@ export function useChatSocket(teamId: string, chatRoomId: string) {
     if (!chatRoomId) return;
 
     const token = localStorage.getItem('accessToken');
-    const socketUrl = 'https://meezy.kr/ws-chat';
+    const socketUrl = 'https://api.meezy.kr/ws-chat';
 
     console.log(' 🔌 [Chat Socket Attempt (SockJS)]', {
       socketUrl,

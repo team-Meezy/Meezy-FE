@@ -15,7 +15,7 @@ const nextConfig = {
     remotePatterns: [
       {
         protocol: 'https',
-        hostname: 'meezy.kr',
+        hostname: 'api.meezy.kr',
       },
       {
         protocol: 'http',

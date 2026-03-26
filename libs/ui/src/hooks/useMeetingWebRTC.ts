@@ -123,15 +123,15 @@ export function useMeetingWebRTC(
     return activeMeeting.participants
       .map((participant: any) =>
         String(
-          participant?.teamMemberId ||
-            participant?.memberId ||
-            participant?.userId ||
+          participant?.userId ||
             participant?.user_id ||
             participant?.accountId ||
             participant?.id ||
             participant?.user?.id ||
             participant?.user?.userId ||
             participant?.user?.user_id ||
+            participant?.teamMemberId ||
+            participant?.memberId ||
             ''
         ).trim()
       )

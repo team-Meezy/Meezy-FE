@@ -24,7 +24,12 @@ const getBaseUrl = () => {
     (!url || url === 'undefined' || url === '/') &&
     typeof window !== 'undefined'
   ) {
-    url = window.location.origin;
+    // meezy.kr 도메인이라면 기본적으로 api.meezy.kr 을 사용하도록 명시적 폴백 설정
+    if (window.location.hostname.includes('meezy.kr')) {
+      url = 'https://api.meezy.kr';
+    } else {
+      url = window.location.origin;
+    }
   }
 
   // 최종 정리: "undefined" 문자열이거나 빈 값이면 '/' 반환, 아니면 끝의 '/' 제거

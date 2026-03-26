@@ -3,6 +3,14 @@ import axios from 'axios';
 const getBaseUrl = () => {
   let url = '';
 
+  // Production web domains should always target the API subdomain.
+  if (
+    typeof window !== 'undefined' &&
+    window.location.hostname.includes('meezy.kr')
+  ) {
+    return 'https://api.meezy.kr';
+  }
+
   // 체크: process.env (Next.js or Node environment)
   if (typeof process !== 'undefined' && process.env) {
     url =

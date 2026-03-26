@@ -1,10 +1,10 @@
 'use client';
 
-import { useEffect } from 'react';
+import { useEffect, useState } from 'react';
 import { createPortal } from 'react-dom';
+import { useRouter } from 'next/navigation';
 import { colors, typography } from '../../design';
 import { useImg } from '../../hooks';
-import { useRouter } from 'next/navigation';
 import {
   useServerJoinedTeam,
   useServerCreate,
@@ -17,6 +17,27 @@ import { useServerIdStore } from '@org/shop-data';
 interface ServerModalProps {
   isOpen: boolean;
   onClose: () => void;
+}
+
+function extractTeamId(payload: any, fallbackName?: string) {
+  const directId =
+    (typeof payload === 'number' && payload !== 0) ||
+    (typeof payload === 'string' && payload !== '')
+      ? payload
+      : payload?.teamId ||
+        payload?.team_id ||
+        payload?.id ||
+        payload?.data?.teamId ||
+        payload?.data?.team_id ||
+        payload?.data?.id ||
+        (Array.isArray(payload) &&
+          (payload[0]?.teamId || payload[0]?.team_id || payload[0]?.id));
+
+  if (directId) {
+    return String(directId);
+  }
+
+  return null;
 }
 
 export function ServerModal({ isOpen, onClose }: ServerModalProps) {
@@ -39,199 +60,170 @@ export function ServerModal({ isOpen, onClose }: ServerModalProps) {
     handleImageChange,
   } = useImg();
   const { setImageFile } = useServerCreate();
+  const { setJoined } = useServerJoinedTeam();
+  const { updateTeams } = useServerState();
+  const { serverId, setServerId } = useServerIdStore();
+  const router = useRouter();
+  const [isSubmitting, setIsSubmitting] = useState(false);
 
-  // useImg에서 선택된 파일을 서버 생성 컨텍스트에 동기화
   useEffect(() => {
     setImageFile(localImageFile);
   }, [localImageFile, setImageFile]);
-  const { setJoined } = useServerJoinedTeam();
-  const { updateTeams, updateTeamMembers } = useServerState();
-  const router = useRouter();
-  const { serverId } = useServerIdStore();
-  const { setServerId } = useServerIdStore();
-
-  const handleTeamClick = (id?: string) => {
-    router.push(`/main/${id || serverId}`);
-  };
 
   useEffect(() => {
     setMounted(true);
     return () => setMounted(false);
-  }, []);
+  }, [setMounted]);
 
   useEffect(() => {
-    if (generalError) {
-      const timer = setTimeout(() => {
-        setGeneralError('');
-      }, 3000);
-      return () => clearTimeout(timer);
-    }
-  }, [generalError]);
+    if (!generalError) return;
 
-  const createServer = async () => {
-    const valueToValidate = createModal ? serverName : serverLink;
-    if (!valueToValidate) {
-      setGeneralError(
-        `${createModal ? '서버 이름을 입력해주세요.' : '링크를 입력해주세요.'}`
+    const timer = setTimeout(() => {
+      setGeneralError('');
+    }, 3000);
+
+    return () => clearTimeout(timer);
+  }, [generalError, setGeneralError]);
+
+  const moveToTeam = (id?: string) => {
+    router.push(`/main/${id || serverId}`);
+  };
+
+  const resolveFallbackTeamId = async (targetName?: string) => {
+    const teams = await getTeams();
+    if (!Array.isArray(teams) || teams.length === 0) return null;
+
+    if (targetName) {
+      const found = teams.find(
+        (team: any) => team.teamName === targetName || team.name === targetName
       );
-      return false;
+      if (found) {
+        return String(found.teamId || found.team_id || found.id);
+      }
     }
-    if (createModal) {
-      if (!localImageFile) {
-        setGeneralError('서버 대표 이미지를 업로드해주세요.');
-        return false;
-      }
-      
-      try {
-        const res = await createTeam(serverName, localImageFile);
-        console.log('createTeam full response body:', res);
-        
-        // res가 숫자나 문자열인 경우 (직접 ID 반환)
-        // res 내부의 다양한 ID 레이블
-        // res.data 내부의 다양한 ID 레이블
-        // res가 배열인 경우 첫 번째 요소의 ID
-        let newTeamId = 
-          (typeof res === 'number' && res !== 0 || (typeof res === 'string' && res !== '')) ? res :
-          (res?.teamId || res?.team_id || res?.id || 
-           res?.data?.teamId || res?.data?.team_id || res?.data?.id ||
-           (Array.isArray(res) && (res[0]?.teamId || res[0]?.team_id || res[0]?.id)));
 
-        // [Fallback] 응답에 ID가 없는 경우 (서버에서 생성은 되었으나 응답 바디가 비어있을 때)
+    return String(teams[0].teamId || teams[0].team_id || teams[0].id);
+  };
+
+  const handleCreateOrJoin = async () => {
+    if (isSubmitting) return;
+
+    const valueToValidate = createModal ? serverName.trim() : serverLink.trim();
+    if (!valueToValidate) {
+      setGeneralError(createModal ? '서버 이름을 입력해주세요.' : '링크를 입력해주세요.');
+      return;
+    }
+
+    if (createModal && !localImageFile) {
+      setGeneralError('서버 대표 이미지를 업로드해주세요.');
+      return;
+    }
+
+    setIsSubmitting(true);
+
+    try {
+      if (createModal) {
+        const response = await createTeam(serverName.trim(), localImageFile as File);
+        let newTeamId = extractTeamId(response, serverName.trim());
+
         if (!newTeamId) {
-          console.warn('No ID in response, attempting fallback lookup...');
-          const teams = await getTeams();
-          if (Array.isArray(teams)) {
-            // 이번에 새로 만든 서버 이름과 일치하는 팀 찾기
-            const found = teams.find((t: any) => t.teamName === serverName || t.name === serverName);
-            if (found) {
-              newTeamId = found.teamId || found.team_id || found.id;
-            } else if (teams.length > 0) {
-              // 찾지 못했다면 가장 최근 팀(첫 번째)으로 간주
-              newTeamId = teams[0].teamId || teams[0].team_id || teams[0].id;
-            }
-          }
+          newTeamId = await resolveFallbackTeamId(serverName.trim());
         }
 
-        if (newTeamId) {
-          const stringId = String(newTeamId);
-          console.log('Found teamId (including fallback):', stringId);
-          await updateTeams();
-
-          setServerId(stringId);
-          setJoined(true);
-          router.push(`/main/${stringId}`);
-          onClose();
-          return;
-        } else {
-          console.error('No ID found even after fallback:', JSON.stringify(res));
-          setGeneralError('서버에서 팀 식별정보를 찾을 수 없습니다.');
-        }
-      } catch (e: any) {
-        const msg = e.response?.data?.message || e.message || '팀 생성 실패';
-        console.error('Team creation error detail:', e);
-        setGeneralError(msg);
-      }
-    } else {
-      // 가입 로직 (!createModal)
-      try {
-        const extractedCode = serverLink.split('/').pop() || serverLink;
-        const res = await joinTeamByCode(extractedCode);
-        console.log('joinTeamByCode full response body:', res);
-
-        let newTeamId = 
-          (typeof res === 'number' && res !== 0 || (typeof res === 'string' && res !== '')) ? res :
-          (res?.teamId || res?.team_id || res?.id || 
-           res?.data?.teamId || res?.data?.team_id || res?.data?.id ||
-           (Array.isArray(res) && (res[0]?.teamId || res[0]?.team_id || res[0]?.id)));
-
-        // [Fallback] 가입 시에도 응답이 없으면 최신 팀 목록에서 첫 번째 것 사용
         if (!newTeamId) {
-          console.warn('No ID in join response, attempting fallback lookup...');
-          const teams = await getTeams();
-          if (Array.isArray(teams) && teams.length > 0) {
-            newTeamId = teams[0].teamId || teams[0].team_id || teams[0].id;
-          }
-        }
-
-        if (newTeamId) {
-          const stringId = String(newTeamId);
-          console.log('Found teamId (including fallback):', stringId);
-          await updateTeams();
-
-          setServerId(stringId);
-          setJoined(true);
-          router.push(`/main/${stringId}`);
-          onClose();
+          setGeneralError('생성된 팀 정보를 찾을 수 없습니다.');
           return;
-        } else {
-          console.error('No ID found even after fallback:', JSON.stringify(res));
-          setGeneralError('서버에서 팀 식별정보를 찾을 수 없습니다.');
         }
-      } catch (e: any) {
-        const msg = e.response?.data?.message || e.message || '팀 가입 실패';
-        console.error('Team join error detail:', e);
-        setGeneralError(msg);
+
+        await updateTeams();
+        setServerId(newTeamId);
+        setJoined(true);
+        onClose();
+        moveToTeam(newTeamId);
+        return;
       }
+
+      const inviteCode = serverLink.trim().split('/').pop() || serverLink.trim();
+      const response = await joinTeamByCode(inviteCode);
+      let newTeamId = extractTeamId(response);
+
+      if (!newTeamId) {
+        newTeamId = await resolveFallbackTeamId();
+      }
+
+      if (!newTeamId) {
+        setGeneralError('참가한 팀 정보를 찾을 수 없습니다.');
+        return;
+      }
+
+      await updateTeams();
+      setServerId(newTeamId);
+      setJoined(true);
+      onClose();
+      moveToTeam(newTeamId);
+    } catch (error: any) {
+      const message =
+        error?.response?.data?.message ||
+        error?.message ||
+        (createModal ? '팀 생성에 실패했습니다.' : '팀 참가에 실패했습니다.');
+      setGeneralError(message);
+    } finally {
+      setIsSubmitting(false);
     }
   };
 
   if (!isOpen || !mounted) return null;
 
-  // Portal을 사용하여 document.body에 직접 렌더링
   return createPortal(
-    // 배경 Overlay
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/30 backdrop-blur-[2px]">
-      {/*   모달 컨테이너 */}
-      <div className="w-[480px] bg-[#2b2d31] rounded-xl shadow-2xl border border-white/5 overflow-hidden">
-        {/* 상단 탭 및 닫기 버튼 */}
-        <div className="flex justify-between items-center px-4 pt-4">
+      <div className="w-[480px] overflow-hidden rounded-xl border border-white/5 bg-[#2b2d31] shadow-2xl">
+        <div className="flex items-center justify-between px-4 pt-4">
           <div className="flex gap-2">
             <button
               onClick={() => setCreateModal(true)}
               style={{ ...typography.body.BodyM }}
-              className={`${
-                createModal ? 'bg-[#404040] text-[#fff] rounded-xl' : ''
-              } p-3 text-[#A1A1AA]`}
+              className={`p-3 text-[#A1A1AA] ${
+                createModal ? 'rounded-xl bg-[#404040] text-[#fff]' : ''
+              }`}
             >
               서버 만들기
             </button>
             <button
               onClick={() => setCreateModal(false)}
               style={{ ...typography.body.BodyM }}
-              className={`${
+              className={`rounded-xl p-3 text-[#A1A1AA] ${
                 createModal ? '' : 'bg-[#404040] text-[#fff]'
-              } rounded-xl p-3 text-[#A1A1AA]`}
+              }`}
             >
-              서버 가입하기
+              서버 참가하기
             </button>
           </div>
         </div>
 
-        <div className="flex justify-center items-center w-full h-[1px] mt-3">
+        <div className="mt-3 flex h-[1px] w-full items-center justify-center">
           <div
-            className="w-[94%] h-[1px] bg-white rounded-full"
+            className="h-[1px] w-[94%] rounded-full bg-white"
             style={{ backgroundColor: colors.gray[700] }}
           />
         </div>
 
-        {/* // 폼 콘텐츠 */}
-        <div className="p-6 pt-4 flex flex-col gap-6">
-          {/* 서버 이름 입력 */}
+        <div className="flex flex-col gap-6 p-6 pt-4">
           <section>
-            <h2 className="text-xl font-bold text-white mb-1">
-              {createModal ? '서버 만들기' : '서버 가입하기'}
+            <h2 className="mb-1 text-xl font-bold text-white">
+              {createModal ? '서버 만들기' : '서버 참가하기'}
             </h2>
-            <p className="text-xs text-gray-400 mb-4">
+            <p className="mb-4 text-xs text-gray-400">
               {createModal
-                ? '회의를 위한 서버를 만들어 보세요!'
-                : '초대 받은 서버 가입을 위해 링크를 입력 해주세요.'}
+                ? '회의를 위한 서버를 만들어보세요.'
+                : '초대 링크를 입력해 서버에 참가해주세요.'}
             </p>
+
             {generalError && (
               <div
-                className="flex flex-col items-center justify-center w-[100%] p-4 rounded-lg mb-4"
+                className="mb-4 flex w-full flex-col items-center justify-center rounded-lg p-4"
                 style={{
                   backgroundColor: '#fab1b1ff',
-                  border: `1px solid ${'#ffa0a0ff'}`,
+                  border: '1px solid #ffa0a0ff',
                 }}
               >
                 <p
@@ -245,7 +237,7 @@ export function ServerModal({ isOpen, onClose }: ServerModalProps) {
               </div>
             )}
 
-            <label className="block text-xs font-bold text-gray-300 uppercase mb-2">
+            <label className="mb-2 block text-xs font-bold uppercase text-gray-300">
               {createModal ? '이름' : '링크 입력'}
             </label>
             <input
@@ -258,21 +250,20 @@ export function ServerModal({ isOpen, onClose }: ServerModalProps) {
                   setServerLink(e.target.value);
                 }
               }}
-              placeholder={createModal ? '서버 이름' : '초대 받은 링크를 입력'}
-              className="w-full bg-[#1e1f22] border-none rounded-md p-3 text-white placeholder:text-gray-500 focus:ring-1 focus:ring-orange-500 outline-none transition-all"
+              placeholder={createModal ? '서버 이름' : '초대 링크를 입력'}
+              className="w-full rounded-md border-none bg-[#1e1f22] p-3 text-white outline-none transition-all placeholder:text-gray-500 focus:ring-1 focus:ring-orange-500"
             />
           </section>
 
           {createModal && (
-            //   {/* 서버 이미지 지정 */}
             <section className="border-t border-white/5 pt-3">
-              <h2 className="text-xl font-bold text-white mb-1">
+              <h2 className="mb-1 text-xl font-bold text-white">
                 서버 대표 이미지 지정
               </h2>
-              <p className="text-xs text-gray-400 mb-4">
-                서버 대표 이미지를 정해주세요!
+              <p className="mb-4 text-xs text-gray-400">
+                서버 대표 이미지를 선택해주세요.
                 <br />
-                최소 512 x 512 크기로 지정해주세요.
+                최소 512 x 512 크기를 권장합니다.
               </p>
 
               <input
@@ -284,18 +275,19 @@ export function ServerModal({ isOpen, onClose }: ServerModalProps) {
               />
 
               {previewUrl && (
-                <div className="flex flex-col items-start mb-4">
+                <div className="mb-4 flex flex-col items-start">
                   <img
                     src={previewUrl}
                     alt="서버 대표 이미지 미리보기"
-                    className="w-42 h-32 rounded-lg object-cover border border-white/10"
+                    className="h-32 w-42 rounded-lg border border-white/10 object-cover"
                   />
                 </div>
               )}
 
               <button
-                className="bg-[#ff5c00] hover:bg-[#e65300] text-white text-sm font-bold py-2 px-4 rounded-md transition-colors"
+                className="rounded-md bg-[#ff5c00] px-4 py-2 text-sm font-bold text-white transition-colors hover:bg-[#e65300]"
                 onClick={handleClickUpload}
+                disabled={isSubmitting}
               >
                 {previewUrl ? '이미지 변경' : '대표 이미지 업로드'}
               </button>
@@ -303,19 +295,20 @@ export function ServerModal({ isOpen, onClose }: ServerModalProps) {
           )}
         </div>
 
-        {/* 하단 버튼 바 */}
-        <div className="bg-[#232428] px-6 py-4 flex justify-between gap-4">
+        <div className="flex justify-between gap-4 bg-[#232428] px-6 py-4">
           <button
             onClick={onClose}
-            className="flex-1 py-3 px-4 border border-[#ff5c00] text-[#ff5c00] rounded-md font-bold hover:bg-[#ff5c00]/10 transition-colors"
+            disabled={isSubmitting}
+            className="flex-1 rounded-md border border-[#ff5c00] px-4 py-3 font-bold text-[#ff5c00] transition-colors hover:bg-[#ff5c00]/10 disabled:cursor-not-allowed disabled:opacity-60"
           >
             닫기
           </button>
           <button
-            onClick={createServer}
-            className="flex-1 py-3 px-4 bg-[#ff5c00] text-white rounded-md font-bold hover:bg-[#e65300] transition-colors"
+            onClick={handleCreateOrJoin}
+            disabled={isSubmitting}
+            className="flex-1 rounded-md bg-[#ff5c00] px-4 py-3 font-bold text-white transition-colors hover:bg-[#e65300] disabled:cursor-not-allowed disabled:opacity-60"
           >
-            다음
+            {isSubmitting ? '처리중...' : '다음'}
           </button>
         </div>
       </div>

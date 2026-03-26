@@ -191,9 +191,6 @@ export function Header() {
       }
 
       setHasActiveMeeting(true);
-      if (activeMeeting.startTime || activeMeeting.createdAt) {
-        setStartTime(activeMeeting.startTime || activeMeeting.createdAt);
-      }
 
       const isParticipant =
         Array.isArray(activeMeeting.participants) &&
@@ -401,7 +398,7 @@ export function Header() {
 
       setMeeting(true);
       setHasActiveMeeting(true);
-      setStartTime(response?.startTime || response?.createdAt || null);
+      setStartTime(null);
       setTeamId(currentTeamId);
 
       if (response?.meetingId) {

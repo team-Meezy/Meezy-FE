@@ -81,13 +81,17 @@ const MESSAGE_LEAVE_FAILED =
   '\uD68C\uC758 \uB098\uAC00\uAE30\uC5D0 \uC2E4\uD328\uD588\uC2B5\uB2C8\uB2E4.';
 const MESSAGE_UNKNOWN_ERROR = '\uC54C \uC218 \uC5C6\uB294 \uC624\uB958';
 
+import { useModalStore } from '@org/shop-data';
+
 export function Header() {
   const router = useRouter();
   const pathname = usePathname();
   const params = useParams();
   const currentTeamId = params.serverId as string;
 
+  const { isSidebarOpen, setIsSidebarOpen } = useModalStore();
   const { setJoined, meeting, setMeeting } = useServerJoinedTeam();
+// ... rest of imports/state ...
   const { profile } = useProfile();
   const { teamMembers } = useServerState();
   const { setLoading, setLoadingState } = useLoadingStore();
@@ -433,12 +437,33 @@ export function Header() {
         backgroundColor: colors.black[100],
       }}
     >
-      <h1
-        className="text-[#ff5c00] font-extrabold text-2xl tracking-tight cursor-pointer"
-        onClick={onClickMain}
-      >
-        Meezy.
-      </h1>
+      <div className="flex items-center gap-4">
+        <button
+          className="lg:hidden p-2 text-white/60 hover:text-white transition-colors"
+          onClick={() => setIsSidebarOpen(!isSidebarOpen)}
+          aria-label="Toggle Sidebar"
+        >
+          <svg
+            className="w-6 h-6"
+            fill="none"
+            stroke="currentColor"
+            viewBox="0 0 24 24"
+          >
+            <path
+              strokeLinecap="round"
+              strokeLinejoin="round"
+              strokeWidth={2}
+              d="M4 6h16M4 12h16m-7 6h7"
+            />
+          </svg>
+        </button>
+        <h1
+          className="text-[#ff5c00] font-extrabold text-2xl tracking-tight cursor-pointer"
+          onClick={onClickMain}
+        >
+          Meezy.
+        </h1>
+      </div>
 
       <div className="flex items-center gap-10">
         {currentTeamId && (

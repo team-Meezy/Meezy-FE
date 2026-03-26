@@ -42,8 +42,13 @@ export const MeetingRoomPage = () => {
   const [isKamera, setIsKamera] = useState(true);
   const [participants, setParticipants] = useState<any[]>([]);
 
-  const { localStream, remoteStreams, isSpeaking, remoteVoices, initLocalMedia } =
-    useMeeting();
+  const {
+    localStream,
+    remoteStreams,
+    isSpeaking,
+    remoteVoices,
+    initLocalMedia,
+  } = useMeeting();
 
   const normalizeName = useCallback((name?: string | null) => {
     return (name || '').trim().toLowerCase();
@@ -108,29 +113,24 @@ export const MeetingRoomPage = () => {
     });
   }, [myComparableNames, normalizeName, profileIds, teamMembers]);
 
-  const localIds = useMemo(
-    () => {
-      const member = myMemberInfo as any;
-      return (
-      Array.from(
-        new Set(
-          [
-            member?.teamMemberId,
-            member?.memberId,
-            member?.userId,
-            member?.user_id,
-            member?.user?.id,
-            member?.user?.userId,
-            ...profileIds,
-          ]
-            .map((value) => String(value ?? '').trim())
-            .filter(Boolean)
-        )
+  const localIds = useMemo(() => {
+    const member = myMemberInfo as any;
+    return Array.from(
+      new Set(
+        [
+          member?.teamMemberId,
+          member?.memberId,
+          member?.userId,
+          member?.user_id,
+          member?.user?.id,
+          member?.user?.userId,
+          ...profileIds,
+        ]
+          .map((value) => String(value ?? '').trim())
+          .filter(Boolean)
       )
-      );
-    },
-    [myMemberInfo, profileIds]
-  );
+    );
+  }, [myMemberInfo, profileIds]);
   const myId = localIds[0] || '';
 
   const isCurrentUser = useCallback(
@@ -272,7 +272,9 @@ export const MeetingRoomPage = () => {
     }
   };
 
-  const others = participants.filter((participant) => !isCurrentUser(participant));
+  const others = participants.filter(
+    (participant) => !isCurrentUser(participant)
+  );
 
   const remoteOnlyParticipants = remoteStreams.reduce<any[]>((acc, remote) => {
     const remoteId = String(remote.userId);
@@ -378,17 +380,17 @@ export const MeetingRoomPage = () => {
   const rows = getRows();
 
   return (
-    <div className="flex-1 flex flex-col h-full min-h-0 bg-[#121212] overflow-hidden relative">
-      <div className="flex-1 flex flex-col items-center justify-center p-4 md:p-8 min-h-0 space-y-4 max-w-6xl mx-auto w-full">
+    <div className="flex-1 flex flex-col h-full min-h-0 bg-[#0c0c0c] overflow-hidden relative">
+      <div className="flex-1 flex flex-col items-center justify-center p-8 md:p-16 min-h-0 space-y-8 w-full">
         {rows.map((row, rowIndex) => (
           <div
             key={rowIndex}
-            className="flex flex-1 w-full gap-4 items-center justify-center min-h-0"
+            className="flex flex-1 w-full gap-8 items-center justify-center min-h-0"
           >
             {row.map((participant) => (
               <div
                 key={String(participant.id)}
-                className="flex-1 h-full max-w-2xl min-h-0"
+                className="flex-1 h-full min-h-0"
               >
                 <VideoCard
                   name={participant.name}
@@ -406,35 +408,39 @@ export const MeetingRoomPage = () => {
         ))}
       </div>
 
-      <div className="bg-[#1e1e1e] rounded-2xl py-3 px-6 flex items-center justify-center relative w-full max-w-5xl mx-auto shrink-0 border border-white/10">
-        <button
-          className="p-3 hover:bg-[#333] rounded-full transition-all group"
-          onClick={onMikeClick}
-        >
-          <Image
-            src={isMike ? Mike : NoMike}
-            alt="Mike"
-            width={22}
-            height={22}
-          />
-        </button>
-        <button
-          className="p-3 hover:bg-[#333] rounded-full transition-all shadow-lg"
-          onClick={onKameraClick}
-        >
-          <Image
-            src={isKamera ? Kamera : Nokamera}
-            alt="Nokamera"
-            width={22}
-            height={22}
-          />
-        </button>
+      <div className="pb-12 pt-4 px-10 flex justify-center w-full z-10 shrink-0">
+        <div className="bg-[#1e1e1e]/80 rounded-[32px] py-6 px-12 flex items-center justify-center gap-6 relative w-full max-w-4xl shadow-[0_20px_60px_rgba(0,0,0,0.5)] border border-white/5 backdrop-blur-xl">
+          <button
+            className={`p-5 rounded-2xl transition-all group ${isMike ? 'bg-white/5 hover:bg-white/10' : 'bg-red-500/20 hover:bg-red-500/30'}`}
+            onClick={onMikeClick}
+          >
+            <Image
+              src={isMike ? Mike : NoMike}
+              alt="Mike"
+              width={28}
+              height={28}
+              className="opacity-90 group-hover:scale-110 transition-transform"
+            />
+          </button>
+          <button
+            className={`p-5 rounded-2xl transition-all group ${isKamera ? 'bg-white/5 hover:bg-white/10' : 'bg-red-500/20 hover:bg-red-500/30'}`}
+            onClick={onKameraClick}
+          >
+            <Image
+              src={isKamera ? Kamera : Nokamera}
+              alt="Kamera"
+              width={28}
+              height={28}
+              className="opacity-90 group-hover:scale-110 transition-transform"
+            />
+          </button>
 
-        <button className="absolute right-8 text-white/40 hover:text-white">
-          <span className="text-2xl font-extralight tracking-tighter cursor-pointer">
-            ⛶
-          </span>
-        </button>
+          <button className="absolute right-12 text-white/40 hover:text-white transition-colors">
+            <span className="text-3xl font-light cursor-pointer">
+              ⛶
+            </span>
+          </button>
+        </div>
       </div>
     </div>
   );

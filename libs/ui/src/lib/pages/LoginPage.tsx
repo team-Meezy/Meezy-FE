@@ -51,39 +51,51 @@ export function LoginPage() {
         backgroundColor: colors.black[100],
       }}
     >
-      <div className="flex w-full items-center justify-center xl:justify-between gap-10 md:gap-20">
+      <div className="flex w-full h-screen items-stretch overflow-hidden py-10">
         {/* 왼쪽: 브랜드 섹션 */}
-        <div className="hidden lg:block max-w-xl">
-          <Image
-            src={LoginLogo}
-            alt="Meezy Logo"
-            priority
-            className="object-contain"
-          />
+        <div className="hidden lg:flex flex-1 items-center justify-start bg-[#111111] relative overflow-hidden rounded-tr-[40px] rounded-br-[40px]">
+          <div className="absolute inset-0 opacity-10 pointer-events-none">
+            <div className="absolute top-[-10%] right-[-10%] w-[60%] h-[60%] rounded-5xl bg-[#FF5C00] blur-[150px]" />
+            <div className="absolute bottom-[-10%] left-[-10%] w-[50%] h-[50%] rounded-5xl bg-[#FF5C00] blur-[120px]" />
+          </div>
+          <div className="relative z-10 w-full h-full">
+            <Image
+              src={LoginLogo}
+              alt="Meezy Logo"
+              priority
+              className="w-full h-full object-cover object-left"
+            />
+          </div>
         </div>
 
         {/* 오른쪽: 로그인 폼 섹션 */}
-        <div className="w-full max-w-3xl flex flex-col justify-center">
-          <div className="max-w-2xl">
-            <div className="mb-8">
+        <div className="flex-1 flex flex-col items-center justify-center p-12 md:p-24 lg:p-32 bg-[#161616] relative rounded-[40px]">
+          <div className="w-full max-w-xl flex flex-col justify-center">
+            <div className="mb-12">
               <h2
                 style={{
                   color: colors.white[100],
                   ...typography.headline.LHeadlineB,
+                  fontSize: '3rem',
+                  lineHeight: '1.2',
                 }}
               >
-                더 높은 수준의 경험.
+                더 높은 수준의 <span className="text-[#FF5C00]">경험.</span>
               </h2>
               <p
-                className="mt-2"
-                style={{ color: colors.gray[400], ...typography.body.BodyM }}
+                className="mt-4"
+                style={{
+                  color: colors.gray[400],
+                  ...typography.body.BodyM,
+                  fontSize: '1.25rem',
+                }}
               >
                 로그인 하여 Meezy에 참가하세요.
               </p>
             </div>
 
             <form
-              className="space-y-5"
+              className="space-y-8"
               onSubmit={(e) => {
                 e.preventDefault();
                 handleLogin();
@@ -98,7 +110,7 @@ export function LoginPage() {
                 value={accountId}
                 onChange={(value) => setAccountId(value)}
                 placeholder="아이디를 입력해주세요."
-                error={isIdEmptyError || isServerError ? true : false}
+                error={!!(isIdEmptyError || isServerError)}
                 errorMessage={
                   isIdEmptyError || isServerError ? generalError : ''
                 }
@@ -113,7 +125,7 @@ export function LoginPage() {
                 value={password}
                 onChange={(value) => setPassword(value)}
                 placeholder="비밀번호를 입력해주세요."
-                error={isPasswordEmptyError || isServerError ? true : false}
+                error={!!(isPasswordEmptyError || isServerError)}
                 errorMessage={
                   isPasswordEmptyError || isServerError ? generalError : ''
                 }

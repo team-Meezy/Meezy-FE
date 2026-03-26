@@ -8,9 +8,11 @@ interface ModalState {
   serverName: string;
   newPassword: string;
   serverLink: string;
+  isSidebarOpen: boolean;
   createModal: boolean;
 
   // 액션 (action)
+  setIsSidebarOpen: (value: boolean) => void;
   setIsModalOpen: (value: boolean) => void;
   setMounted: (value: boolean) => void;
   setPassword: (value: string) => void;
@@ -22,6 +24,7 @@ interface ModalState {
 
 export const useModalStore = create<ModalState>()((set) => ({
   // 초기값
+  isSidebarOpen: false,
   isModalOpen: false,
   mounted: false,
   password: '',
@@ -31,6 +34,7 @@ export const useModalStore = create<ModalState>()((set) => ({
   createModal: true,
 
   // 액션
+  setIsSidebarOpen: (value: boolean) => set({ isSidebarOpen: value }),
   setIsModalOpen: (value: boolean) => set({ isModalOpen: value }),
   setMounted: (value: boolean) => set({ mounted: value }),
   setPassword: (value: string) => set({ password: value }),

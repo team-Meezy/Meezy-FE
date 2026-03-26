@@ -4,7 +4,7 @@ import { colors, typography } from '../../design';
 import Image from 'next/image';
 import { ChevronRight, JoinedPlus, Shrap } from '../../assets/index.client';
 import { useState, useEffect } from 'react';
-import { JoinedModal, UserKickModal } from '../modals';
+import { JoinedModal } from '../modals';
 import { useRouter } from 'next/navigation';
 import { useServerIdStore } from '@org/shop-data';
 import { useServerState, useProfile } from '../../context';
@@ -15,6 +15,7 @@ interface JoinedSidebarProps {
   setChatRoom: (chatRoom: boolean) => void;
   setSelectedRoomId: (roomId: number) => void;
   setServerProfile: (serverProfile: boolean) => void;
+  className?: string;
   sidebarList: {
     team_id: number;
     room_name: string;
@@ -32,6 +33,7 @@ interface JoinedSidebarProps {
 export function JoinedSidebar({
   setChatRoom,
   sidebarList,
+  className,
 }: JoinedSidebarProps) {
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [modalType, setModalType] = useState<'ROOM' | 'MEMBER' | null>(null);
@@ -45,7 +47,7 @@ export function JoinedSidebar({
     updateChatRooms,
   } = useServerState();
   const { profile } = useProfile();
-  const { chatRooms, setChatRooms } = useChatStore();
+  const { chatRooms } = useChatStore();
 
   const onOpenModal = (type: 'ROOM' | 'MEMBER' | null) => {
     setModalType(type);
@@ -70,11 +72,10 @@ export function JoinedSidebar({
             : [],
       }))
     : [];
-  console.log(teamRoomMap, 'safdghsaz');
 
-  const onContextMenu = (e: React.MouseEvent, contextMenuUserId: string) => {
+  const onContextMenu = (e: React.MouseEvent, targetUserId: string) => {
     e.preventDefault();
-    setContextMenuUserId(contextMenuUserId);
+    setContextMenuUserId(targetUserId);
   };
 
   const handleClickOutside = () => setContextMenuUserId(null);
@@ -108,12 +109,7 @@ export function JoinedSidebar({
 
   useEffect(() => {
     if (!serverId) return;
-
-    const apiChatRooms = async () => {
-      const res = await updateChatRooms(serverId);
-      console.log('chatRooms', res);
-    };
-    apiChatRooms();
+    updateChatRooms(serverId);
   }, [serverId, updateChatRooms]);
 
   useEffect(() => {
@@ -123,7 +119,6 @@ export function JoinedSidebar({
 
   const onKickUser = async () => {
     if (!serverId || !contextMenuUserId) return;
-
     try {
       await expelTeamMember(serverId, contextMenuUserId);
       setTeamMembers((prev) =>
@@ -140,7 +135,6 @@ export function JoinedSidebar({
   const onLeaveTeam = async () => {
     if (!serverId) return;
     if (!confirm('정말로 팀을 나가시겠습니까?')) return;
-
     try {
       await leaveTeam(serverId);
       alert('팀에서 나갔습니다.');
@@ -162,13 +156,12 @@ export function JoinedSidebar({
 
   const onClickChatRoom = (roomId: string) => {
     setChatRoom(true);
-    // roomId가 바로 API에서 받아온 그 chatRoomId입니다.
     router.push(`/main/${serverId}/${roomId}`);
   };
 
   return (
     <nav
-      className="w-[120px] h-screen flex flex-col items-center"
+      className={`hidden lg:flex w-[120px] h-screen flex-col items-center shrink-0 ${className || ''}`}
       style={{
         backgroundColor: colors.black[100],
       }}
@@ -180,113 +173,69 @@ export function JoinedSidebar({
         onClick={onClickServerProfile}
         aria-label="서버 프로필 열기"
       >
-        <span
-          style={{
-            color: colors.gray[300],
-          }}
-        >
-          MEEZY
-        </span>
+        <span style={{ color: colors.gray[300] }}>MEEZY</span>
         <Image src={ChevronRight} alt="ChevronRight" className="w-5" />
       </button>
       <div className="w-full h-[1px] bg-white/5 mt-5" />
-      <div className="flex flex-col items-center flex-1 overflow-y-auto no-scrollbar w-full">
+      <div className="flex flex-col items-center flex-1 overflow-y-auto no-scrollbar w-full text-white">
         {Array.isArray(teamRoomMap) && teamRoomMap.map((team, index) => (
           <div key={`team-section-${team.team_id}-${index}`} className="w-full">
-            {/* 팀 */}
             <div className="flex justify-center items-center gap-4 mt-5">
               <div
-                className="min-w-14 min-h-6 flex items-center justify-center rounded-lg transition-colors"
+                className="min-w-14 min-h-6 flex items-center justify-center rounded-lg transition-colors overflow-hidden truncate px-2"
                 style={{ color: colors.gray[300], ...typography.body.LBodyB }}
               >
                 {team.room_name}
               </div>
-              {isLeader ? (
-                <button
-                  onClick={() => {
-                    onOpenModal(team.type);
-                  }}
-                >
+              {isLeader && (
+                <button onClick={() => onOpenModal(team.type)}>
                   <Image src={JoinedPlus} alt="addRoom" className="w-5" />
                 </button>
-              ) : (
-                <div className="w-5 invisible" />
               )}
             </div>
 
-            {/* 팀의 룸 */}
             {Array.isArray(team.rooms) && team.rooms.map((room) => (
               <div
                 key={`room-${room.chatRoomId}`}
-                className="flex justify-center items-center gap-4"
+                className="w-full px-4 min-h-12 mt-3 flex gap-3 items-center justify-start rounded-xl transition-all hover:bg-white/5 cursor-pointer group"
+                onClick={() => onClickChatRoom(room.chatRoomId)}
               >
-                <div
-                  className="w-full px-4 min-h-8 mt-3 flex gap-5 items-center justify-start rounded-lg transition-colors hover:bg-white/5 cursor-pointer overflow-hidden"
-                  style={{ color: colors.gray[300], ...typography.body.BodyB }}
-                  onClick={() => {
-                    onClickChatRoom(room.chatRoomId);
-                  }}
-                >
-                  <Image src={Shrap} alt="shrap" className="w-4 shrink-0" />
-                  <span className="truncate">{room.name}</span>
-                </div>
+                <Image src={Shrap} alt="shrap" className="w-4 shrink-0 opacity-50 group-hover:opacity-100 transition-opacity" />
+                <span className="truncate text-sm opacity-70 group-hover:opacity-100 transition-opacity" style={{ ...typography.body.BodyB }}>
+                  {room.name}
+                </span>
               </div>
             ))}
 
-            {/* 팀의 사용자 */}
             {Array.isArray(team.users) && team.users.map((user, userIdx) => {
-              const currentUserId =
-                user.teamMemberId || (user as any).user_id || userIdx;
-              const currentUserName =
-                user.name || (user as any).user_name || '알 수 없는 사용자';
-
+              const currentUserId = user.teamMemberId || (user as any).user_id || userIdx;
+              const currentUserName = user.name || (user as any).user_name || '사용자';
               return (
-                <div
-                  key={`user-${currentUserId}`}
-                  className="flex flex-col justify-center items-center"
-                >
+                <div key={`user-${currentUserId}`} className="w-full px-4 mt-3 flex flex-col gap-2">
                   <div
-                    className="w-full px-4 min-h-8 mt-3 flex gap-3 items-center justify-start rounded-lg transition-colors overflow-hidden"
-                    style={{
-                      color: colors.gray[300],
-                      ...typography.body.BodyB,
-                    }}
+                    className="flex gap-3 items-center justify-start rounded-xl cursor-default overflow-hidden py-1 px-2 hover:bg-white/5 transition-colors"
+                    onContextMenu={(e) => onContextMenu(e, currentUserId as any)}
                   >
                     {user.profileImageUrl || user.profileImage || (user as any).user?.profileImage ? (
                       <img
                         src={user.profileImageUrl || user.profileImage || (user as any).user?.profileImage}
                         alt={currentUserName}
-                        className="rounded-full w-5 h-5 shrink-0 object-cover"
+                        className="rounded-full w-6 h-6 shrink-0 object-cover border border-white/10"
                       />
                     ) : (
-                      <div
-                        className="rounded-full w-5 h-5 shrink-0"
-                        style={{ backgroundColor: colors.white[100] }}
-                      />
+                      <div className="rounded-full w-6 h-6 shrink-0 bg-gray-700 border border-white/5" />
                     )}
-
-                    <span
-                      className="truncate"
-                      onContextMenu={(e) =>
-                        onContextMenu(e, currentUserId as any)
-                      }
-                    >
+                    <span className="truncate text-xs opacity-60" style={{ ...typography.body.BodyB }}>
                       {currentUserName}
                     </span>
                   </div>
                   {contextMenuUserId === currentUserId && (
-                    <div
-                      className="mt-2 px-4 py-3 flex flex-col items-center justify-center rounded-lg transition-colors gap-2"
-                      style={{
-                        backgroundColor: colors.gray[800],
-                        ...typography.label.labelB,
-                      }}
-                    >
+                    <div className="flex flex-col gap-1 p-2 rounded-xl bg-[#1e1e1e] border border-white/5 shadow-xl animate-in fade-in zoom-in duration-200">
                       {isLeader && String(profile?.id || profile?.userId) !== String(currentUserId) && (
-                        <button onClick={onKickUser} className="text-red-500 hover:text-red-400 transition-colors">내보내기</button>
+                        <button onClick={onKickUser} className="text-xs text-red-500 hover:bg-red-500/10 py-2 rounded-lg transition-colors">내보내기</button>
                       )}
                       {String(profile?.id || profile?.userId) === String(currentUserId) && (
-                        <button onClick={onLeaveTeam} className="text-gray-300 hover:text-white transition-colors">나가기</button>
+                        <button onClick={onLeaveTeam} className="text-xs text-gray-400 hover:bg-white/5 py-2 rounded-lg transition-colors">나가기</button>
                       )}
                     </div>
                   )}
@@ -296,11 +245,7 @@ export function JoinedSidebar({
           </div>
         ))}
       </div>
-      <JoinedModal
-        isOpen={isModalOpen}
-        type={modalType}
-        onClose={onCloseModal}
-      />
+      <JoinedModal isOpen={isModalOpen} type={modalType} onClose={onCloseModal} />
     </nav>
   );
 }

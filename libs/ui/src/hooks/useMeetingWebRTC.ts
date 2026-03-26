@@ -17,7 +17,12 @@ interface ParticipantStream {
   name?: string;
 }
 
-export function useMeetingWebRTC(teamId: string, myId: string, isActive: boolean) {
+export function useMeetingWebRTC(
+  teamId: string,
+  myId: string,
+  localIds: string[],
+  isActive: boolean
+) {
   const [localStream, setLocalStream] = useState<MediaStream | null>(null);
   const [remoteStreams, setRemoteStreams] = useState<ParticipantStream[]>([]);
   const [isSpeaking, setIsSpeaking] = useState(false);
@@ -43,6 +48,7 @@ export function useMeetingWebRTC(teamId: string, myId: string, isActive: boolean
 
   const teamIdRef = useRef(teamId);
   const meetingIdRef = useRef(meetingId);
+  const localIdsRef = useRef<string[]>([]);
 
   // Helper for verbose logging
   const log = useCallback((msg: string, data?: any) => {
@@ -53,7 +59,8 @@ export function useMeetingWebRTC(teamId: string, myId: string, isActive: boolean
   useEffect(() => {
     teamIdRef.current = teamId;
     meetingIdRef.current = meetingId;
-  }, [teamId, meetingId]);
+    localIdsRef.current = localIds;
+  }, [localIds, meetingId, teamId]);
 
   const shouldInitiateOffer = useCallback((firstId: string, secondId: string) => {
     return firstId.localeCompare(secondId, undefined, {
@@ -202,7 +209,7 @@ export function useMeetingWebRTC(teamId: string, myId: string, isActive: boolean
         sdpMid,
         sdpMLineIndex,
       } = signal;
-      if (toUserId !== myId) return;
+      if (!localIdsRef.current.includes(String(toUserId))) return;
 
       if (type === 'offer') {
         const pc = getOrCreatePC(fromUserId);
@@ -270,7 +277,7 @@ export function useMeetingWebRTC(teamId: string, myId: string, isActive: boolean
   const onVoiceActivity = useCallback(
     (activity: any) => {
       const { userId, isSpeaking: speaking } = activity;
-      if (userId === myId) return;
+      if (localIdsRef.current.includes(String(userId))) return;
 
       if (speaking) {
         setRemoteVoices((prev) => ({ ...prev, [userId]: true }));
@@ -306,7 +313,7 @@ export function useMeetingWebRTC(teamId: string, myId: string, isActive: boolean
 
   const connectToUser = useCallback(
     async (targetUserId: string) => {
-      if (targetUserId === myId) return;
+      if (localIdsRef.current.includes(String(targetUserId))) return;
       getOrCreatePC(targetUserId);
     },
     [myId, getOrCreatePC]
@@ -318,10 +325,14 @@ export function useMeetingWebRTC(teamId: string, myId: string, isActive: boolean
       switch (event.type) {
         case 'participant-joined':
           // 1. 내가 접속했을 때: 이미 있는 참가자들(existingParticipantIds)에게 연결 시도
-          if (event.joinedUserId === myId && event.existingParticipantIds) {
+          if (
+            event.joinedUserId &&
+            localIdsRef.current.includes(String(event.joinedUserId)) &&
+            event.existingParticipantIds
+          ) {
             log(`I joined. Connecting to existing participants: ${event.existingParticipantIds}`);
             event.existingParticipantIds.forEach((pId) => {
-              if (pId !== myId) {
+              if (!localIdsRef.current.includes(String(pId))) {
                 // Polite 발송 전략: ID가 더 작은 쪽이 먼저 Offer를 보냄
                 if (shouldInitiateOffer(myId, pId)) {
                   log(`polite initiation (existing): sending offer to ${pId}`);
@@ -333,7 +344,10 @@ export function useMeetingWebRTC(teamId: string, myId: string, isActive: boolean
             });
           }
           // 2. 다른 사람이 접속했을 때: 해당 참가자에게 연결 시도
-          else if (event.joinedUserId && event.joinedUserId !== myId) {
+          else if (
+            event.joinedUserId &&
+            !localIdsRef.current.includes(String(event.joinedUserId))
+          ) {
             if (shouldInitiateOffer(myId, event.joinedUserId)) {
               log(`polite initiation (newcomer): sending offer to ${event.joinedUserId}`);
               connectToUser(event.joinedUserId);

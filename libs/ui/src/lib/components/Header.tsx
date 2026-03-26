@@ -27,20 +27,36 @@ function getProfileId(profile: any) {
   );
 }
 
-function getMemberUserId(member: any) {
-  return (
-    member?.userId ||
-    member?.user_id ||
-    member?.id ||
-    member?.accountId ||
-    member?.memberId ||
-    member?.teamMemberId ||
-    member?.user?.id ||
-    member?.user?.userId ||
-    member?.user?.user_id ||
-    member?.user?.accountId ||
-    member?.user?.memberId
-  );
+function getProfileIds(profile: any) {
+  return [
+    profile?.id,
+    profile?.userId,
+    profile?.user_id,
+    profile?.accountId,
+    profile?.memberId,
+    profile?.teamMemberId,
+  ]
+    .map((value) => String(value ?? '').trim())
+    .filter(Boolean);
+}
+
+function getMemberIds(member: any) {
+  return [
+    member?.userId,
+    member?.user_id,
+    member?.accountId,
+    member?.memberId,
+    member?.teamMemberId,
+    member?.id,
+    member?.user?.id,
+    member?.user?.userId,
+    member?.user?.user_id,
+    member?.user?.accountId,
+    member?.user?.memberId,
+    member?.user?.teamMemberId,
+  ]
+    .map((value) => String(value ?? '').trim())
+    .filter(Boolean);
 }
 
 function getMemberRole(member: any) {
@@ -100,7 +116,7 @@ export function Header() {
     isUploadingRef.current = isUploading;
   }, [isUploading]);
 
-  const myProfileId = getProfileId(profile);
+  const myProfileIds = useMemo(() => getProfileIds(profile), [profile]);
   const myNames = useMemo(
     () =>
       [
@@ -117,10 +133,10 @@ export function Header() {
   const myMemberInfo = useMemo(() => {
     return teamMembers?.find((member) => {
       const memberData = member as any;
-      const memberUserId = getMemberUserId(member);
+      const memberIds = getMemberIds(member);
 
-      if (myProfileId && memberUserId) {
-        return String(myProfileId) === String(memberUserId);
+      if (memberIds.some((value) => myProfileIds.includes(value))) {
+        return true;
       }
 
       const memberNames = [
@@ -136,7 +152,7 @@ export function Header() {
 
       return memberNames.some((name) => myNames.includes(name));
     });
-  }, [myNames, myProfileId, teamMembers]);
+  }, [myNames, myProfileIds, teamMembers]);
 
   const isLeader = useMemo(() => {
     const role = getMemberRole(myMemberInfo);
@@ -180,18 +196,10 @@ export function Header() {
       const isParticipant =
         Array.isArray(activeMeeting.participants) &&
         activeMeeting.participants.some((participant: any) => {
-          const participantId =
-            participant?.userId ||
-            participant?.id ||
-            participant?.user_id ||
-            participant?.accountId ||
-            participant?.teamMemberId ||
-            participant?.user?.id ||
-            participant?.user?.userId ||
-            participant?.user?.user_id;
+          const participantIds = getMemberIds(participant);
 
-          if (myProfileId && participantId) {
-            return String(myProfileId) === String(participantId);
+          if (participantIds.some((value) => myProfileIds.includes(value))) {
+            return true;
           }
 
           const participantNames = [
@@ -208,7 +216,7 @@ export function Header() {
           return participantNames.some((name) => myNames.includes(name));
         });
 
-      if (isParticipant) {
+      if (isParticipant && (meetingRef.current || currentPath.includes('/meeting'))) {
         setMeeting(true);
         setMeetingId(activeMeeting.meetingId);
         setTeamId(currentTeamId);
@@ -225,7 +233,7 @@ export function Header() {
   }, [
     currentTeamId,
     myNames,
-    myProfileId,
+    myProfileIds,
     profile,
     setHasActiveMeeting,
     setMeeting,

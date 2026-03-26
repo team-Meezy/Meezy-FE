@@ -9,7 +9,7 @@ import {
   useMeetingEvents,
   useMeetingStore,
 } from '@org/shop-data';
-import { useMeeting, useProfile } from '../../context';
+import { useMeeting, useProfile, useServerState } from '../../context';
 import Kamera from '../../assets/Kamera.svg';
 import Mike from '../../assets/mike.svg';
 import NoMike from '../../assets/NoMike.svg';
@@ -20,10 +20,23 @@ export const MeetingRoomPage = () => {
   const router = useRouter();
   const params = useParams();
   const { profile } = useProfile();
+  const { teamMembers } = useServerState();
   const { setTeamId, setMeetingId } = useMeetingStore();
   const currentTeamId = params.serverId as string;
-  const myId =
-    profile?.userId || profile?.id || profile?.user_id || profile?.accountId;
+  const profileIds = useMemo(
+    () =>
+      [
+        profile?.userId,
+        profile?.id,
+        profile?.user_id,
+        profile?.accountId,
+        profile?.memberId,
+        profile?.teamMemberId,
+      ]
+        .map((value) => String(value ?? '').trim())
+        .filter(Boolean),
+    [profile]
+  );
 
   const [isMike, setIsMike] = useState(true);
   const [isKamera, setIsKamera] = useState(true);
@@ -59,11 +72,72 @@ export const MeetingRoomPage = () => {
       .filter(Boolean);
   }, [normalizeName, profile]);
 
+  const myMemberInfo = useMemo(() => {
+    return teamMembers.find((member: any) => {
+      const memberIds = [
+        member?.userId,
+        member?.user_id,
+        member?.accountId,
+        member?.memberId,
+        member?.teamMemberId,
+        member?.id,
+        member?.user?.id,
+        member?.user?.userId,
+        member?.user?.user_id,
+        member?.user?.accountId,
+      ]
+        .map((value) => String(value ?? '').trim())
+        .filter(Boolean);
+
+      if (memberIds.some((value) => profileIds.includes(value))) {
+        return true;
+      }
+
+      const memberNames = [
+        member?.name,
+        member?.nickname,
+        member?.nickName,
+        member?.user?.name,
+        member?.user?.nickname,
+        member?.user?.nickName,
+      ]
+        .map(normalizeName)
+        .filter(Boolean);
+
+      return memberNames.some((value) => myComparableNames.includes(value));
+    });
+  }, [myComparableNames, normalizeName, profileIds, teamMembers]);
+
+  const localIds = useMemo(
+    () => {
+      const member = myMemberInfo as any;
+      return (
+      Array.from(
+        new Set(
+          [
+            member?.teamMemberId,
+            member?.memberId,
+            member?.userId,
+            member?.user_id,
+            member?.user?.id,
+            member?.user?.userId,
+            ...profileIds,
+          ]
+            .map((value) => String(value ?? '').trim())
+            .filter(Boolean)
+        )
+      )
+      );
+    },
+    [myMemberInfo, profileIds]
+  );
+  const myId = localIds[0] || '';
+
   const isCurrentUser = useCallback(
     (participant: any) => {
       const participantId = getParticipantId(participant);
-      if (participantId && myId) {
-        return String(participantId) === String(myId);
+      if (participantId) {
+        return localIds.includes(String(participantId));
       }
 
       const participantName = normalizeName(
@@ -74,7 +148,7 @@ export const MeetingRoomPage = () => {
       );
       return myComparableNames.includes(participantName);
     },
-    [getParticipantId, myComparableNames, myId, normalizeName]
+    [getParticipantId, localIds, myComparableNames, normalizeName]
   );
 
   const hasLiveVideoTrack = useCallback((stream?: MediaStream | null) => {
@@ -86,7 +160,7 @@ export const MeetingRoomPage = () => {
   }, []);
 
   useEffect(() => {
-    if (!currentTeamId || !myId) return;
+    if (!currentTeamId || localIds.length === 0) return;
 
     setTeamId(currentTeamId);
 
@@ -107,7 +181,7 @@ export const MeetingRoomPage = () => {
     };
 
     void fetchParticipants();
-  }, [currentTeamId, myId, setMeetingId, setTeamId]);
+  }, [currentTeamId, localIds.length, setMeetingId, setTeamId]);
 
   const handleMeetingEvent = useCallback(
     (event: MeetingEvent) => {
@@ -116,7 +190,7 @@ export const MeetingRoomPage = () => {
       if (event.type === 'participant-joined') {
         const joinedId = event.joinedUserId;
 
-        if (joinedId && String(joinedId) !== String(myId)) {
+        if (joinedId && !localIds.includes(String(joinedId))) {
           setParticipants((prev) => {
             const exists = prev.some(
               (participant) =>
@@ -156,7 +230,7 @@ export const MeetingRoomPage = () => {
         router.push(`/main/${currentTeamId}`);
       }
     },
-    [currentTeamId, getParticipantId, myId, router]
+    [currentTeamId, getParticipantId, localIds, router]
   );
 
   useMeetingEvents(currentTeamId, handleMeetingEvent);
@@ -198,7 +272,7 @@ export const MeetingRoomPage = () => {
   const remoteOnlyParticipants = remoteStreams.reduce<any[]>((acc, remote) => {
     const remoteId = String(remote.userId);
 
-    if (remoteId === String(myId)) {
+    if (localIds.includes(remoteId)) {
       return acc;
     }
 
@@ -255,7 +329,7 @@ export const MeetingRoomPage = () => {
   ].filter((participant, index, list) => {
     if (participant.isLocal) return true;
 
-    if (participant.id != null && String(participant.id) === String(myId)) {
+    if (participant.id != null && localIds.includes(String(participant.id))) {
       return false;
     }
 

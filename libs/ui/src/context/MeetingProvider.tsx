@@ -47,7 +47,11 @@ export function MeetingProvider({ children }: { children: React.ReactNode }) {
         (profile as any)?.nickName,
         (profile as any)?.nickname,
       ]
-        .map((value) => String(value ?? '').trim().toLowerCase())
+        .map((value) =>
+          String(value ?? '')
+            .trim()
+            .toLowerCase()
+        )
         .filter(Boolean),
     [profile]
   );
@@ -81,48 +85,51 @@ export function MeetingProvider({ children }: { children: React.ReactNode }) {
           member?.user?.nickname,
           member?.user?.nickName,
         ]
-          .map((value) => String(value ?? '').trim().toLowerCase())
+          .map((value) =>
+            String(value ?? '')
+              .trim()
+              .toLowerCase()
+          )
           .filter(Boolean);
 
-        return memberNames.some((value) => normalizedProfileNames.includes(value));
+        return memberNames.some((value) =>
+          normalizedProfileNames.includes(value)
+        );
       }),
     [normalizedProfileNames, profileIds, teamMembers]
   );
-  const signalingIdentity = useMemo(
-    () => {
-      return (
-      String(
-        profile?.userId ||
-          profile?.id ||
-          profile?.user_id ||
-          profile?.accountId ||
-          ''
-      ).trim()
-      );
-    },
-    [profile]
-  );
-  const localIds = useMemo(
-    () => {
-      const member = myMemberInfo as any;
-      return Array.from(
-        new Set(
-          [
-            signalingIdentity,
-            member?.teamMemberId,
-            member?.memberId,
-            member?.userId,
-            member?.user_id,
-            member?.user?.id,
-            member?.user?.userId,
-            member?.user?.user_id,
-            ...profileIds,
-          ].filter(Boolean)
-        )
-      );
-    },
-    [myMemberInfo, profileIds, signalingIdentity]
-  );
+  const signalingIdentity = useMemo(() => {
+    return String(
+      profile?.userId ||
+        profile?.id ||
+        profile?.user_id ||
+        profile?.accountId ||
+        ''
+    ).trim();
+  }, [profile]);
+  const localIds = useMemo(() => {
+    const member = myMemberInfo as any;
+    return Array.from(
+      new Set(
+        [
+          signalingIdentity,
+          member?.teamMemberId,
+          member?.memberId,
+          member?.userId,
+          member?.user_id,
+          member?.accountId,
+          member?.id,
+          member?.user?.id,
+          member?.user?.userId,
+          member?.user?.user_id,
+          member?.user?.accountId,
+          ...profileIds,
+        ]
+          .map((value) => String(value ?? '').trim())
+          .filter(Boolean)
+      )
+    );
+  }, [myMemberInfo, profileIds, signalingIdentity]);
 
   const { meeting } = useServerJoinedTeam();
 
@@ -130,14 +137,15 @@ export function MeetingProvider({ children }: { children: React.ReactNode }) {
   // We use teamId from the store (set by Header or other triggers)
   const webrtc = useMeetingWebRTC(teamId, signalingIdentity, localIds, meeting);
 
-  const value = useMemo(() => ({
-    ...webrtc
-  }), [webrtc]);
+  const value = useMemo(
+    () => ({
+      ...webrtc,
+    }),
+    [webrtc]
+  );
 
   return (
-    <MeetingContext.Provider value={value}>
-      {children}
-    </MeetingContext.Provider>
+    <MeetingContext.Provider value={value}>{children}</MeetingContext.Provider>
   );
 }
 

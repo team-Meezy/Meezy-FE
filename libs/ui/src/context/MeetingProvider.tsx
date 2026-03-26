@@ -88,19 +88,11 @@ export function MeetingProvider({ children }: { children: React.ReactNode }) {
       }),
     [normalizedProfileNames, profileIds, teamMembers]
   );
-  const meetingIdentity = useMemo(
+  const signalingIdentity = useMemo(
     () => {
-      const member = myMemberInfo as any;
       return (
       String(
-        member?.teamMemberId ||
-          member?.memberId ||
-          member?.userId ||
-          member?.user_id ||
-          member?.user?.id ||
-          member?.user?.userId ||
-          member?.user?.user_id ||
-          profile?.userId ||
+        profile?.userId ||
           profile?.id ||
           profile?.user_id ||
           profile?.accountId ||
@@ -108,18 +100,35 @@ export function MeetingProvider({ children }: { children: React.ReactNode }) {
       ).trim()
       );
     },
-    [myMemberInfo, profile]
+    [profile]
   );
   const localIds = useMemo(
-    () => Array.from(new Set([meetingIdentity, ...profileIds].filter(Boolean))),
-    [meetingIdentity, profileIds]
+    () => {
+      const member = myMemberInfo as any;
+      return Array.from(
+        new Set(
+          [
+            signalingIdentity,
+            member?.teamMemberId,
+            member?.memberId,
+            member?.userId,
+            member?.user_id,
+            member?.user?.id,
+            member?.user?.userId,
+            member?.user?.user_id,
+            ...profileIds,
+          ].filter(Boolean)
+        )
+      );
+    },
+    [myMemberInfo, profileIds, signalingIdentity]
   );
 
   const { meeting } = useServerJoinedTeam();
 
   // Only activate WebRTC if there is an active meeting and we have our ID
   // We use teamId from the store (set by Header or other triggers)
-  const webrtc = useMeetingWebRTC(teamId, meetingIdentity, localIds, meeting);
+  const webrtc = useMeetingWebRTC(teamId, signalingIdentity, localIds, meeting);
 
   const value = useMemo(() => ({
     ...webrtc

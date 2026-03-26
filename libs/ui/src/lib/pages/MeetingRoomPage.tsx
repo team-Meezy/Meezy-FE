@@ -181,6 +181,11 @@ export const MeetingRoomPage = () => {
     };
 
     void fetchParticipants();
+    const intervalId = setInterval(() => {
+      void fetchParticipants();
+    }, 3000);
+
+    return () => clearInterval(intervalId);
   }, [currentTeamId, localIds.length, setMeetingId, setTeamId]);
 
   const handleMeetingEvent = useCallback(

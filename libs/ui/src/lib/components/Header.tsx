@@ -4,8 +4,10 @@ import {
   getActiveMeetings,
   joinMeeting,
   leaveMeeting,
+  MeetingEvent,
   startMeeting,
   useLoadingStore,
+  useMeetingEvents,
   useMeetingStore,
 } from '@org/shop-data';
 import { colors, typography } from '../../design';
@@ -247,6 +249,16 @@ export function Header() {
   }, [checkActiveMeeting]);
 
   useEffect(() => {
+    if (!currentTeamId) return;
+
+    const intervalId = setInterval(() => {
+      void checkActiveMeeting();
+    }, 3000);
+
+    return () => clearInterval(intervalId);
+  }, [checkActiveMeeting, currentTeamId]);
+
+  useEffect(() => {
     const handleSync = () => {
       void checkActiveMeeting();
     };
@@ -254,6 +266,39 @@ export function Header() {
     window.addEventListener('meezy:sync-meeting', handleSync);
     return () => window.removeEventListener('meezy:sync-meeting', handleSync);
   }, [checkActiveMeeting]);
+
+  const handleGlobalMeetingEvent = useCallback(
+    (event: MeetingEvent) => {
+      if (event.type === 'meeting-ended') {
+        setMeeting(false);
+        setHasActiveMeeting(false);
+        setMeetingId('');
+        setTeamId('');
+        setStartTime(null);
+        meetingRef.current = false;
+        window.dispatchEvent(new CustomEvent('meezy:stop-and-upload'));
+
+        if (pathnameRef.current.includes('/meeting') && currentTeamId) {
+          router.push(`/main/${currentTeamId}`);
+        }
+        return;
+      }
+
+      void checkActiveMeeting();
+    },
+    [
+      checkActiveMeeting,
+      currentTeamId,
+      router,
+      setHasActiveMeeting,
+      setMeeting,
+      setMeetingId,
+      setStartTime,
+      setTeamId,
+    ]
+  );
+
+  useMeetingEvents(currentTeamId, handleGlobalMeetingEvent);
 
   useEffect(() => {
     const handleUnload = () => {
@@ -356,13 +401,14 @@ export function Header() {
 
       setMeeting(true);
       setHasActiveMeeting(true);
-      setStartTime(new Date().toISOString());
+      setStartTime(response?.startTime || response?.createdAt || null);
       setTeamId(currentTeamId);
 
       if (response?.meetingId) {
         setMeetingId(response.meetingId);
       }
 
+      void checkActiveMeeting();
       window.dispatchEvent(new CustomEvent('meezy:sync-meeting'));
       router.push(`/main/${currentTeamId}/meeting`);
     } catch (error: any) {

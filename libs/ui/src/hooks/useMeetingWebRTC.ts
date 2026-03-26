@@ -7,6 +7,7 @@ import {
   useMeetingVoiceActivity,
   useMeetingStore,
   uploadMeetingRecording,
+  getActiveMeetings,
   MeetingEvent,
   MeetingSignal,
 } from '@org/shop-data';
@@ -87,6 +88,22 @@ export function useMeetingWebRTC(
       return next;
     });
     setRemoteStreams((prev) => prev.filter((s) => s.userId !== userId));
+  }, []);
+
+  const teardownMeetingMedia = useCallback(() => {
+    Object.values(remoteVoiceTimers.current).forEach((timer) => clearTimeout(timer));
+    remoteVoiceTimers.current = {};
+    pendingIceCandidates.current.clear();
+    pcs.current.forEach((pc) => pc.close());
+    pcs.current.clear();
+    setRemoteVoices({});
+    setRemoteStreams([]);
+
+    if (localStreamRef.current) {
+      localStreamRef.current.getTracks().forEach((track) => track.stop());
+      localStreamRef.current = null;
+    }
+    setLocalStream(null);
   }, []);
 
   const getOrCreatePC = useCallback(
@@ -363,13 +380,58 @@ export function useMeetingWebRTC(
           break;
         case 'meeting-ended':
           log('meeting-ended event received, cleaning up');
+          teardownMeetingMedia();
           break;
       }
     },
-    [myId, removeParticipant, connectToUser, log, shouldInitiateOffer]
+    [myId, removeParticipant, connectToUser, log, shouldInitiateOffer, teardownMeetingMedia]
   );
 
   useMeetingEvents(teamId, onMeetingEvent);
+
+  useEffect(() => {
+    if (!teamId || !meetingId || !isActive) return;
+
+    const getParticipantId = (participant: any) =>
+      String(
+        participant?.teamMemberId ||
+          participant?.memberId ||
+          participant?.userId ||
+          participant?.user_id ||
+          participant?.accountId ||
+          participant?.id ||
+          participant?.user?.id ||
+          participant?.user?.userId ||
+          participant?.user?.user_id ||
+          ''
+      ).trim();
+
+    const syncParticipants = async () => {
+      try {
+        const activeMeeting = await getActiveMeetings(teamId);
+        const participantIds = Array.isArray(activeMeeting?.participants)
+          ? activeMeeting.participants
+              .map((participant: any) => getParticipantId(participant))
+              .filter(Boolean)
+          : [];
+
+        participantIds.forEach((participantId: string) => {
+          if (localIdsRef.current.includes(participantId)) return;
+          if (pcs.current.has(participantId)) return;
+          void connectToUser(participantId);
+        });
+      } catch (error) {
+        log('[WARN] participant sync failed', error);
+      }
+    };
+
+    void syncParticipants();
+    const intervalId = setInterval(() => {
+      void syncParticipants();
+    }, 3000);
+
+    return () => clearInterval(intervalId);
+  }, [connectToUser, isActive, log, meetingId, teamId]);
 
   const startRecording = useCallback(() => {
     log('startRecording entry point');
@@ -731,12 +793,9 @@ export function useMeetingWebRTC(
       ) {
         mediaRecorderRef.current.stop();
       }
-      localStreamRef.current?.getTracks().forEach((track) => track.stop());
-      pcs.current.forEach((pc) => pc.close());
-      pcs.current.clear();
-      pendingIceCandidates.current.clear();
+      teardownMeetingMedia();
     };
-  }, [myId, initLocalMedia, meetingId, teamId, isActive]);
+  }, [myId, initLocalMedia, meetingId, teamId, isActive, teardownMeetingMedia]);
 
   return {
     localStream,

@@ -6,7 +6,7 @@ const getBaseUrl = () => {
   // 체크: process.env (Next.js or Node environment)
   if (typeof process !== 'undefined' && process.env) {
     url =
-      process.env['NEXT_PUBLIC_BASE_URL'] || process.env['VITE_BASE_URL'] || '';
+      process.env.NEXT_PUBLIC_BASE_URL || process.env.VITE_BASE_URL || '';
   }
 
   // 체크: import.meta.env (Vite environment)

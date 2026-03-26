@@ -12,7 +12,7 @@ export function SocialButton({
   provider: 'google' | 'kakao' | 'naver';
 }) {
   const handleoAuthLogin = () => {
-    const baseUrl = process.env['NEXT_PUBLIC_BASE_URL'];
+    const baseUrl = process.env.NEXT_PUBLIC_BASE_URL;
     if (!baseUrl) {
       console.error('NEXT_PUBLIC_BASE_URL is not configured');
       return;

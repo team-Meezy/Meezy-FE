@@ -27,13 +27,23 @@ export function useMeetingEvents(
     if (!teamId || !BASE_URL) return;
 
     const token = localStorage.getItem('accessToken');
-    const socketUrl = `${BASE_URL}/ws`;
+    const socketUrl = `${BASE_URL}/ws${token ? `?token=${token}` : ''}`;
 
-    console.log('Meeting Events SockJS Debug:', socketUrl);
+    console.log('[DEBUG] useMeetingEvents: attempting connection', {
+      socketUrl,
+      hasToken: !!token,
+      teamId
+    });
 
     const client = new Client({
-      webSocketFactory: () =>
-        new SockJS(socketUrl, null, { transports: ['websocket'] }),
+      webSocketFactory: () => {
+        console.log('[DEBUG] useMeetingEvents: SockJS factory called', socketUrl);
+        const sock = new SockJS(socketUrl, null, {});
+        sock.onopen = () => console.log('[DEBUG] useMeetingEvents: SockJS onopen');
+        sock.onclose = (e) => console.log('[DEBUG] useMeetingEvents: SockJS onclose', e);
+        sock.onerror = (e) => console.log('[DEBUG] useMeetingEvents: SockJS onerror', e);
+        return sock;
+      },
       connectHeaders: token
         ? {
             Authorization: `Bearer ${token}`,
@@ -62,6 +72,7 @@ export function useMeetingEvents(
       },
     });
 
+    console.log('[DEBUG] useMeetingEvents: calling activate()');
     client.activate();
     return () => {
       client.deactivate();

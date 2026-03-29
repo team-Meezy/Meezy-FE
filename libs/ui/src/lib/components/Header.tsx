@@ -396,9 +396,12 @@ export function Header() {
     }
 
     try {
+      console.log('[DEBUG] Header: onClickMeeting starting. isLeader:', isLeader);
       const response = isLeader
         ? await startMeeting(currentTeamId)
         : await joinMeeting(currentTeamId);
+      
+      console.log('[DEBUG] Header: Meeting response received:', response);
 
       setMeeting(true);
       setHasActiveMeeting(true);

@@ -28,22 +28,35 @@ export function useMeetingSignal(
 ) {
   const client = useRef<Client | null>(null);
   const onSignalRef = useRef(onSignal);
+  const pendingSignalsRef = useRef<MeetingSignal[]>([]);
 
   useEffect(() => {
     onSignalRef.current = onSignal;
   }, [onSignal]);
 
   useEffect(() => {
+    console.log('[DEBUG] useMeetingSignal check:', { teamId, myId, BASE_URL });
     if (!teamId || !myId || !BASE_URL) return;
 
     const token = localStorage.getItem('accessToken');
-    const socketUrl = `${BASE_URL}/ws`;
+    const socketUrl = `${BASE_URL}/ws${token ? `?token=${token}` : ''}`;
 
-    console.log('Meeting Signaling SockJS Debug:', socketUrl);
+    console.log('[DEBUG] useMeetingSignal: attempting connection', {
+      socketUrl,
+      hasToken: !!token,
+      teamId,
+      myId
+    });
 
     client.current = new Client({
-      webSocketFactory: () =>
-        new SockJS(socketUrl, null, { transports: ['websocket'] }),
+      webSocketFactory: () => {
+        console.log('[DEBUG] useMeetingSignal: SockJS factory called', socketUrl);
+        const sock = new SockJS(socketUrl, null, {});
+        sock.onopen = () => console.log('[DEBUG] useMeetingSignal: SockJS onopen');
+        sock.onclose = (e) => console.log('[DEBUG] useMeetingSignal: SockJS onclose', e);
+        sock.onerror = (e) => console.log('[DEBUG] useMeetingSignal: SockJS onerror', e);
+        return sock;
+      },
       connectHeaders: token
         ? {
             Authorization: `Bearer ${token}`,
@@ -55,23 +68,39 @@ export function useMeetingSignal(
       debug: (str) => console.log('STOMP Signaling Debug:', str),
       onConnect: () => {
         console.log('STOMP Connected for Signaling (SockJS)');
+        console.log('Subscribing to:', `/user/queue/teams/${teamId}/meeting/signal`);
+
+        if (pendingSignalsRef.current.length > 0) {
+          const queuedSignals = [...pendingSignalsRef.current];
+          pendingSignalsRef.current = [];
+
+          queuedSignals.forEach((signal) => {
+            client.current?.publish({
+              destination: `/app/teams/${teamId}/meeting/signal`,
+              body: JSON.stringify(signal),
+            });
+          });
+        }
 
         client.current?.subscribe(
           `/user/queue/teams/${teamId}/meeting/signal`,
           (message) => {
             const signal = JSON.parse(message.body);
+            console.log('Meeting Signal Received (STOMP):', signal);
             onSignalRef.current(signal);
           }
         );
       },
       onStompError: (frame) => {
-        console.error('STOMP Error:', frame.headers['message']);
+        console.error('STOMP Error in Signaling:', frame.headers['message']);
+        console.log('STOMP Error Frame:', frame);
       },
       onWebSocketError: (event) => {
         console.error('WebSocket Error in Signaling:', event);
       },
     });
 
+    console.log('[DEBUG] useMeetingSignal: calling activate()');
     client.current.activate();
 
     return () => {
@@ -80,13 +109,21 @@ export function useMeetingSignal(
   }, [teamId, myId]);
 
   return {
-    sendSignal: (toUserId: string, signal: any) => {
+    sendSignal: (toUserId: string, signal: MeetingSignal) => {
       if (client.current?.connected) {
+        console.log('Meeting Signal Sent (STOMP):', signal);
         client.current.publish({
           destination: `/app/teams/${teamId}/meeting/signal`,
           body: JSON.stringify(signal),
         });
+        return;
       }
+
+      console.log('Meeting Signal queued until STOMP connects:', signal);
+      pendingSignalsRef.current.push({
+        ...signal,
+        toUserId,
+      });
     },
   };
 }

@@ -3,6 +3,7 @@
 import { useRef } from 'react';
 import { useWebSocketSignal } from './useWebSocketSignal';
 import { usePeerConnection } from './usePeerConnection';
+import { BASE_URL } from '../../../shop/data/src/lib/hooks/axios';
 
 export function useWebRTC(teamId: string) {
   const videoRef = useRef<HTMLVideoElement | null>(null);
@@ -18,9 +19,13 @@ export function useWebRTC(teamId: string) {
       }
     });
 
+  const wsProtocol = BASE_URL.startsWith('https') ? 'wss' : 'ws';
+  const wsUrl = `${BASE_URL.replace(/^http/, 'ws')}/app/teams/${teamId}/meeting/signal`;
+
   const { send } = useWebSocketSignal(
-    `wss://BASE_URL/app/teams/${teamId}/meeting/signal`, //실제 나의 주소
+    wsUrl,
     async (data) => {
+      console.log('Meeting Signal Received (WebSocket):', data);
       const pc = pcRef.current;
       if (!pc) return;
 
@@ -29,6 +34,7 @@ export function useWebRTC(teamId: string) {
         const answer = await pc.createAnswer();
         await pc.setLocalDescription(answer);
 
+        console.log('Meeting Signal Sent (WebSocket):', { type: 'answer', sdp: answer.sdp });
         send({ type: 'answer', sdp: answer.sdp });
       }
 

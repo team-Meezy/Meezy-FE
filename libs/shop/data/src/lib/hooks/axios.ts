@@ -74,11 +74,44 @@ const getWsHost = () => {
 
 export const WS_HOST = getWsHost();
 
+const getWebSocketEndpoint = () => {
+  let endpoint = '';
+
+  if (typeof process !== 'undefined' && process.env) {
+    endpoint =
+      process.env.NEXT_PUBLIC_CHAT_WS_ENDPOINT ||
+      process.env.NEXT_PUBLIC_WS_ENDPOINT ||
+      '';
+  }
+
+  if (!endpoint || endpoint === 'undefined') {
+    try {
+      const env = (import.meta as any).env;
+      endpoint =
+        env?.VITE_CHAT_WS_ENDPOINT || env?.VITE_WS_ENDPOINT || endpoint;
+    } catch (e) {
+      /* ignore */
+    }
+  }
+
+  endpoint = String(endpoint || '/ws-chat').trim();
+
+  if (endpoint.startsWith('http://') || endpoint.startsWith('https://')) {
+    return endpoint.replace(/\/$/, '');
+  }
+
+  const normalizedPath = endpoint.startsWith('/') ? endpoint : `/${endpoint}`;
+  return `${BASE_URL}${normalizedPath}`;
+};
+
+export const STOMP_SOCKET_URL = getWebSocketEndpoint();
+
 if (typeof window !== 'undefined') {
   console.log(' [Meezy API Client Config]', {
     BASE_URL,
     WS_PROTOCOL,
     WS_HOST,
+    STOMP_SOCKET_URL,
   });
 
   if (

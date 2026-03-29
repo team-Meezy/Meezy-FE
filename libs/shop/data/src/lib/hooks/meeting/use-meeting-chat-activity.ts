@@ -1,7 +1,7 @@
 import { useEffect, useRef, useCallback } from 'react';
 import { Client } from '@stomp/stompjs';
 import SockJS from 'sockjs-client';
-import { BASE_URL } from '../axios';
+import { BASE_URL, STOMP_SOCKET_URL } from '../axios';
 
 export function useMeetingChatActivity(meetingId: string, myId: string) {
   const client = useRef<Client | null>(null);
@@ -10,7 +10,7 @@ export function useMeetingChatActivity(meetingId: string, myId: string) {
     if (!meetingId || !myId || !BASE_URL) return;
 
     const token = localStorage.getItem('accessToken');
-    const socketUrl = '/ws';
+    const socketUrl = `${STOMP_SOCKET_URL}${token ? `?token=${token}` : ''}`;
     console.log('Chat Activity SockJS Attempt:', socketUrl);
 
     client.current = new Client({

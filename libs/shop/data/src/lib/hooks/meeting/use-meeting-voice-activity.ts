@@ -1,7 +1,7 @@
 import { useEffect, useRef } from 'react';
 import { Client } from '@stomp/stompjs';
 import SockJS from 'sockjs-client';
-import { BASE_URL } from '../axios';
+import { BASE_URL, STOMP_SOCKET_URL } from '../axios';
 
 interface VoiceActivity {
   userId: string;
@@ -24,7 +24,7 @@ export function useMeetingVoiceActivity(
     if (!meetingId || !BASE_URL) return;
 
     const token = localStorage.getItem('accessToken');
-    const socketUrl = `${BASE_URL}/ws`;
+    const socketUrl = `${STOMP_SOCKET_URL}${token ? `?token=${token}` : ''}`;
 
     console.log('Voice Activity SockJS Debug:', socketUrl);
 

@@ -1,7 +1,7 @@
 import { useEffect, useRef } from 'react';
 import { Client } from '@stomp/stompjs';
 import SockJS from 'sockjs-client';
-import { BASE_URL } from '../axios';
+import { BASE_URL, STOMP_SOCKET_URL } from '../axios';
 
 export type SignalType =
   | 'offer'
@@ -39,7 +39,7 @@ export function useMeetingSignal(
     if (!teamId || !myId || !BASE_URL) return;
 
     const token = localStorage.getItem('accessToken');
-    const socketUrl = `${BASE_URL}/ws${token ? `?token=${token}` : ''}`;
+    const socketUrl = `${STOMP_SOCKET_URL}${token ? `?token=${token}` : ''}`;
 
     console.log('[DEBUG] useMeetingSignal: attempting connection', {
       socketUrl,

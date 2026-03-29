@@ -49,6 +49,7 @@ export function useMeetingWebRTC(
   localIds: string[],
   isActive: boolean
 ) {
+  console.log('[DEBUG] useMeetingWebRTC initialized', { teamId, myId, isActive });
   const iceServers = useRef<RTCIceServer[]>(buildIceServers());
   const [localStream, setLocalStream] = useState<MediaStream | null>(null);
   const [remoteStreams, setRemoteStreams] = useState<ParticipantStream[]>([]);
@@ -188,8 +189,18 @@ export function useMeetingWebRTC(
 
   const getOrCreatePC = useCallback(
     (targetUserId: string) => {
-      if (pcs.current.has(targetUserId)) {
-        return pcs.current.get(targetUserId)!;
+      const existingPc = pcs.current.get(targetUserId);
+      if (existingPc) {
+        if (
+          existingPc.connectionState !== 'closed' &&
+          existingPc.connectionState !== 'failed' &&
+          existingPc.connectionState !== 'disconnected'
+        ) {
+          return existingPc;
+        }
+
+        existingPc.close();
+        pcs.current.delete(targetUserId);
       }
 
       console.log(`Creating PeerConnection for: ${targetUserId}`);
@@ -543,7 +554,16 @@ export function useMeetingWebRTC(
         const participantIds = await getMeetingParticipantIds();
 
         participantIds.forEach((participantId: string) => {
-          if (pcs.current.has(participantId)) return;
+          const existingPc = pcs.current.get(participantId);
+          if (
+            existingPc &&
+            existingPc.connectionState !== 'closed' &&
+            existingPc.connectionState !== 'failed' &&
+            existingPc.connectionState !== 'disconnected'
+          ) {
+            return;
+          }
+
           void connectToUser(participantId);
         });
       } catch (error) {

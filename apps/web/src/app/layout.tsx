@@ -6,5 +6,8 @@ export default function RootLayout({
 }: {
   children: React.ReactNode;
 }) {
+  if (typeof window !== 'undefined') {
+    console.log('[DEBUG] RootLayout rendering');
+  }
   return <RootLayoutWrapper>{children}</RootLayoutWrapper>;
 }

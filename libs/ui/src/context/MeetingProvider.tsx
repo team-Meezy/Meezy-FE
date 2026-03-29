@@ -1,6 +1,6 @@
 'use client';
 
-import React, { createContext, useContext, useMemo } from 'react';
+import React, { createContext, useContext, useMemo, useEffect } from 'react';
 import { useMeetingWebRTC } from '../hooks/useMeetingWebRTC';
 import { useMeetingStore } from '@org/shop-data';
 import { useProfile } from './ProfileProvider';
@@ -22,6 +22,7 @@ interface MeetingContextType {
 const MeetingContext = createContext<MeetingContextType | null>(null);
 
 export function MeetingProvider({ children }: { children: React.ReactNode }) {
+  console.log('[DEBUG] MeetingProvider body executing');
   const { meetingId, teamId } = useMeetingStore();
   const { profile } = useProfile();
   const { teamMembers } = useServerState();
@@ -135,6 +136,15 @@ export function MeetingProvider({ children }: { children: React.ReactNode }) {
 
   // Only activate WebRTC if there is an active meeting and we have our ID
   // We use teamId from the store (set by Header or other triggers)
+  useEffect(() => {
+    console.log('[DEBUG] MeetingProvider state:', {
+      teamId,
+      signalingIdentity,
+      localIds,
+      meetingStatus: meeting,
+    });
+  }, [teamId, signalingIdentity, localIds, meeting]);
+
   const webrtc = useMeetingWebRTC(teamId, signalingIdentity, localIds, meeting);
 
   const value = useMemo(

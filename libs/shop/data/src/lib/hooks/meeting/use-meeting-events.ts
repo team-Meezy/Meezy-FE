@@ -1,7 +1,7 @@
 import { useEffect, useRef } from 'react';
 import { Client } from '@stomp/stompjs';
 import SockJS from 'sockjs-client';
-import { BASE_URL } from '../axios';
+import { BASE_URL, STOMP_SOCKET_URL } from '../axios';
 
 export interface MeetingEvent {
   type: 'participant-joined' | 'participant-left' | 'meeting-ended';
@@ -27,7 +27,7 @@ export function useMeetingEvents(
     if (!teamId || !BASE_URL) return;
 
     const token = localStorage.getItem('accessToken');
-    const socketUrl = `${BASE_URL}/ws${token ? `?token=${token}` : ''}`;
+    const socketUrl = `${STOMP_SOCKET_URL}${token ? `?token=${token}` : ''}`;
 
     console.log('[DEBUG] useMeetingEvents: attempting connection', {
       socketUrl,

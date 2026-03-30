@@ -387,17 +387,17 @@ export const MeetingRoomPage = () => {
         name: participant.name,
         isLocal: participant.isLocal,
         hasStream: Boolean(participant.stream),
-        audioTracks: participant.stream?.getAudioTracks().map((track) => ({
+        audioTracks: (participant.stream as MediaStream | undefined)?.getAudioTracks().map((track: MediaStreamTrack) => ({
           id: track.id,
           enabled: track.enabled,
           readyState: track.readyState,
-          muted: track.muted,
+          muted: (track as any).muted,
         })),
-        videoTracks: participant.stream?.getVideoTracks().map((track) => ({
+        videoTracks: (participant.stream as MediaStream | undefined)?.getVideoTracks().map((track: MediaStreamTrack) => ({
           id: track.id,
           enabled: track.enabled,
           readyState: track.readyState,
-          muted: track.muted,
+          muted: (track as any).muted,
         })),
         isKamera: participant.isKamera,
       }))

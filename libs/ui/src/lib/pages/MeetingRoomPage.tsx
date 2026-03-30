@@ -16,12 +16,48 @@ import NoMike from '../../assets/NoMike.svg';
 import Nokamera from '../../assets/Nokamera.svg';
 import { VideoCard } from './VideoCard';
 
+function getMeetingUserId(entity: any) {
+  return String(
+    entity?.userId ||
+      entity?.user_id ||
+      entity?.user?.userId ||
+      entity?.user?.user_id ||
+      entity?.user?.id ||
+      entity?.id ||
+      ''
+  ).trim();
+}
+
+function getUserIdFromAccessToken() {
+  if (typeof window === 'undefined') return '';
+
+  try {
+    const token = localStorage.getItem('accessToken');
+    if (!token) return '';
+
+    const payload = token.split('.')[1];
+    if (!payload) return '';
+
+    const decoded = JSON.parse(atob(payload.replace(/-/g, '+').replace(/_/g, '/')));
+    return String(
+      decoded?.userId ||
+        decoded?.user_id ||
+        decoded?.id ||
+        decoded?.sub ||
+        decoded?.accountId ||
+        ''
+    ).trim();
+  } catch (error) {
+    return '';
+  }
+}
+
 export const MeetingRoomPage = () => {
   const router = useRouter();
   const params = useParams();
   const { profile } = useProfile();
   const { teamMembers } = useServerState();
-  const { setTeamId, setMeetingId } = useMeetingStore();
+  const { setTeamId, setMeetingId, setIceServers } = useMeetingStore();
   const currentTeamId = params.serverId as string;
   const profileIds = useMemo(
     () =>
@@ -55,16 +91,7 @@ export const MeetingRoomPage = () => {
   }, []);
 
   const getParticipantId = useCallback((participant: any) => {
-    return (
-      participant?.userId ||
-      participant?.id ||
-      participant?.user_id ||
-      participant?.accountId ||
-      participant?.teamMemberId ||
-      participant?.user?.id ||
-      participant?.user?.userId ||
-      participant?.user?.user_id
-    );
+    return getMeetingUserId(participant);
   }, []);
 
   const myComparableNames = useMemo(() => {
@@ -118,19 +145,16 @@ export const MeetingRoomPage = () => {
     return Array.from(
       new Set(
         [
-          member?.teamMemberId,
-          member?.memberId,
-          member?.userId,
-          member?.user_id,
-          member?.user?.id,
-          member?.user?.userId,
-          ...profileIds,
+          getMeetingUserId(member),
+          getMeetingUserId(member?.user),
+          getMeetingUserId(profile),
+          getUserIdFromAccessToken(),
         ]
           .map((value) => String(value ?? '').trim())
           .filter(Boolean)
       )
     );
-  }, [myMemberInfo, profileIds]);
+  }, [myMemberInfo, profile]);
   const myId = localIds[0] || '';
 
   const isCurrentUser = useCallback(
@@ -170,6 +194,7 @@ export const MeetingRoomPage = () => {
         if (res?.meetingId) {
           setMeetingId(res.meetingId);
         }
+        setIceServers(Array.isArray(res?.iceServers) ? res.iceServers : []);
         if (Array.isArray(res?.participants)) {
           setParticipants(res.participants);
         } else {
@@ -186,7 +211,7 @@ export const MeetingRoomPage = () => {
     }, 3000);
 
     return () => clearInterval(intervalId);
-  }, [currentTeamId, localIds.length, setMeetingId, setTeamId]);
+  }, [currentTeamId, localIds.length, setIceServers, setMeetingId, setTeamId]);
 
   const handleMeetingEvent = useCallback(
     (event: MeetingEvent) => {
@@ -353,6 +378,31 @@ export const MeetingRoomPage = () => {
       )
     );
   });
+
+  useEffect(() => {
+    console.log(
+      '[MeetingRoomPage] participant render snapshot',
+      allParticipants.map((participant) => ({
+        id: participant.id,
+        name: participant.name,
+        isLocal: participant.isLocal,
+        hasStream: Boolean(participant.stream),
+        audioTracks: participant.stream?.getAudioTracks().map((track) => ({
+          id: track.id,
+          enabled: track.enabled,
+          readyState: track.readyState,
+          muted: track.muted,
+        })),
+        videoTracks: participant.stream?.getVideoTracks().map((track) => ({
+          id: track.id,
+          enabled: track.enabled,
+          readyState: track.readyState,
+          muted: track.muted,
+        })),
+        isKamera: participant.isKamera,
+      }))
+    );
+  }, [allParticipants]);
 
   const total = allParticipants.length;
 

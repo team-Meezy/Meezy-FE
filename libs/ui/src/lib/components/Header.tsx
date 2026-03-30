@@ -98,6 +98,7 @@ export function Header() {
   const {
     setMeetingId,
     setTeamId,
+    setIceServers,
     isUploading,
     setHasActiveMeeting,
     setStartTime,
@@ -186,6 +187,7 @@ export function Header() {
       if (!activeMeeting || !activeMeeting.meetingId) {
         setHasActiveMeeting(false);
         setStartTime(null);
+        setIceServers([]);
 
         if (!meetingRef.current && !currentPath.includes('/meeting')) {
           setMeeting(false);
@@ -223,9 +225,11 @@ export function Header() {
         setMeeting(true);
         setMeetingId(activeMeeting.meetingId);
         setTeamId(currentTeamId);
+        setIceServers(Array.isArray(activeMeeting.iceServers) ? activeMeeting.iceServers : []);
       } else if (!meetingRef.current && !currentPath.includes('/meeting')) {
         setMeeting(false);
         setMeetingId('');
+        setIceServers([]);
       }
     } catch (error) {
       console.log('Header: getActiveMeeting error', error);
@@ -241,6 +245,7 @@ export function Header() {
     setHasActiveMeeting,
     setMeeting,
     setMeetingId,
+    setIceServers,
     setStartTime,
     setTeamId,
   ]);
@@ -275,6 +280,7 @@ export function Header() {
         setHasActiveMeeting(false);
         setMeetingId('');
         setTeamId('');
+        setIceServers([]);
         setStartTime(null);
         meetingRef.current = false;
         window.dispatchEvent(new CustomEvent('meezy:stop-and-upload'));
@@ -407,6 +413,7 @@ export function Header() {
       setHasActiveMeeting(true);
       setStartTime(null);
       setTeamId(currentTeamId);
+      setIceServers(Array.isArray(response?.iceServers) ? response.iceServers : []);
 
       if (response?.meetingId) {
         setMeetingId(response.meetingId);

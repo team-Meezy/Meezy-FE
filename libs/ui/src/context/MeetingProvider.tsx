@@ -21,6 +21,42 @@ interface MeetingContextType {
 
 const MeetingContext = createContext<MeetingContextType | null>(null);
 
+function getMeetingUserId(entity: any) {
+  return String(
+    entity?.userId ||
+      entity?.user_id ||
+      entity?.user?.userId ||
+      entity?.user?.user_id ||
+      entity?.user?.id ||
+      entity?.id ||
+      ''
+  ).trim();
+}
+
+function getUserIdFromAccessToken() {
+  if (typeof window === 'undefined') return '';
+
+  try {
+    const token = localStorage.getItem('accessToken');
+    if (!token) return '';
+
+    const payload = token.split('.')[1];
+    if (!payload) return '';
+
+    const decoded = JSON.parse(atob(payload.replace(/-/g, '+').replace(/_/g, '/')));
+    return String(
+      decoded?.userId ||
+        decoded?.user_id ||
+        decoded?.id ||
+        decoded?.sub ||
+        decoded?.accountId ||
+        ''
+    ).trim();
+  } catch (error) {
+    return '';
+  }
+}
+
 export function MeetingProvider({ children }: { children: React.ReactNode }) {
   console.log('[DEBUG] MeetingProvider body executing');
   const { meetingId, teamId } = useMeetingStore();
@@ -100,37 +136,29 @@ export function MeetingProvider({ children }: { children: React.ReactNode }) {
     [normalizedProfileNames, profileIds, teamMembers]
   );
   const signalingIdentity = useMemo(() => {
-    return String(
-      profile?.userId ||
-        profile?.id ||
-        profile?.user_id ||
-        profile?.accountId ||
-        ''
-    ).trim();
-  }, [profile]);
+    return (
+      getMeetingUserId(myMemberInfo) ||
+      getMeetingUserId((myMemberInfo as any)?.user) ||
+      getMeetingUserId(profile) ||
+      getUserIdFromAccessToken()
+    );
+  }, [myMemberInfo, profile]);
   const localIds = useMemo(() => {
     const member = myMemberInfo as any;
     return Array.from(
       new Set(
         [
           signalingIdentity,
-          member?.teamMemberId,
-          member?.memberId,
-          member?.userId,
-          member?.user_id,
-          member?.accountId,
-          member?.id,
-          member?.user?.id,
-          member?.user?.userId,
-          member?.user?.user_id,
-          member?.user?.accountId,
-          ...profileIds,
+          getMeetingUserId(member),
+          getMeetingUserId(member?.user),
+          getMeetingUserId(profile),
+          getUserIdFromAccessToken(),
         ]
           .map((value) => String(value ?? '').trim())
           .filter(Boolean)
       )
     );
-  }, [myMemberInfo, profileIds, signalingIdentity]);
+  }, [myMemberInfo, profileIds, signalingIdentity, profile]);
 
   const { meeting } = useServerJoinedTeam();
 
@@ -145,7 +173,42 @@ export function MeetingProvider({ children }: { children: React.ReactNode }) {
     });
   }, [teamId, signalingIdentity, localIds, meeting]);
 
-  const webrtc = useMeetingWebRTC(teamId, signalingIdentity, localIds, meeting);
+  useEffect(() => {
+    console.log('[DEBUG] MeetingProvider identity sources:', {
+      profile: {
+        id: profile?.id,
+        userId: profile?.userId,
+        user_id: profile?.user_id,
+        accountId: profile?.accountId,
+        memberId: (profile as any)?.memberId,
+        teamMemberId: (profile as any)?.teamMemberId,
+      },
+      myMemberInfo: myMemberInfo
+        ? {
+            id: (myMemberInfo as any)?.id,
+            userId: (myMemberInfo as any)?.userId,
+            user_id: (myMemberInfo as any)?.user_id,
+            accountId: (myMemberInfo as any)?.accountId,
+            memberId: (myMemberInfo as any)?.memberId,
+            teamMemberId: (myMemberInfo as any)?.teamMemberId,
+            user: {
+              id: (myMemberInfo as any)?.user?.id,
+              userId: (myMemberInfo as any)?.user?.userId,
+              user_id: (myMemberInfo as any)?.user?.user_id,
+              accountId: (myMemberInfo as any)?.user?.accountId,
+            },
+          }
+        : null,
+    });
+  }, [myMemberInfo, profile]);
+
+  const isWebRTCActive = Boolean(teamId && meetingId && signalingIdentity);
+  const webrtc = useMeetingWebRTC(
+    teamId,
+    signalingIdentity,
+    localIds,
+    isWebRTCActive
+  );
 
   const value = useMemo(
     () => ({

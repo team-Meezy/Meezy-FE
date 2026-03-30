@@ -18,6 +18,18 @@ interface ParticipantStream {
   name?: string;
 }
 
+function getMeetingUserId(entity: any) {
+  return String(
+    entity?.userId ||
+      entity?.user_id ||
+      entity?.user?.userId ||
+      entity?.user?.user_id ||
+      entity?.user?.id ||
+      entity?.id ||
+      ''
+  ).trim();
+}
+
 function parseIceServerUrls(value?: string) {
   return String(value ?? '')
     .split(',')
@@ -43,6 +55,28 @@ function buildIceServers(): RTCIceServer[] {
   return iceServers;
 }
 
+function normalizeIceServers(
+  value?: Array<{
+    urls: string | string[];
+    username?: string | null;
+    credential?: string | null;
+  }>
+): RTCIceServer[] {
+  if (!Array.isArray(value) || value.length === 0) {
+    return buildIceServers();
+  }
+
+  return value
+    .map((server) => ({
+      urls: server.urls,
+      username: server.username || undefined,
+      credential: server.credential || undefined,
+    }))
+    .filter((server) =>
+      Array.isArray(server.urls) ? server.urls.length > 0 : Boolean(server.urls)
+    );
+}
+
 export function useMeetingWebRTC(
   teamId: string,
   myId: string,
@@ -50,7 +84,15 @@ export function useMeetingWebRTC(
   isActive: boolean
 ) {
   console.log('[DEBUG] useMeetingWebRTC initialized', { teamId, myId, isActive });
-  const iceServers = useRef<RTCIceServer[]>(buildIceServers());
+  const {
+    meetingId,
+    iceServers: meetingIceServers,
+    setIsUploading,
+    isRecording,
+    setIsRecording,
+    setStartTime,
+  } = useMeetingStore();
+  const iceServers = useRef<RTCIceServer[]>(normalizeIceServers(meetingIceServers));
   const [localStream, setLocalStream] = useState<MediaStream | null>(null);
   const [remoteStreams, setRemoteStreams] = useState<ParticipantStream[]>([]);
   const [isSpeaking, setIsSpeaking] = useState(false);
@@ -68,14 +110,6 @@ export function useMeetingWebRTC(
   const analyserRef = useRef<AnalyserNode | null>(null);
   const animationFrameIdRef = useRef<number | null>(null);
   const isVADInitializingRef = useRef(false);
-  const {
-    meetingId,
-    setIsUploading,
-    isRecording,
-    setIsRecording,
-    setStartTime,
-  } = useMeetingStore();
-
   // Recording Refs
   const mediaRecorderRef = useRef<MediaRecorder | null>(null);
   const recordedChunksRef = useRef<Blob[]>([]);
@@ -96,6 +130,42 @@ export function useMeetingWebRTC(
     meetingIdRef.current = meetingId;
     localIdsRef.current = localIds;
   }, [localIds, meetingId, teamId]);
+
+  useEffect(() => {
+    iceServers.current = normalizeIceServers(meetingIceServers);
+    log('[WebRTC] active iceServers updated', iceServers.current);
+  }, [log, meetingIceServers]);
+
+  useEffect(() => {
+    log('[WebRTC] lifecycle snapshot', {
+      myId,
+      meetingId,
+      teamId,
+      isActive,
+      localIds,
+    });
+  }, [isActive, localIds, log, meetingId, myId, teamId]);
+
+  useEffect(() => {
+    log(
+      '[WebRTC] remoteStreams snapshot',
+      remoteStreams.map((entry) => ({
+        userId: entry.userId,
+        audioTracks: entry.stream.getAudioTracks().map((track) => ({
+          id: track.id,
+          enabled: track.enabled,
+          readyState: track.readyState,
+          muted: track.muted,
+        })),
+        videoTracks: entry.stream.getVideoTracks().map((track) => ({
+          id: track.id,
+          enabled: track.enabled,
+          readyState: track.readyState,
+          muted: track.muted,
+        })),
+      }))
+    );
+  }, [log, remoteStreams]);
 
   const shouldInitiateOffer = useCallback((firstId: string, secondId: string) => {
     return firstId.localeCompare(secondId, undefined, {
@@ -148,20 +218,7 @@ export function useMeetingWebRTC(
     if (!Array.isArray(activeMeeting?.participants)) return [];
 
     return activeMeeting.participants
-      .map((participant: any) =>
-        String(
-          participant?.userId ||
-            participant?.user_id ||
-            participant?.accountId ||
-            participant?.id ||
-            participant?.user?.id ||
-            participant?.user?.userId ||
-            participant?.user?.user_id ||
-            participant?.teamMemberId ||
-            participant?.memberId ||
-            ''
-        ).trim()
-      )
+      .map((participant: any) => getMeetingUserId(participant))
       .filter(
         (participantId: string) =>
           participantId && !localIdsRef.current.includes(participantId)
@@ -216,7 +273,7 @@ export function useMeetingWebRTC(
             sdpMid: event.candidate.sdpMid,
             sdpMLineIndex: event.candidate.sdpMLineIndex,
           });
-          sendSignal(targetUserId, {
+          sendSignalRef.current?.(targetUserId, {
             type: 'ice-candidate',
             fromUserId: myId,
             toUserId: targetUserId,
@@ -322,13 +379,21 @@ export function useMeetingWebRTC(
           // 이 경우 Impolite 사용자가 트랙을 추가했을 때 상대가 알 방법이 없으므로 오퍼를 보냅니다.
           log(`[WebRTC] Negotiation needed for ${targetUserId}, sending offer`);
           const offer = await pc.createOffer();
+          log(`[WebRTC] offer created for ${targetUserId}`);
           await pc.setLocalDescription(offer);
-          sendSignalRef.current?.(targetUserId, {
+          log(`[WebRTC] local offer applied for ${targetUserId}`);
+          if (!sendSignalRef.current) {
+            log(`[WebRTC] sendSignalRef missing for ${targetUserId}`);
+            return;
+          }
+          log(`[WebRTC] invoking sendSignal for ${targetUserId}`);
+          sendSignalRef.current(targetUserId, {
             type: 'offer',
             fromUserId: myId,
             toUserId: targetUserId,
             sdp: offer.sdp,
           });
+          log(`[WebRTC] offer dispatched for ${targetUserId}`);
         } catch (err) {
           console.error('[WebRTC] Negotiation offer error:', err);
         }
@@ -352,7 +417,14 @@ export function useMeetingWebRTC(
         sdpMid,
         sdpMLineIndex,
       } = signal;
-      if (!localIdsRef.current.includes(String(toUserId))) return;
+      if (!localIdsRef.current.includes(String(toUserId))) {
+        log('[WebRTC] signal arrived on personal queue with unmatched toUserId; processing anyway', {
+          type,
+          fromUserId,
+          toUserId,
+          localIds: localIdsRef.current,
+        });
+      }
 
       if (type === 'recording-started') {
         recordingStartedAtRef.current = signal.startedAt || new Date().toISOString();
@@ -436,6 +508,59 @@ export function useMeetingWebRTC(
   );
 
   const { sendSignal } = useMeetingSignal(teamId, myId, onSignal);
+  sendSignalRef.current = sendSignal;
+
+  const createAndSendOffer = useCallback(
+    async (targetUserId: string) => {
+      log('[WebRTC] createAndSendOffer called', {
+        targetUserId,
+        myId,
+        localIds: localIdsRef.current,
+      });
+
+      if (!myId) {
+        log(`[WebRTC] skipping explicit offer for ${targetUserId}; myId is empty`);
+        return;
+      }
+      if (localIdsRef.current.includes(String(targetUserId))) {
+        log(
+          `[WebRTC] skipping explicit offer for ${targetUserId}; target is recognized as local`
+        );
+        return;
+      }
+
+      const pc = getOrCreatePC(targetUserId);
+      if (pc.signalingState !== 'stable') {
+        log(
+          `[WebRTC] skipping explicit offer for ${targetUserId}; signalingState=${pc.signalingState}`
+        );
+        return;
+      }
+
+      try {
+        log(`[WebRTC] explicit offer start for ${targetUserId}`);
+        const offer = await pc.createOffer();
+        log(`[WebRTC] explicit offer created for ${targetUserId}`);
+        await pc.setLocalDescription(offer);
+        log(`[WebRTC] explicit local description set for ${targetUserId}`);
+        if (!sendSignalRef.current) {
+          log(`[WebRTC] explicit sendSignalRef missing for ${targetUserId}`);
+          return;
+        }
+        log(`[WebRTC] explicit invoking sendSignal for ${targetUserId}`);
+        sendSignalRef.current(targetUserId, {
+          type: 'offer',
+          fromUserId: myId,
+          toUserId: targetUserId,
+          sdp: offer.sdp,
+        });
+        log(`[WebRTC] explicit offer dispatched for ${targetUserId}`);
+      } catch (error) {
+        log(`[WebRTC] explicit offer failed for ${targetUserId}`, error);
+      }
+    },
+    [getOrCreatePC, log, myId]
+  );
 
   const onVoiceActivity = useCallback(
     (activity: any) => {
@@ -487,7 +612,16 @@ export function useMeetingWebRTC(
 
   const connectToUser = useCallback(
     async (targetUserId: string) => {
-      if (localIdsRef.current.includes(String(targetUserId))) return;
+      if (!myId) {
+        log(`[WebRTC] skipping connectToUser for ${targetUserId}; myId is empty`);
+        return;
+      }
+      if (localIdsRef.current.includes(String(targetUserId))) {
+        log(
+          `[WebRTC] skipping connectToUser for ${targetUserId}; target is recognized as local`
+        );
+        return;
+      }
       getOrCreatePC(targetUserId);
     },
     [myId, getOrCreatePC]
@@ -495,6 +629,15 @@ export function useMeetingWebRTC(
 
   const onMeetingEvent = useCallback(
     async (event: MeetingEvent) => {
+      log('[WebRTC] onMeetingEvent entered', {
+        myId,
+        isActive,
+        event,
+      });
+      if (!myId) {
+        log('[WebRTC] ignoring meeting event until myId is ready', event);
+        return;
+      }
       log('meeting event received', event);
       switch (event.type) {
         case 'participant-joined':
@@ -510,7 +653,7 @@ export function useMeetingWebRTC(
                 // Polite 발송 전략: ID가 더 작은 쪽이 먼저 Offer를 보냄
                 if (shouldInitiateOffer(myId, pId)) {
                   log(`polite initiation (existing): sending offer to ${pId}`);
-                  connectToUser(pId);
+                  void createAndSendOffer(pId);
                 } else {
                   log(`polite initiation (existing): waiting for offer from ${pId}`);
                 }
@@ -524,7 +667,7 @@ export function useMeetingWebRTC(
           ) {
             if (shouldInitiateOffer(myId, event.joinedUserId)) {
               log(`polite initiation (newcomer): sending offer to ${event.joinedUserId}`);
-              connectToUser(event.joinedUserId);
+              void createAndSendOffer(event.joinedUserId);
             } else {
               log(`polite initiation (newcomer): waiting for offer from ${event.joinedUserId}`);
             }
@@ -541,17 +684,33 @@ export function useMeetingWebRTC(
           break;
       }
     },
-    [myId, removeParticipant, connectToUser, log, shouldInitiateOffer, teardownMeetingMedia]
+    [createAndSendOffer, myId, removeParticipant, connectToUser, log, shouldInitiateOffer, teardownMeetingMedia]
   );
 
   useMeetingEvents(teamId, onMeetingEvent);
 
   useEffect(() => {
-    if (!teamId || !meetingId || !isActive) return;
+    log('[WebRTC] syncParticipants effect entered', {
+      teamId,
+      meetingId,
+      isActive,
+      myId,
+    });
+    if (!teamId || !meetingId || !isActive || !myId) {
+      log('[WebRTC] syncParticipants effect blocked', {
+        teamId,
+        meetingId,
+        isActive,
+        myId,
+      });
+      return;
+    }
 
     const syncParticipants = async () => {
       try {
+        log('[WebRTC] syncParticipants run start');
         const participantIds = await getMeetingParticipantIds();
+        log('[WebRTC] syncParticipants resolved ids', participantIds);
 
         participantIds.forEach((participantId: string) => {
           const existingPc = pcs.current.get(participantId);
@@ -561,6 +720,11 @@ export function useMeetingWebRTC(
             existingPc.connectionState !== 'failed' &&
             existingPc.connectionState !== 'disconnected'
           ) {
+            return;
+          }
+
+          if (shouldInitiateOffer(myId, participantId)) {
+            void createAndSendOffer(participantId);
             return;
           }
 
@@ -577,7 +741,7 @@ export function useMeetingWebRTC(
     }, 3000);
 
     return () => clearInterval(intervalId);
-  }, [connectToUser, getMeetingParticipantIds, isActive, log, meetingId, teamId]);
+  }, [connectToUser, createAndSendOffer, getMeetingParticipantIds, isActive, log, meetingId, myId, shouldInitiateOffer, teamId]);
 
   const startRecording = useCallback(() => {
     log('startRecording entry point');
@@ -951,7 +1115,28 @@ export function useMeetingWebRTC(
   }, [log]);
 
   useEffect(() => {
-    if (myId && meetingId && teamId && isActive) initLocalMedia();
+    if (myId && meetingId && teamId && isActive) {
+      void initLocalMedia();
+      return () => {
+        if (speakingTimeoutRef.current) {
+          clearTimeout(speakingTimeoutRef.current);
+          speakingTimeoutRef.current = null;
+        }
+        localSpeakingRef.current = false;
+        if (
+          mediaRecorderRef.current &&
+          mediaRecorderRef.current.state !== 'inactive'
+        ) {
+          mediaRecorderRef.current.stop();
+        }
+        teardownMeetingMedia();
+      };
+    }
+
+    if (!isActive || !myId) {
+      teardownMeetingMedia();
+    }
+
     return () => {
       if (speakingTimeoutRef.current) {
         clearTimeout(speakingTimeoutRef.current);

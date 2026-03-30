@@ -68,7 +68,10 @@ export function useMeetingSignal(
       debug: (str) => console.log('STOMP Signaling Debug:', str),
       onConnect: () => {
         console.log('STOMP Connected for Signaling (SockJS)');
-        console.log('Subscribing to:', `/user/queue/teams/${teamId}/meeting/signal`);
+        console.log(
+          'Subscribing to:',
+          `/topic/meeting/${teamId}/user/${myId}`
+        );
 
         if (pendingSignalsRef.current.length > 0) {
           const queuedSignals = [...pendingSignalsRef.current];
@@ -83,7 +86,7 @@ export function useMeetingSignal(
         }
 
         client.current?.subscribe(
-          `/user/queue/teams/${teamId}/meeting/signal`,
+          `/topic/meeting/${teamId}/user/${myId}`,
           (message) => {
             const signal = JSON.parse(message.body);
             console.log('Meeting Signal Received (STOMP):', signal);
@@ -110,6 +113,12 @@ export function useMeetingSignal(
 
   return {
     sendSignal: (toUserId: string, signal: MeetingSignal) => {
+      console.log('sendSignal invoked', {
+        connected: client.current?.connected,
+        toUserId,
+        type: signal.type,
+      });
+
       if (client.current?.connected) {
         console.log('Meeting Signal Sent (STOMP):', signal);
         client.current.publish({

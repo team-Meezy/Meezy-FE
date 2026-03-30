@@ -26,6 +26,13 @@ export const VideoCard = ({
   onMikeClick,
   onKameraClick,
 }: VideoCardProps) => {
+  const streamSignature = videoStream
+    ? [
+        ...videoStream.getVideoTracks().map((track) => `v:${track.id}`),
+        ...videoStream.getAudioTracks().map((track) => `a:${track.id}`),
+      ].join('|')
+    : 'no-stream';
+
   return (
     <div
       className={`relative bg-[#1e1e1e] rounded-2xl flex flex-col items-center justify-center overflow-hidden w-full h-full min-h-0 transition-all border ${
@@ -40,7 +47,11 @@ export const VideoCard = ({
             isKamera ? '' : 'opacity-0 pointer-events-none'
           }`}
         >
-          <WebRTC stream={videoStream} isLocal={isLocal} />
+          <WebRTC
+            key={`${isLocal ? 'local' : 'remote'}:${name}:${streamSignature}`}
+            stream={videoStream}
+            isLocal={isLocal}
+          />
         </div>
       )}
 

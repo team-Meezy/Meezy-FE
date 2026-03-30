@@ -88,9 +88,15 @@ export function useMeetingSignal(
         client.current?.subscribe(
           `/topic/meeting/${teamId}/user/${myId}`,
           (message) => {
-            const signal = JSON.parse(message.body);
-            console.log('Meeting Signal Received (STOMP):', signal);
-            onSignalRef.current(signal);
+            try {
+              const signal = JSON.parse(message.body);
+              console.log('Meeting Signal Received (STOMP):', signal);
+              Promise.resolve(onSignalRef.current(signal)).catch((error) => {
+                console.error('Meeting Signal handler failed:', error, signal);
+              });
+            } catch (error) {
+              console.error('Meeting Signal parse failed:', error, message.body);
+            }
           }
         );
       },

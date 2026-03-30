@@ -437,39 +437,51 @@ export function useMeetingWebRTC(
         setStartTime(null);
         return;
       } else if (type === 'offer') {
-        const pc = getOrCreatePC(fromUserId);
-        const polite = shouldInitiateOffer(myId, fromUserId);
-        const offerCollision = pc.signalingState !== 'stable';
+        try {
+          const pc = getOrCreatePC(fromUserId);
+          const offerCollision = pc.signalingState !== 'stable';
+          if (offerCollision) {
+            log(
+              `[WebRTC] Glare detected, rolling back to accept offer from ${fromUserId}`
+            );
+            await pc.setLocalDescription({ type: 'rollback' } as any);
+          }
 
-        if (offerCollision && !polite) {
-          log(`[WebRTC] Glare detected, I am impolite, ignoring offer from ${fromUserId}`);
-          return;
+          log(`[WebRTC] applying remote offer from ${fromUserId}`);
+          await pc.setRemoteDescription(
+            new RTCSessionDescription({ type: 'offer', sdp })
+          );
+          log(`[WebRTC] remote offer applied from ${fromUserId}`);
+          const pendingCandidates =
+            pendingIceCandidates.current.get(fromUserId) ?? [];
+          for (const queuedCandidate of pendingCandidates) {
+            await pc.addIceCandidate(new RTCIceCandidate(queuedCandidate));
+          }
+          pendingIceCandidates.current.delete(fromUserId);
+          log(`[WebRTC] creating local answer for ${fromUserId}`);
+          const answer = await pc.createAnswer();
+          await pc.setLocalDescription(answer);
+          log(`[WebRTC] local answer created for ${fromUserId}`);
+          if (!sendSignalRef.current) {
+            log(`[WebRTC] sendSignalRef missing for answer to ${fromUserId}`);
+            return;
+          }
+          log(`[WebRTC] invoking sendSignal for answer to ${fromUserId}`);
+          sendSignalRef.current(fromUserId, {
+            type: 'answer',
+            fromUserId: myId,
+            toUserId: fromUserId,
+            sdp: answer.sdp,
+          });
+          log(`[WebRTC] answer dispatched to ${fromUserId}`);
+        } catch (error) {
+          console.error(`[WebRTC] offer handling failed for ${fromUserId}`, error, {
+            myId,
+            toUserId,
+            signalingState: pcs.current.get(fromUserId)?.signalingState,
+            connectionState: pcs.current.get(fromUserId)?.connectionState,
+          });
         }
-
-        if (offerCollision && polite) {
-          log(`[WebRTC] Glare detected, I am polite, rolling back to accept offer from ${fromUserId}`);
-          await pc.setLocalDescription({ type: 'rollback' } as any);
-        }
-
-        await pc.setRemoteDescription(
-          new RTCSessionDescription({ type: 'offer', sdp })
-        );
-        log(`[WebRTC] remote offer applied from ${fromUserId}`);
-        const pendingCandidates =
-          pendingIceCandidates.current.get(fromUserId) ?? [];
-        for (const queuedCandidate of pendingCandidates) {
-          await pc.addIceCandidate(new RTCIceCandidate(queuedCandidate));
-        }
-        pendingIceCandidates.current.delete(fromUserId);
-        const answer = await pc.createAnswer();
-        await pc.setLocalDescription(answer);
-        log(`[WebRTC] local answer created for ${fromUserId}`);
-        sendSignal(fromUserId, {
-          type: 'answer',
-          fromUserId: myId,
-          toUserId: fromUserId,
-          sdp: answer.sdp,
-        });
       } else if (type === 'answer') {
         const pc = pcs.current.get(fromUserId);
         if (pc) {
@@ -504,7 +516,7 @@ export function useMeetingWebRTC(
         }
       }
     },
-    [getOrCreatePC, myId, setIsRecording, setStartTime, shouldInitiateOffer]
+    [getOrCreatePC, myId, setIsRecording, setStartTime]
   );
 
   const { sendSignal } = useMeetingSignal(teamId, myId, onSignal);

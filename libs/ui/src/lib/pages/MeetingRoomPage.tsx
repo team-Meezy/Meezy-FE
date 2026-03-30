@@ -57,6 +57,10 @@ export const MeetingRoomPage = () => {
   const params = useParams();
   const { profile } = useProfile();
   const { teamMembers } = useServerState();
+  const teamMemberList = useMemo(
+    () => (Array.isArray(teamMembers) ? teamMembers : []),
+    [teamMembers]
+  );
   const { setTeamId, setMeetingId, setIceServers } = useMeetingStore();
   const currentTeamId = params.serverId as string;
   const profileIds = useMemo(
@@ -105,7 +109,7 @@ export const MeetingRoomPage = () => {
   }, [normalizeName, profile]);
 
   const myMemberInfo = useMemo(() => {
-    return teamMembers.find((member: any) => {
+    return teamMemberList.find((member: any) => {
       const memberIds = [
         member?.userId,
         member?.user_id,
@@ -138,7 +142,7 @@ export const MeetingRoomPage = () => {
 
       return memberNames.some((value) => myComparableNames.includes(value));
     });
-  }, [myComparableNames, normalizeName, profileIds, teamMembers]);
+  }, [myComparableNames, normalizeName, profileIds, teamMemberList]);
 
   const localIds = useMemo(() => {
     const member = myMemberInfo as any;

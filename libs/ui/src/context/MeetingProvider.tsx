@@ -62,6 +62,10 @@ export function MeetingProvider({ children }: { children: React.ReactNode }) {
   const { meetingId, teamId } = useMeetingStore();
   const { profile } = useProfile();
   const { teamMembers } = useServerState();
+  const teamMemberList = useMemo(
+    () => (Array.isArray(teamMembers) ? teamMembers : []),
+    [teamMembers]
+  );
   const profileIds = useMemo(
     () =>
       [
@@ -94,7 +98,7 @@ export function MeetingProvider({ children }: { children: React.ReactNode }) {
   );
   const myMemberInfo = useMemo(
     () =>
-      teamMembers.find((member: any) => {
+      teamMemberList.find((member: any) => {
         const memberIds = [
           member?.userId,
           member?.user_id,
@@ -133,7 +137,7 @@ export function MeetingProvider({ children }: { children: React.ReactNode }) {
           normalizedProfileNames.includes(value)
         );
       }),
-    [normalizedProfileNames, profileIds, teamMembers]
+    [normalizedProfileNames, profileIds, teamMemberList]
   );
   const signalingIdentity = useMemo(() => {
     return (

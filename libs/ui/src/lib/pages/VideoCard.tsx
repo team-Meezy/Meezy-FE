@@ -32,6 +32,8 @@ export const VideoCard = ({
         ...videoStream.getAudioTracks().map((track) => `a:${track.id}`),
       ].join('|')
     : 'no-stream';
+  const shouldShowVideo = Boolean(videoStream) && (isLocal ? isKamera : true);
+  const shouldShowPlaceholder = !videoStream || (isLocal ? !isKamera : !shouldShowVideo);
 
   return (
     <div
@@ -44,7 +46,7 @@ export const VideoCard = ({
       {videoStream && (
         <div
           className={`w-full h-full absolute inset-0 ${
-            isKamera ? '' : 'opacity-0 pointer-events-none'
+            shouldShowVideo ? '' : 'opacity-0 pointer-events-none'
           }`}
         >
           <WebRTC
@@ -55,7 +57,7 @@ export const VideoCard = ({
         </div>
       )}
 
-      {(!videoStream || !isKamera) && (
+      {shouldShowPlaceholder && (
         <>
           <div
             className={`w-[20%] aspect-square max-w-[100px] min-w-[60px] rounded-full bg-[#d9d9d9] transition-all duration-300 ${

@@ -391,107 +391,122 @@ export const MeetingRoomPage = () => {
         name: participant.name,
         isLocal: participant.isLocal,
         hasStream: Boolean(participant.stream),
-        audioTracks: (participant.stream as MediaStream | undefined)?.getAudioTracks().map((track: MediaStreamTrack) => ({
-          id: track.id,
-          enabled: track.enabled,
-          readyState: track.readyState,
-          muted: (track as any).muted,
-        })),
-        videoTracks: (participant.stream as MediaStream | undefined)?.getVideoTracks().map((track: MediaStreamTrack) => ({
-          id: track.id,
-          enabled: track.enabled,
-          readyState: track.readyState,
-          muted: (track as any).muted,
-        })),
+        audioTracks: (participant.stream as MediaStream | undefined)
+          ?.getAudioTracks()
+          .map((track: MediaStreamTrack) => ({
+            id: track.id,
+            enabled: track.enabled,
+            readyState: track.readyState,
+            muted: (track as any).muted,
+          })),
+        videoTracks: (participant.stream as MediaStream | undefined)
+          ?.getVideoTracks()
+          .map((track: MediaStreamTrack) => ({
+            id: track.id,
+            enabled: track.enabled,
+            readyState: track.readyState,
+            muted: (track as any).muted,
+          })),
         isKamera: participant.isKamera,
       }))
     );
   }, [allParticipants]);
 
   const total = allParticipants.length;
-
-  const getRows = () => {
-    if (total <= 1) return [allParticipants];
-    if (total === 2) return [[allParticipants[0]], [allParticipants[1]]];
-    if (total === 3) return [allParticipants.slice(0, 2), [allParticipants[2]]];
-    if (total === 4)
-      return [allParticipants.slice(0, 2), allParticipants.slice(2, 4)];
-    if (total === 5) {
-      return [
-        allParticipants.slice(0, 2),
-        allParticipants.slice(2, 4),
-        [allParticipants[4]],
-      ];
+  const gridClassName = (() => {
+    if (total <= 2) {
+      return 'grid-cols-1';
     }
 
-    const rows = [];
-    for (let i = 0; i < allParticipants.length; i += 3) {
-      rows.push(allParticipants.slice(i, i + 3));
+    if (total === 3) {
+      return 'grid-cols-1 lg:grid-cols-2';
     }
-    return rows;
+
+    if (total === 4) {
+      return 'grid-cols-1 md:grid-cols-2';
+    }
+
+    return 'grid-cols-1 md:grid-cols-2 2xl:grid-cols-3';
+  })();
+
+  const getCardWrapperClassName = (index: number) => {
+    if (total === 1) {
+      return 'min-h-[260px] sm:min-h-[320px] lg:min-h-[400px]';
+    }
+
+    if (total === 2) {
+      return 'min-h-[180px] sm:min-h-[210px] lg:min-h-[230px]';
+    }
+
+    if (total === 3) {
+      return index === 0
+        ? 'min-h-[180px] sm:min-h-[220px] lg:col-span-2 lg:min-h-[240px]'
+        : 'min-h-[170px] sm:min-h-[190px] lg:min-h-[200px]';
+    }
+
+    if (total === 4) {
+      return 'min-h-[170px] sm:min-h-[190px] lg:min-h-[210px]';
+    }
+
+    return 'min-h-[150px] sm:min-h-[170px] xl:min-h-[190px]';
   };
 
-  const rows = getRows();
-
   return (
-    <div className="flex-1 flex flex-col h-full min-h-0 bg-[#0c0c0c] overflow-hidden relative">
-      <div className="flex-1 flex flex-col items-center justify-center p-8 md:p-16 min-h-0 space-y-8 w-full">
-        {rows.map((row, rowIndex) => (
-          <div
-            key={rowIndex}
-            className="flex flex-1 w-full gap-8 items-center justify-center min-h-0"
-          >
-            {row.map((participant) => (
-              <div
-                key={String(participant.id)}
-                className="flex-1 h-full min-h-0"
-              >
-                <VideoCard
-                  name={participant.name}
-                  isLocal={participant.isLocal}
-                  isSpeaking={participant.isSpeaking}
-                  isMike={participant.isMike}
-                  isKamera={participant.isKamera}
-                  videoStream={participant.stream}
-                  onMikeClick={participant.onMikeClick}
-                  onKameraClick={participant.onKameraClick}
-                />
-              </div>
-            ))}
-          </div>
-        ))}
+    <div className="relative flex h-full min-h-0 flex-1 flex-col overflow-hidden bg-[#0c0c0c]">
+      <div className="flex-1 min-h-0 w-full overflow-hidden px-4 py-4 sm:px-6 sm:py-5 lg:px-8 lg:py-6">
+        <div
+          className={`mx-auto grid h-full w-full max-w-6xl auto-rows-fr gap-3 sm:gap-4 lg:gap-5 ${gridClassName}`}
+        >
+          {allParticipants.map((participant, index) => (
+            <div
+              key={String(participant.id)}
+              className={`min-h-0 ${getCardWrapperClassName(index)}`}
+            >
+              <VideoCard
+                name={participant.name}
+                isLocal={participant.isLocal}
+                isSpeaking={participant.isSpeaking}
+                isMike={participant.isMike}
+                isKamera={participant.isKamera}
+                videoStream={participant.stream}
+                onMikeClick={participant.onMikeClick}
+                onKameraClick={participant.onKameraClick}
+              />
+            </div>
+          ))}
+        </div>
       </div>
 
-      <div className="pb-12 pt-4 px-10 flex justify-center w-full z-10 shrink-0">
-        <div className="bg-[#1e1e1e]/80 rounded-[32px] py-6 px-12 flex items-center justify-center gap-6 relative w-full max-w-4xl shadow-[0_20px_60px_rgba(0,0,0,0.5)] border border-white/5 backdrop-blur-xl">
+      <div className="flex w-full shrink-0 justify-center px-4 pb-4 pt-2 sm:px-6 sm:pb-5 lg:px-8 lg:pb-6">
+        <div className="relative flex w-full max-w-3xl items-center justify-center gap-3 rounded-[22px] border border-white/5 bg-[#1e1e1e]/70 px-4 py-3 shadow-[0_12px_30px_rgba(0,0,0,0.35)] backdrop-blur-xl sm:gap-4 sm:rounded-[24px] sm:px-6 sm:py-3.5 lg:gap-5 lg:px-8 lg:py-4">
           <button
-            className={`p-5 rounded-2xl transition-all group ${isMike ? 'bg-white/5 hover:bg-white/10' : 'bg-red-500/20 hover:bg-red-500/30'}`}
+            className="group rounded-xl p-2 transition-all hover:opacity-80 sm:p-2.5"
             onClick={onMikeClick}
           >
             <Image
               src={isMike ? Mike : NoMike}
               alt="Mike"
-              width={28}
-              height={28}
-              className="opacity-90 group-hover:scale-110 transition-transform"
+              width={24}
+              height={24}
+              className="opacity-90 transition-transform group-hover:scale-110"
             />
           </button>
           <button
-            className={`p-5 rounded-2xl transition-all group ${isKamera ? 'bg-white/5 hover:bg-white/10' : 'bg-red-500/20 hover:bg-red-500/30'}`}
+            className="group rounded-xl p-2 transition-all hover:opacity-80 sm:p-2.5"
             onClick={onKameraClick}
           >
             <Image
               src={isKamera ? Kamera : Nokamera}
               alt="Kamera"
-              width={28}
-              height={28}
-              className="opacity-90 group-hover:scale-110 transition-transform"
+              width={24}
+              height={24}
+              className="opacity-90 transition-transform group-hover:scale-110"
             />
           </button>
 
-          <button className="absolute right-12 text-white/40 hover:text-white transition-colors">
-            <span className="text-3xl font-light cursor-pointer">
-              ⛶
+          <button className="absolute right-4 text-white/40 transition-colors hover:text-white sm:right-6 lg:right-8">
+            <span className="cursor-pointer text-lg font-light sm:text-xl">
+              []
             </span>
           </button>
         </div>

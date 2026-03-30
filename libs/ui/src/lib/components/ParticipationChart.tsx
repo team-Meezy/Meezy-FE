@@ -1,15 +1,15 @@
-
-
 interface ParticipationChartProps {
   percentage?: number;
-  size?: number; // 차트 전체 크기
+  size?: number;
+  labelClassName?: string;
 }
 
 export const ParticipationChart = ({
   percentage = 87.5,
-  size = 192, // 기본값 (w-48 = 192px)
+  size = 192,
+  labelClassName = '',
 }: ParticipationChartProps) => {
-  const strokeWidth = size * 0.12; // 두께 비율
+  const strokeWidth = size * 0.13;
   const radius = (size - strokeWidth) / 2;
   const circumference = 2 * Math.PI * radius;
   const strokeDashoffset = circumference - (percentage / 100) * circumference;
@@ -25,17 +25,15 @@ export const ParticipationChart = ({
         viewBox={`0 0 ${size} ${size}`}
         className="-rotate-90"
       >
-        {/* 배경 원 */}
         <circle
           cx={size / 2}
           cy={size / 2}
           r={radius}
-          stroke="#333"
+          stroke="#323232"
           strokeWidth={strokeWidth}
           fill="transparent"
         />
 
-        {/* 진행률 원 */}
         <circle
           cx={size / 2}
           cy={size / 2}
@@ -45,17 +43,16 @@ export const ParticipationChart = ({
           fill="transparent"
           strokeDasharray={circumference}
           strokeDashoffset={strokeDashoffset}
-          strokeLinecap="round"
+          strokeLinecap="butt"
           style={{
             transition: 'stroke-dashoffset 0.5s ease',
           }}
         />
       </svg>
 
-      {/* 중앙 텍스트 */}
       <span
-        className="absolute font-bold text-[#ff5c00]"
-        style={{ fontSize: size * 0.18 }}
+        className={`absolute font-bold tracking-[-0.03em] text-[#ff5c00] ${labelClassName}`}
+        style={{ fontSize: size * 0.16 }}
       >
         {percentage}%
       </span>

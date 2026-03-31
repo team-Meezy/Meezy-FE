@@ -77,6 +77,44 @@ function normalizeIceServers(
     );
 }
 
+const PREFERRED_RECORDING_MIME_TYPES = [
+  'audio/webm;codecs=opus',
+  'audio/webm',
+  'audio/ogg;codecs=opus',
+  'audio/ogg',
+  'audio/wav',
+  'audio/mpeg',
+];
+
+function getSupportedRecordingMimeType() {
+  if (typeof MediaRecorder === 'undefined') {
+    return '';
+  }
+
+  return (
+    PREFERRED_RECORDING_MIME_TYPES.find((mimeType) =>
+      MediaRecorder.isTypeSupported(mimeType)
+    ) ?? ''
+  );
+}
+
+function getRecordingFileExtension(mimeType?: string) {
+  const normalizedMimeType = String(mimeType ?? '').toLowerCase();
+
+  if (normalizedMimeType.includes('webm')) return 'webm';
+  if (normalizedMimeType.includes('ogg')) return 'ogg';
+  if (normalizedMimeType.includes('wav')) return 'wav';
+  if (normalizedMimeType.includes('mpeg') || normalizedMimeType.includes('mp3')) {
+    return 'mp3';
+  }
+
+  return 'webm';
+}
+
+function getRecordingFileName(mimeType?: string) {
+  return `recording.${getRecordingFileExtension(mimeType)}`;
+}
+
 export function useMeetingWebRTC(
   teamId: string,
   myId: string,
@@ -114,6 +152,13 @@ export function useMeetingWebRTC(
   const mediaRecorderRef = useRef<MediaRecorder | null>(null);
   const recordedChunksRef = useRef<Blob[]>([]);
   const recordingStartedAtRef = useRef<string | null>(null);
+  const recordingMimeTypeRef = useRef<string>('');
+  const recordingMixContextRef = useRef<AudioContext | null>(null);
+  const recordingDestinationRef =
+    useRef<MediaStreamAudioDestinationNode | null>(null);
+  const recordingSourceNodesRef = useRef<MediaStreamAudioSourceNode[]>([]);
+  const recordingSourceStreamsRef = useRef<MediaStream[]>([]);
+  const mixedRecordingStreamRef = useRef<MediaStream | null>(null);
 
   const teamIdRef = useRef(teamId);
   const meetingIdRef = useRef(meetingId);
@@ -194,6 +239,113 @@ export function useMeetingWebRTC(
     setRemoteStreams((prev) => prev.filter((s) => s.userId !== userId));
   }, []);
 
+  const cleanupRecordingMix = useCallback(() => {
+    recordingSourceNodesRef.current.forEach((sourceNode) => {
+      try {
+        sourceNode.disconnect();
+      } catch {
+        // noop
+      }
+    });
+    recordingSourceNodesRef.current = [];
+    recordingSourceStreamsRef.current = [];
+
+    if (mixedRecordingStreamRef.current) {
+      mixedRecordingStreamRef.current.getTracks().forEach((track) => track.stop());
+      mixedRecordingStreamRef.current = null;
+    }
+
+    recordingDestinationRef.current = null;
+
+    if (recordingMixContextRef.current) {
+      const context = recordingMixContextRef.current;
+      recordingMixContextRef.current = null;
+      if (context.state !== 'closed') {
+        void context.close().catch(() => undefined);
+      }
+    }
+  }, []);
+
+  const syncRecordingMix = useCallback(
+    async (streams: ParticipantStream[]) => {
+      const context = recordingMixContextRef.current;
+      const destination = recordingDestinationRef.current;
+
+      if (!context || !destination) {
+        return 0;
+      }
+
+      recordingSourceNodesRef.current.forEach((sourceNode) => {
+        try {
+          sourceNode.disconnect();
+        } catch {
+          // noop
+        }
+      });
+      recordingSourceNodesRef.current = [];
+      recordingSourceStreamsRef.current = [];
+
+      const sourceStreams: MediaStream[] = [];
+
+      const appendAudioSource = (stream: MediaStream | null) => {
+        if (!stream) return;
+
+        const activeAudioTracks = stream
+          .getAudioTracks()
+          .filter((track) => track.readyState === 'live');
+
+        if (activeAudioTracks.length === 0) {
+          return;
+        }
+
+        const audioOnlyStream = new MediaStream(activeAudioTracks);
+        const sourceNode = context.createMediaStreamSource(audioOnlyStream);
+        sourceNode.connect(destination);
+        recordingSourceNodesRef.current.push(sourceNode);
+        sourceStreams.push(audioOnlyStream);
+      };
+
+      appendAudioSource(localStreamRef.current);
+      streams.forEach((participant) => appendAudioSource(participant.stream));
+
+      recordingSourceStreamsRef.current = sourceStreams;
+
+      if (context.state === 'suspended') {
+        await context.resume().catch(() => undefined);
+      }
+
+      return recordingSourceNodesRef.current.length;
+    },
+    []
+  );
+
+  const ensureMixedRecordingStream = useCallback(async () => {
+    cleanupRecordingMix();
+
+    const AudioContextClass =
+      window.AudioContext || ((window as typeof window & { webkitAudioContext?: typeof AudioContext }).webkitAudioContext);
+
+    if (!AudioContextClass) {
+      log('[WARN] AudioContext is not available for recording mix');
+      return null;
+    }
+
+    const context = new AudioContextClass();
+    const destination = context.createMediaStreamDestination();
+    recordingMixContextRef.current = context;
+    recordingDestinationRef.current = destination;
+
+    const sourceCount = await syncRecordingMix(remoteStreams);
+    if (sourceCount === 0) {
+      log('[WARN] mixed recording stream has no audio sources');
+      cleanupRecordingMix();
+      return null;
+    }
+
+    mixedRecordingStreamRef.current = destination.stream;
+    return destination.stream;
+  }, [cleanupRecordingMix, log, remoteStreams, syncRecordingMix]);
+
   const teardownMeetingMedia = useCallback(() => {
     Object.values(remoteVoiceTimers.current).forEach((timer) => clearTimeout(timer));
     remoteVoiceTimers.current = {};
@@ -211,7 +363,11 @@ export function useMeetingWebRTC(
     setIsRecording(false);
     setStartTime(null);
     recordingStartedAtRef.current = null;
-  }, [setIsRecording, setStartTime]);
+    recordingMimeTypeRef.current = '';
+    mediaRecorderRef.current = null;
+    recordedChunksRef.current = [];
+    cleanupRecordingMix();
+  }, [cleanupRecordingMix, setIsRecording, setStartTime]);
 
   const getMeetingParticipantIds = useCallback(async () => {
     const activeMeeting = await getActiveMeetings(teamIdRef.current);
@@ -622,6 +778,14 @@ export function useMeetingWebRTC(
     return () => clearInterval(intervalId);
   }, [broadcastRecordingState, isRecording, meetingId, teamId]);
 
+  useEffect(() => {
+    if (!isRecording || !recordingDestinationRef.current) {
+      return;
+    }
+
+    void syncRecordingMix(remoteStreams);
+  }, [isRecording, localStream, remoteStreams, syncRecordingMix]);
+
   const connectToUser = useCallback(
     async (targetUserId: string) => {
       if (!myId) {
@@ -768,29 +932,12 @@ export function useMeetingWebRTC(
 
     log('MediaRecorder initializing...');
     recordedChunksRef.current = [];
-
-    const mimeTypes = [
-      'audio/webm;codecs=opus',
-      'audio/webm',
-      'audio/ogg;codecs=opus',
-      'audio/wav',
-      'audio/mpeg', // fallback check
-    ];
-    let selectedMimeType = '';
-    for (const mimeType of mimeTypes) {
-      if (MediaRecorder.isTypeSupported(mimeType)) {
-        selectedMimeType = mimeType;
-        break;
-      }
-    }
+    const selectedMimeType = getSupportedRecordingMimeType();
 
     const startedAt = new Date().toISOString();
-    try {
-      recordingStartedAtRef.current = startedAt;
-      const recorder = new MediaRecorder(localStreamRef.current, {
-        mimeType: selectedMimeType || undefined,
-      });
-      mediaRecorderRef.current = recorder; // Ensure ref is assigned before starting
+    const beginRecorder = (recorder: MediaRecorder, mimeType: string) => {
+      mediaRecorderRef.current = recorder;
+      recordingMimeTypeRef.current = mimeType;
 
       recorder.ondataavailable = (event) => {
         if (event.data.size > 0) {
@@ -805,42 +952,55 @@ export function useMeetingWebRTC(
         );
       };
 
-      recorder.start(1000); // 1s chunks
+      recorder.start(1000);
       setIsRecording(true);
       setStartTime(startedAt);
       void broadcastRecordingState('recording-started', startedAt);
       log('MediaRecorder SUCCESS. state:', recorder.state);
-      log('MIME Type selected:', recorder.mimeType);
-    } catch (e) {
-      log('[ERROR] MediaRecorder instantiation/start failed', e);
-      // Fallback: Try without specific options if it failed
-      try {
-        const fallbackRecorder = new MediaRecorder(localStreamRef.current);
-        mediaRecorderRef.current = fallbackRecorder;
-        fallbackRecorder.ondataavailable = (event) => {
-          if (event.data.size > 0) {
-            recordedChunksRef.current.push(event.data);
+      log('MIME Type selected:', recorder.mimeType || mimeType);
+    };
+
+    recordingStartedAtRef.current = startedAt;
+
+    void ensureMixedRecordingStream()
+      .then((mixedStream) => {
+        if (!mixedStream) {
+          throw new Error('recording mix stream is unavailable');
+        }
+
+        const recorder = new MediaRecorder(mixedStream, {
+          mimeType: selectedMimeType || undefined,
+        });
+        beginRecorder(recorder, recorder.mimeType || selectedMimeType);
+      })
+      .catch((error) => {
+        log('[ERROR] MediaRecorder instantiation/start failed', error);
+
+        try {
+          const fallbackStream = mixedRecordingStreamRef.current || localStreamRef.current;
+          if (!fallbackStream) {
+            throw new Error('fallback recording stream is unavailable');
           }
-        };
-        fallbackRecorder.onstop = () => {
+
+          const fallbackRecorder = new MediaRecorder(fallbackStream);
+          beginRecorder(fallbackRecorder, fallbackRecorder.mimeType || selectedMimeType);
+        } catch (fallbackError) {
           log(
-            'Fallback MediaRecorder stopped internally. Chunks collected:',
-            recordedChunksRef.current.length
+            '[CRITICAL ERROR] Fallback MediaRecorder instantiation/start failed',
+            fallbackError
           );
-        };
-        fallbackRecorder.start(1000);
-        setIsRecording(true);
-        setStartTime(startedAt);
-        void broadcastRecordingState('recording-started', startedAt);
-        log('Fallback MediaRecorder SUCCESS. state:', fallbackRecorder.state);
-      } catch (fallbackError) {
-        log(
-          '[CRITICAL ERROR] Fallback MediaRecorder instantiation/start failed',
-          fallbackError
-        );
-      }
-    }
-  }, [broadcastRecordingState, log, setIsRecording, setStartTime]);
+          recordingStartedAtRef.current = null;
+          cleanupRecordingMix();
+        }
+      });
+  }, [
+    broadcastRecordingState,
+    cleanupRecordingMix,
+    ensureMixedRecordingStream,
+    log,
+    setIsRecording,
+    setStartTime,
+  ]);
 
   const stopRecording = useCallback(() => {
     log('stopRecording triggered manually');
@@ -1043,6 +1203,13 @@ export function useMeetingWebRTC(
 
       try {
         let blob: Blob | null = null;
+        const resolvedMimeType =
+          recordingMimeTypeRef.current ||
+          recorder?.mimeType ||
+          recordedChunksRef.current[0]?.type ||
+          getSupportedRecordingMimeType() ||
+          'audio/webm';
+        const recordingFileName = getRecordingFileName(resolvedMimeType);
 
         if (recorder && recorder.state !== 'inactive') {
           log('[DEBUG] calling recorder.stop()');
@@ -1053,7 +1220,7 @@ export function useMeetingWebRTC(
                 '[WARN] stop recording timeout (3s) - resolving with available chunks'
               );
               resolve(
-                new Blob(recordedChunksRef.current, { type: 'audio/mpeg' })
+                new Blob(recordedChunksRef.current, { type: resolvedMimeType })
               );
             }, 3000);
 
@@ -1063,7 +1230,7 @@ export function useMeetingWebRTC(
                 chunkCount: recordedChunksRef.current.length,
               });
               resolve(
-                new Blob(recordedChunksRef.current, { type: 'audio/mpeg' })
+                new Blob(recordedChunksRef.current, { type: resolvedMimeType })
               );
             };
             recorder.stop();
@@ -1077,7 +1244,7 @@ export function useMeetingWebRTC(
               chunkCount: recordedChunksRef.current.length,
             }
           );
-          blob = new Blob(recordedChunksRef.current, { type: 'audio/mpeg' });
+          blob = new Blob(recordedChunksRef.current, { type: resolvedMimeType });
         } else {
           log(
             '[WARN] Recorder is NULL or INACTIVE and NO chunks available, skipping upload',
@@ -1089,10 +1256,19 @@ export function useMeetingWebRTC(
         }
 
         if (blob) {
-          log('[DEBUG] final blob generated', { size: blob.size });
+          log('[DEBUG] final blob generated', {
+            size: blob.size,
+            mimeType: resolvedMimeType,
+            fileName: recordingFileName,
+          });
           if (tId && mId && blob.size > 0) {
             log('[DEBUG] initializing uploadMeetingRecording API call...');
-            const res = await uploadMeetingRecording(tId, mId, blob);
+            const res = await uploadMeetingRecording(
+              tId,
+              mId,
+              blob,
+              recordingFileName
+            );
             console.log('[SUCCESS] API call completed', res);
           } else {
             log('[WARN] upload conditions NOT met (IDs missing or zero size)', {
@@ -1105,6 +1281,10 @@ export function useMeetingWebRTC(
       } catch (err) {
         log('[ERROR] handleStopAndUpload task failed', err);
       } finally {
+        mediaRecorderRef.current = null;
+        recordedChunksRef.current = [];
+        recordingMimeTypeRef.current = '';
+        cleanupRecordingMix();
         setIsUploading(false);
       }
 

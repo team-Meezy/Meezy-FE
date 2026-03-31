@@ -42,8 +42,6 @@ function extractTeamId(payload: any, fallbackName?: string) {
 
 export function ServerModal({ isOpen, onClose }: ServerModalProps) {
   const {
-    mounted,
-    setMounted,
     serverName,
     setServerName,
     serverLink,
@@ -65,6 +63,7 @@ export function ServerModal({ isOpen, onClose }: ServerModalProps) {
   const { serverId, setServerId } = useServerIdStore();
   const router = useRouter();
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [mounted, setMounted] = useState(false);
 
   useEffect(() => {
     setImageFile(localImageFile);
@@ -175,8 +174,8 @@ export function ServerModal({ isOpen, onClose }: ServerModalProps) {
   if (!isOpen || !mounted) return null;
 
   return createPortal(
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/30 backdrop-blur-[2px]">
-      <div className="w-[480px] overflow-hidden rounded-xl border border-white/5 bg-[#2b2d31] shadow-2xl">
+    <div className="fixed inset-0 z-[10000] flex items-center justify-center bg-black/30 backdrop-blur-[2px]">
+      <div className="relative w-[480px] overflow-hidden rounded-xl border border-white/5 bg-[#2b2d31] shadow-2xl">
         <div className="flex items-center justify-between px-4 pt-4">
           <div className="flex gap-2">
             <button

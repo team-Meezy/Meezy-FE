@@ -2,7 +2,6 @@
 
 import { Header, CalendarMockup, MiniMeetingOverlay } from '../../components';
 import { TeamSidebar } from '../../sidebar';
-import { ServerModal } from '../../modals';
 import { useServerJoinedTeam } from '../../../context';
 import { useEffect } from 'react';
 import { useModalStore } from '@org/shop-data';
@@ -11,7 +10,7 @@ import { useLoadingStore } from '@org/shop-data';
 export function MainLayoutWrapper({ children }: { children: React.ReactNode }) {
   const { joined } = useServerJoinedTeam();
   const { isSidebarOpen, setIsSidebarOpen } = useModalStore();
-  const { isModalOpen, setIsModalOpen } = useModalStore();
+  const { setIsModalOpen } = useModalStore();
   const { setLoading } = useLoadingStore();
 
   useEffect(() => {
@@ -50,8 +49,6 @@ export function MainLayoutWrapper({ children }: { children: React.ReactNode }) {
           )}
         </div>
       </div>
-
-      <ServerModal isOpen={isModalOpen} onClose={() => setIsModalOpen(false)} />
       <MiniMeetingOverlay />
     </div>
   );

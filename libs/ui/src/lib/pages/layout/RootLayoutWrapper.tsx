@@ -8,6 +8,8 @@ import {
   MeetingProvider,
 } from '../../../context';
 import { LoadingOverlay } from '../../components';
+import { ServerModal } from '../../modals';
+import { useModalStore } from '@org/shop-data';
 
 export const metadata = {
   title: 'Welcome to web',
@@ -15,6 +17,8 @@ export const metadata = {
 };
 
 export function RootLayoutWrapper({ children }: { children: React.ReactNode }) {
+  const { isModalOpen, setIsModalOpen } = useModalStore();
+
   return (
     <html lang="en">
       <body>
@@ -23,6 +27,10 @@ export function RootLayoutWrapper({ children }: { children: React.ReactNode }) {
             <ServerStateProvider>
               <ProfileProvider>
                 <MeetingProvider>{children}</MeetingProvider>
+                <ServerModal
+                  isOpen={isModalOpen}
+                  onClose={() => setIsModalOpen(false)}
+                />
               </ProfileProvider>
               <LoadingOverlay />
             </ServerStateProvider>

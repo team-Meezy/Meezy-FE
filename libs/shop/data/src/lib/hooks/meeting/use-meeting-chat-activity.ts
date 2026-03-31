@@ -5,6 +5,7 @@ import { BASE_URL, STOMP_SOCKET_URL } from '../axios';
 
 export function useMeetingChatActivity(meetingId: string, myId: string) {
   const client = useRef<Client | null>(null);
+  const pendingSendCount = useRef(0);
 
   useEffect(() => {
     if (!meetingId || !myId || !BASE_URL) return;
@@ -18,7 +19,7 @@ export function useMeetingChatActivity(meetingId: string, myId: string) {
         new SockJS(socketUrl, null, { transports: ['websocket'] }),
       connectHeaders: token
         ? {
-            Authorization: token,
+            Authorization: `Bearer ${token}`,
           }
         : {},
       reconnectDelay: 5000,
@@ -26,7 +27,23 @@ export function useMeetingChatActivity(meetingId: string, myId: string) {
       heartbeatOutgoing: 4000,
       debug: (str) => console.log('STOMP Chat Activity Debug:', str),
       onConnect: () => {
-        console.log('STOMP Connected for Chat Activity (SockJS)');
+        console.log('STOMP Connected for Chat Activity (SockJS)', {
+          meetingId,
+          myId,
+          pendingSendCount: pendingSendCount.current,
+        });
+
+        while (pendingSendCount.current > 0 && client.current?.connected) {
+          client.current.publish({
+            destination: `/app/meetings/${meetingId}/participation/chat`,
+          });
+          pendingSendCount.current -= 1;
+          console.log('[chat] flush-send', {
+            meetingId,
+            myId,
+            remainingPending: pendingSendCount.current,
+          });
+        }
       },
       onStompError: (frame) => {
         console.error(
@@ -42,16 +59,31 @@ export function useMeetingChatActivity(meetingId: string, myId: string) {
     client.current.activate();
 
     return () => {
+      pendingSendCount.current = 0;
       client.current?.deactivate();
     };
   }, [meetingId, myId]);
 
   const sendChatActivity = useCallback(() => {
     if (client.current?.connected) {
+      console.log('[chat] send', {
+        meetingId,
+        myId,
+        destination: `/app/meetings/${meetingId}/participation/chat`,
+      });
       client.current.publish({
         destination: `/app/meetings/${meetingId}/participation/chat`,
       });
+      return;
     }
+
+    pendingSendCount.current += 1;
+    console.log('[chat] queued', {
+      meetingId,
+      myId,
+      connected: client.current?.connected ?? false,
+      pendingSendCount: pendingSendCount.current,
+    });
   }, [meetingId, myId]);
 
   return { sendChatActivity };

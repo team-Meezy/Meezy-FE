@@ -7,6 +7,7 @@ import {
   verifyEmailCode,
   localSignup,
   useSignupStore,
+  useTimeStore,
   useLoadingStore,
   useErrorStore,
 } from '@org/shop-data';
@@ -22,8 +23,8 @@ export function useSignupFlow() {
     id,
     passwordConfirm,
     authCode,
-    setRemainingTime,
   } = useSignupStore();
+  const { setRemainingTime } = useTimeStore();
   const router = useRouter();
   const { loading, setLoading, setLoadingState } = useLoadingStore();
   const { setGeneralError } = useErrorStore();

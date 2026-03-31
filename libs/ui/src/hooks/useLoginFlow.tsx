@@ -1,7 +1,12 @@
 'use client';
 
 import { useRouter } from 'next/navigation';
-import { localLogin, useLoadingStore, getTeams } from '@org/shop-data';
+import {
+  localLogin,
+  useLoadingStore,
+  getTeams,
+  useSignupStore,
+} from '@org/shop-data';
 import { useProfile } from '../context';
 
 interface LoginFlowParams {
@@ -16,6 +21,7 @@ export function useLoginFlow({
   setGeneralError,
 }: LoginFlowParams) {
   const { setLoading, setLoadingState } = useLoadingStore();
+  const { reset } = useSignupStore();
   const router = useRouter();
   const { refetchProfile } = useProfile();
 
@@ -37,16 +43,11 @@ export function useLoginFlow({
       /^(?=.*[A-Za-z])(?=.*\d)(?=.*[@$!%*#?&])[A-Za-z\d@$!%*#?&]{8,30}$/;
     if (!passwordRegex.test(password)) {
       setGeneralError(
-        '비밀번호는 8~30자의 영문, 숫자, 특수문자(@$!%*#?&)를 모두 포함해야 합니다'
+        '비밀번호는 8~30자의 영문, 숫자, 특수문자(@$!%*#?&)를 모두 포함해야 합니다.'
       );
       return false;
     }
 
-    return true;
-  };
-
-  const validateSuccessStep = () => {
-    router.push('/main');
     return true;
   };
 
@@ -73,8 +74,7 @@ export function useLoginFlow({
       }
 
       await refetchProfile();
-      
-      // 바로 팀으로 들어가게 하기 위해 팀 목록 조회
+
       try {
         const teams = await getTeams();
         if (teams && teams.length > 0) {
@@ -92,7 +92,7 @@ export function useLoginFlow({
       const message = error.response?.data?.message || error.message;
 
       if (statusCode === 400) {
-        setGeneralError('입력된 정보가 유효하지 않습니다.');
+        setGeneralError('입력한 정보가 유효하지 않습니다.');
       } else if (statusCode === 401) {
         setGeneralError('아이디 또는 비밀번호가 일치하지 않습니다.');
       } else if (statusCode === 403) {
@@ -100,7 +100,7 @@ export function useLoginFlow({
       } else if (statusCode === 404) {
         setGeneralError('존재하지 않는 계정입니다.');
       } else if (statusCode === 409) {
-        setGeneralError('허용되지 않는 요청입니다.');
+        setGeneralError('유효하지 않은 요청입니다.');
       } else if (statusCode === 500) {
         setGeneralError('서버 오류가 발생했습니다. 잠시 후 다시 시도해주세요.');
       } else {
@@ -113,6 +113,7 @@ export function useLoginFlow({
     setLoading(true);
     setLoadingState('회원가입을 위해 이동 중!');
     await new Promise((resolve) => setTimeout(resolve, 2000));
+    reset();
     router.push('/signUp');
   };
 

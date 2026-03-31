@@ -125,7 +125,7 @@ export function ServerProfilePage() {
   };
 
   const tabClassName = (isActive: boolean) =>
-    `rounded-xl px-4 py-2 text-[clamp(0.72rem,0.9vw,0.84rem)] font-semibold transition-colors sm:px-5 ${
+    `rounded-xl px-4 py-2 text-[clamp(0.72rem,0.9vw,0.84rem)] font-bold transition-colors sm:px-5 ${
       isActive
         ? 'bg-[#2a2a2a] text-white'
         : 'bg-transparent text-[#727272] hover:text-white'
@@ -156,7 +156,7 @@ export function ServerProfilePage() {
           <h1 className="text-[clamp(1.45rem,1.9vw,2.15rem)] font-bold tracking-[-0.04em] text-white">
             {isProfileTab ? '서버 프로필' : '서버 설정'}
           </h1>
-          <p className="text-[clamp(0.76rem,0.92vw,0.9rem)] leading-[1.8] text-[#9b9b9b]">
+          <p className="text-[clamp(0.76rem,0.92vw,0.9rem)] font-medium leading-[1.8] text-[#9b9b9b]">
             {isProfileTab
               ? '공개적으로 보일 서버 프로필인 서버 이름, 서버 아이콘 등을 정해주세요!'
               : '서버의 전체적인 설정과 멤버 관리를 조정할 수 있습니다.'}
@@ -169,7 +169,7 @@ export function ServerProfilePage() {
               {isProfileTab ? '이름' : '멤버 관리'}
             </h2>
             {!isProfileTab && (
-              <p className="text-[clamp(0.76rem,0.92vw,0.88rem)] text-[#8d8d8d]">
+              <p className="text-[clamp(0.76rem,0.92vw,0.88rem)] font-medium text-[#8d8d8d]">
                 서버에 참여 중인 멤버를 관리할 수 있습니다.
               </p>
             )}
@@ -181,7 +181,7 @@ export function ServerProfilePage() {
                 type="text"
                 value={serverName}
                 onChange={(event) => setServerName(event.target.value)}
-                className="h-12 w-full max-w-[560px] rounded-xl border border-white/5 bg-[#303030] px-5 text-[clamp(0.86rem,0.98vw,1rem)] text-white outline-none transition-all placeholder:text-white/30 focus:ring-1 focus:ring-[#FF5C00]"
+                className="h-12 w-full max-w-[560px] rounded-xl border border-white/5 bg-[#303030] px-5 text-[clamp(0.86rem,0.98vw,1rem)] font-semibold text-white outline-none transition-all placeholder:text-white/30 focus:ring-1 focus:ring-[#FF5C00]"
               />
               <button
                 onClick={handleUpdateServerName}
@@ -207,7 +207,7 @@ export function ServerProfilePage() {
                     ) : (
                       <div className="h-5 w-5 rounded-full bg-[#d9d9d9]" />
                     )}
-                    <span className="text-[clamp(0.84rem,0.98vw,0.98rem)] font-medium text-white">
+                    <span className="text-[clamp(0.84rem,0.98vw,0.98rem)] font-semibold text-white">
                       {user.name}
                     </span>
                   </div>
@@ -246,13 +246,13 @@ export function ServerProfilePage() {
                 </h2>
 
                 {isProfileTab ? (
-                  <p className="text-[clamp(0.76rem,0.92vw,0.88rem)] leading-[1.8] text-[#9b9b9b]">
+                  <p className="text-[clamp(0.76rem,0.92vw,0.88rem)] font-medium leading-[1.8] text-[#9b9b9b]">
                     서버 대표 이미지를 정해주세요.
                     <br />
                     최소 512 x 512 크기로 지정해주세요.
                   </p>
                 ) : (
-                  <p className="text-[clamp(0.76rem,0.92vw,0.88rem)] leading-[1.8] text-[#9b9b9b]">
+                  <p className="text-[clamp(0.76rem,0.92vw,0.88rem)] font-medium leading-[1.8] text-[#9b9b9b]">
                     서버를 완전히 삭제하면 복구할 수 없습니다.
                   </p>
                 )}
@@ -269,13 +269,13 @@ export function ServerProfilePage() {
                   />
 
                   <button
-                    className="rounded-xl bg-[#FF5C00] px-5 py-3 text-[clamp(0.76rem,0.9vw,0.88rem)] font-bold text-white transition-colors hover:bg-[#E55200]"
+                    className="rounded-xl bg-[#FF5C00] px-5 py-3 text-[clamp(0.76rem,0.9vw,0.9rem)] font-bold text-white transition-colors hover:bg-[#E55200]"
                     onClick={handleClickUpload}
                   >
                     대표 이미지 업로드
                   </button>
                   <button
-                    className="rounded-xl bg-[#2b2b2b] px-5 py-3 text-[clamp(0.76rem,0.9vw,0.88rem)] font-bold text-[#8f8f8f] transition-colors hover:bg-[#343434]"
+                    className="rounded-xl bg-[#2b2b2b] px-5 py-3 text-[clamp(0.76rem,0.9vw,0.9rem)] font-bold text-[#8f8f8f] transition-colors hover:bg-[#343434]"
                     onClick={handleDeleteImg}
                   >
                     대표 이미지 삭제

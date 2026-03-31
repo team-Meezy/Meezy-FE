@@ -291,14 +291,15 @@ export function ChatRoomPage() {
                   });
 
                   // 멤버의 이미지 필드 탐색 (가장 많이 발견되는 필드 순서)
+                  const memberData = member as any;
                   const memberImg =
                     member?.profileImage ||
                     member?.profileImageUrl ||
-                    (member as any).user?.profileImage ||
-                    (member as any).user?.profileImageUrl ||
-                    (member as any).user?.image ||
-                    (member as any).profile_image ||
-                    (member as any).user?.profile_image;
+                    memberData?.user?.profileImage ||
+                    memberData?.user?.profileImageUrl ||
+                    memberData?.user?.image ||
+                    memberData?.profile_image ||
+                    memberData?.user?.profile_image;
 
                   if (!memberImg && member && !isMyMessage) {
                     console.warn(`⚠️ [ChatRoomPage] Member found but NO image: ${msg.senderName}`, {

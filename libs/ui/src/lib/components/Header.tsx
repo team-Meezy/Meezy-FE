@@ -221,7 +221,7 @@ export function Header() {
           return participantNames.some((name) => myNames.includes(name));
         });
 
-      if (isParticipant && (meetingRef.current || currentPath.includes('/meeting'))) {
+      if (isParticipant) {
         setMeeting(true);
         setMeetingId(activeMeeting.meetingId);
         setTeamId(currentTeamId);

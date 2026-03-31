@@ -7,7 +7,12 @@ import { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { useEffect } from 'react';
 import { useServerState, useServerJoinedTeam, useProfile } from '../../context';
-import { useTeamStore, getTeamMembers, expelTeamMember } from '@org/shop-data';
+import {
+  useTeamStore,
+  getTeamMembers,
+  expelTeamMember,
+  useModalStore,
+} from '@org/shop-data';
 
 interface SidebarProps {
   onOpenModal?: () => void;
@@ -20,6 +25,7 @@ export function TeamSidebar({ onOpenModal, className }: SidebarProps) {
   const router = useRouter();
   const { updateTeams } = useServerState();
   const { teams } = useTeamStore();
+  const { setIsModalOpen } = useModalStore();
   const { profile } = useProfile();
   const [contextMenuTeamId, setContextMenuTeamId] = useState<string | null>(
     null
@@ -28,6 +34,15 @@ export function TeamSidebar({ onOpenModal, className }: SidebarProps) {
   useEffect(() => {
     updateTeams();
   }, []);
+
+  const handleOpenModal = () => {
+    if (onOpenModal) {
+      onOpenModal();
+      return;
+    }
+
+    setIsModalOpen(true);
+  };
 
   const handleTeamClick = (teamId: string) => {
     setJoined(true);
@@ -114,7 +129,7 @@ export function TeamSidebar({ onOpenModal, className }: SidebarProps) {
         <button
           className="min-w-14 min-h-14 flex items-center justify-center rounded-lg border border-gray-800 bg-[#262626] hover:bg-[#252525] transition-colors group"
           aria-label="팀 추가"
-          onClick={onOpenModal}
+          onClick={handleOpenModal}
         >
           <Image src={Plus} alt="plus" className="w-5" />
         </button>

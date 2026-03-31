@@ -54,7 +54,7 @@ export function CalendarMockup() {
 
   return (
     <div
-      className="p-5 rounded-lg"
+      className="h-fit self-start rounded-lg p-5"
       style={{ backgroundColor: colors.gray[900] }}
     >
       <div className="flex items-center justify-between mb-4">

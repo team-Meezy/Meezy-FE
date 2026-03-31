@@ -44,7 +44,7 @@ export function MainLayoutWrapper({ children }: { children: React.ReactNode }) {
         <div className="flex flex-1 overflow-hidden">
           {children}
           {!joined && (
-            <aside className="hidden xl:flex w-full max-w-[270px] bg-[#111111] border border-white/5 p-6 shrink-0">
+            <aside className="hidden xl:flex w-full max-w-[270px] items-start bg-[#111111] border border-white/5 p-6 shrink-0">
               <CalendarMockup />
             </aside>
           )}

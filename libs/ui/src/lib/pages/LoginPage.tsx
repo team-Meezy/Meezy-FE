@@ -69,7 +69,7 @@ export function LoginPage() {
         </div>
 
         {/* 오른쪽: 로그인 폼 섹션 */}
-        <div className="flex-1 flex flex-col items-center justify-center p-12 md:p-24 lg:p-32 bg-[#161616] relative rounded-[40px]">
+        <div className="relative flex flex-1 flex-col items-center justify-center rounded-[40px] p-12 md:p-24 lg:p-32">
           <div className="w-full max-w-xl flex flex-col justify-center">
             <div className="mb-12">
               <h2

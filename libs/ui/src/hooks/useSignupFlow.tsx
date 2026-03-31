@@ -7,6 +7,7 @@ import {
   verifyEmailCode,
   localSignup,
   useSignupStore,
+  useTimeStore,
   useLoadingStore,
   useErrorStore,
 } from '@org/shop-data';
@@ -15,14 +16,15 @@ export function useSignupFlow() {
   const {
     step,
     setStep,
+    reset,
     name,
     email,
     password,
     id,
     passwordConfirm,
     authCode,
-    setRemainingTime,
   } = useSignupStore();
+  const { setRemainingTime } = useTimeStore();
   const router = useRouter();
   const { loading, setLoading, setLoadingState } = useLoadingStore();
   const { setGeneralError } = useErrorStore();
@@ -41,25 +43,80 @@ export function useSignupFlow() {
     try {
       setLoading(true);
       await requestEmailVerification(email);
-
       return true;
     } catch (error: any) {
       const statusCode = error.response?.status || error.statusCode;
+
       if (statusCode === 409) {
-        setGeneralError('이미 가입된 이메일입니다.');
+        setGeneralError('이미 가입한 이메일입니다.');
       } else if (statusCode === 400) {
         setGeneralError('잘못된 이메일 형식입니다.');
       } else if (statusCode === 429) {
         setGeneralError(
-          '너무 많은 요청을 보냈습니다. 24시간 후에 다시 시도해주세요.'
+          '너무 많은 요청을 보냈습니다. 24시간 이후에 다시 시도해주세요.'
         );
       } else {
         setGeneralError('인증번호 전송에 실패했습니다. 다시 시도해 주세요.');
       }
+
       return false;
     } finally {
       setLoading(false);
     }
+  };
+
+  const validateAuthCodeStep = async () => {
+    if (!authCode || authCode.length !== 6) {
+      setGeneralError('인증번호를 입력해주세요.');
+      return false;
+    }
+
+    try {
+      setLoading(true);
+      setLoadingState('인증번호 확인 중...');
+      await verifyEmailCode(email, authCode);
+      return true;
+    } catch (error: any) {
+      const statusCode = error.response?.status || error.statusCode;
+
+      if (statusCode === 400) {
+        setGeneralError('잘못된 인증번호입니다.');
+      } else {
+        setGeneralError('인증번호 확인에 실패했습니다. 다시 시도해 주세요.');
+      }
+
+      return false;
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const validateIdStep = () => {
+    if (!id) {
+      setGeneralError('아이디를 입력해주세요.');
+      return false;
+    }
+
+    if (id.length < 6 || id.length > 15) {
+      setGeneralError('아이디는 6자 이상 15자 이내로 입력해주세요.');
+      return false;
+    }
+
+    return true;
+  };
+
+  const validateNameStep = () => {
+    if (!name) {
+      setGeneralError('이름을 입력해주세요.');
+      return false;
+    }
+
+    if (name.length < 2 || name.length > 10) {
+      setGeneralError('이름은 2자 이상 10자 이내로 입력해주세요.');
+      return false;
+    }
+
+    return true;
   };
 
   const validatePasswordStep = async () => {
@@ -82,7 +139,7 @@ export function useSignupFlow() {
       /^(?=.*[A-Za-z])(?=.*\d)(?=.*[@$!%*#?&])[A-Za-z\d@$!%*#?&]{8,30}$/;
     if (!passwordRegex.test(password)) {
       setGeneralError(
-        '비밀번호는 8~30자의 영문, 숫자, 특수문자(@$!%*#?&)를 모두 포함해야 합니다'
+        '비밀번호는 8~30자의 영문, 숫자, 특수문자(@$!%*#?&)를 모두 포함해야 합니다.'
       );
       return false;
     }
@@ -95,62 +152,20 @@ export function useSignupFlow() {
         localSignup(email, id, name, password),
         new Promise((resolve) => setTimeout(resolve, 3000)),
       ]);
+
       setLoading(false);
       return true;
     } catch (error: any) {
       setLoading(false);
       const statusCode = error.response?.status || error.statusCode;
+
       if (statusCode === 409) {
         setGeneralError('이미 사용 중인 아이디 또는 이메일입니다.');
       } else {
         setGeneralError('회원가입에 실패했습니다. 다시 시도해 주세요.');
       }
-      return false;
-    }
-  };
 
-  const validateNameStep = () => {
-    if (!name) {
-      setGeneralError('이름을 입력해주세요.');
       return false;
-    } else if (name.length < 2 || name.length > 10) {
-      setGeneralError('이름은 2자 이상 10자 이내로 입력해주세요.');
-      return false;
-    }
-    return true;
-  };
-
-  const validateIdStep = () => {
-    if (!id) {
-      setGeneralError('아이디를 입력해주세요.');
-      return false;
-    } else if (id.length < 6 || id.length > 15) {
-      setGeneralError('아이디는 6자 이상 15자 이내로 입력해주세요.');
-      return false;
-    }
-    return true;
-  };
-
-  const validateAuthCodeStep = async () => {
-    if (!authCode || authCode.length !== 6) {
-      setGeneralError('인증번호를 입력해주세요.');
-      return false;
-    }
-    try {
-      setLoading(true);
-      setLoadingState('인증번호 확인 중...');
-      await verifyEmailCode(email, authCode);
-      return true;
-    } catch (error: any) {
-      const statusCode = error.response?.status || error.statusCode;
-      if (statusCode === 400) {
-        setGeneralError('잘못된 인증번호입니다.');
-      } else {
-        setGeneralError('인증번호 전송에 실패했습니다. 다시 시도해 주세요.');
-      }
-      return false;
-    } finally {
-      setLoading(false);
     }
   };
 
@@ -158,14 +173,16 @@ export function useSignupFlow() {
     setLoading(true);
     setLoadingState('로그인 페이지로 이동 중...');
     await new Promise((resolve) => setTimeout(resolve, 2000));
+    reset();
     router.push('/login');
     return true;
   };
 
   const handleGoToLogin = async () => {
     setLoading(true);
-    setLoadingState('로그인 페이지로 이동 중!');
+    setLoadingState('로그인 페이지로 이동 중...');
     await new Promise((resolve) => setTimeout(resolve, 2000));
+    reset();
     router.push('/login');
   };
 
@@ -183,9 +200,10 @@ export function useSignupFlow() {
       setRemainingTime(300);
     } catch (error: any) {
       const statusCode = error.response?.status || error.statusCode;
+
       if (statusCode === 429) {
         setGeneralError(
-          '너무 많은 요청을 보냈습니다. 24시간 후에 다시 시도해주세요.'
+          '너무 많은 요청을 보냈습니다. 24시간 이후에 다시 시도해주세요.'
         );
       } else {
         setGeneralError('인증번호 재전송에 실패했습니다. 다시 시도해 주세요.');

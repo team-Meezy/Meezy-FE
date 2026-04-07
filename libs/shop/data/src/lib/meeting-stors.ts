@@ -1,10 +1,5 @@
 import { create } from 'zustand';
-
-type MeetingIceServer = {
-  urls: string | string[];
-  username?: string | null;
-  credential?: string | null;
-};
+import type { MeetingIceServer } from './hooks/meeting/types';
 
 interface MeetingState {
   meetingId: string;

@@ -1,8 +1,13 @@
 import { privateApi } from '../axios';
+import type { MeetingResponse } from './types';
 
-export const getActiveMeetings = async (teamId: string) => {
+export const getActiveMeetings = async (
+  teamId: string
+): Promise<MeetingResponse> => {
   try {
-    const response = await privateApi.get(`/teams/${teamId}/meetings/active`);
+    const response = await privateApi.get<MeetingResponse>(
+      `/teams/${teamId}/meetings/active`
+    );
     console.log('getActiveMeetings response', response);
     return response.data;
   } catch (error) {

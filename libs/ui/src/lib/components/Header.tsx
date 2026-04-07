@@ -99,6 +99,7 @@ export function Header() {
   const {
     meetingId,
     teamId: activeMeetingTeamId,
+    setLastEndedMeeting,
     setMeetingId,
     setTeamId,
     setIceServers,
@@ -307,6 +308,12 @@ export function Header() {
   const handleGlobalMeetingEvent = useCallback(
     (event: MeetingEvent) => {
       if (event.type === 'meeting-ended') {
+        if (meetingIdRef.current && activeMeetingTeamIdRef.current) {
+          setLastEndedMeeting(
+            meetingIdRef.current,
+            activeMeetingTeamIdRef.current
+          );
+        }
         setMeeting(false);
         setHasActiveMeeting(false);
         setMeetingId('');
@@ -329,6 +336,7 @@ export function Header() {
       currentTeamId,
       router,
       setHasActiveMeeting,
+      setLastEndedMeeting,
       setMeeting,
       setMeetingId,
       setStartTime,
@@ -409,6 +417,9 @@ export function Header() {
         setLoading(true);
         setLoadingState(MESSAGE_LEAVING_MEETING);
 
+        if (meetingIdRef.current) {
+          setLastEndedMeeting(meetingIdRef.current, currentTeamId);
+        }
         await leaveMeeting(currentTeamId);
 
         setMeeting(false);

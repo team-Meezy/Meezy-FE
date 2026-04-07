@@ -12,7 +12,13 @@ import NoMike from '../../assets/NoMike.svg';
 import Kamera from '../../assets/Kamera.svg';
 
 export function MiniMeetingOverlay() {
-  const { meetingId, setMeetingId, teamId, setTeamId } = useMeetingStore();
+  const {
+    meetingId,
+    setMeetingId,
+    teamId,
+    setTeamId,
+    setLastEndedMeeting,
+  } = useMeetingStore();
   const { localStream, remoteStreams, isSpeaking, startRecording, stopRecording } = useMeeting();
   const { setMeeting } = useServerJoinedTeam();
   const { setLoading, setLoadingState } = useLoadingStore();
@@ -67,6 +73,9 @@ export function MiniMeetingOverlay() {
 
     try {
       console.log(`[${now}] MiniOverlay: [EXIT] Calling leaveMeeting...`);
+      if (meetingId) {
+        setLastEndedMeeting(meetingId, teamId);
+      }
       await leaveMeeting(teamId);
       setMeeting(false);
       setMeetingId('');

@@ -52,6 +52,10 @@ export function MainRoomWrapper() {
           currentServerId,
           meetingId
         );
+        if (!('meetingId' in totalEngagement)) {
+          console.log('totalEngagement not ready yet');
+          return;
+        }
         fetchedMeetingId = totalEngagement.meetingId;
         setEngagementMeetingId(fetchedMeetingId);
         console.log(totalEngagement, 'totalEngagement');

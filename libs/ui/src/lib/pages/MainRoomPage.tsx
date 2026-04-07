@@ -3,10 +3,10 @@
 import { useEffect, useMemo, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import {
-  getIndividualEngagement,
-  getMeetingSummaries,
   getTeamDetail,
   getTotalEngagement,
+  type ParticipantEngagementMetrics,
+  useMeetingStore,
   useServerIdStore,
 } from '@org/shop-data';
 import { useProfile } from '../../context';
@@ -16,6 +16,7 @@ import { ParticipationChart } from '../components/ParticipationChart';
 
 export function MainRoomPage() {
   const { serverId } = useServerIdStore();
+  const { lastEndedMeetingId, lastEndedTeamId } = useMeetingStore();
   const router = useRouter();
   const { profile } = useProfile();
   const [participationRate, setParticipationRate] = useState<number | null>(
@@ -47,56 +48,62 @@ export function MainRoomPage() {
 
   useEffect(() => {
     if (!serverId) return;
-
-    const getLatestMeetingId = async () => {
-      const summaries = await getMeetingSummaries(serverId);
-      if (!Array.isArray(summaries) || summaries.length === 0) {
-        return '';
-      }
-
-      const latestSummary = [...summaries].sort((a: any, b: any) => {
-        const left = new Date(
-          a?.createdAt || a?.startedAt || a?.updatedAt || 0
-        ).getTime();
-        const right = new Date(
-          b?.createdAt || b?.startedAt || b?.updatedAt || 0
-        ).getTime();
-
-        return right - left;
-      })[0];
-
-      return String(latestSummary?.meetingId || '').trim();
-    };
+    if (lastEndedTeamId !== serverId || !lastEndedMeetingId) return;
 
     const fetchParticipation = async () => {
+      const totalEngagement = await getTotalEngagement(
+        serverId,
+        lastEndedMeetingId
+      );
+
+      if (!('participants' in totalEngagement)) {
+        return false;
+      }
+
+      const profileIds = [
+        profile?.userId,
+        profile?.id,
+        profile?.user_id,
+        profile?.accountId,
+      ]
+        .map((value) => String(value ?? '').trim())
+        .filter(Boolean);
+
+      const myMetrics = totalEngagement.participants.find(
+        (participant: ParticipantEngagementMetrics) =>
+          profileIds.includes(String(participant.userId ?? '').trim())
+      );
+
+      setParticipationRate(myMetrics?.participationRate ?? 0);
+      return true;
+    };
+
+    let isCancelled = false;
+    let attempts = 0;
+    const maxAttempts = 20;
+
+    const pollParticipation = async () => {
+      if (isCancelled || attempts >= maxAttempts) return;
+      attempts += 1;
+
       try {
-        const latestMeetingId = await getLatestMeetingId();
-
-        if (!latestMeetingId) {
-          console.warn('No latest meetingId found, skipping participation fetch');
-          return;
-        }
-
-        const totalEngagement = await getTotalEngagement(serverId, latestMeetingId);
-        const fetchedMeetingId = totalEngagement?.meetingId;
-
-        if (!fetchedMeetingId) return;
-
-        const individualEngagement = await getIndividualEngagement(
-          serverId,
-          fetchedMeetingId
-        );
-
-        if (individualEngagement?.currentRate != null) {
-          setParticipationRate(individualEngagement.currentRate);
+        const resolved = await fetchParticipation();
+        if (!resolved && !isCancelled) {
+          window.setTimeout(() => {
+            void pollParticipation();
+          }, 3000);
         }
       } catch (error) {
         console.error('fetchParticipation error', error);
       }
     };
 
-    void fetchParticipation();
-  }, [serverId]);
+    void pollParticipation();
+
+    return () => {
+      isCancelled = true;
+    };
+  }, [lastEndedMeetingId, lastEndedTeamId, profile, serverId]);
 
   return (
     <main

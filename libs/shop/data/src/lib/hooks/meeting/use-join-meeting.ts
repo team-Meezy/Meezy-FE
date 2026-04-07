@@ -1,8 +1,9 @@
 import { privateApi } from '../axios';
+import type { MeetingResponse } from './types';
 
-export const joinMeeting = async (teamId: string) => {
+export const joinMeeting = async (teamId: string): Promise<MeetingResponse> => {
   try {
-    const response = await privateApi.post(
+    const response = await privateApi.post<MeetingResponse>(
       `/teams/${teamId}/meetings/join`,
       {}
     );

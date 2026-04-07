@@ -1,6 +1,11 @@
 export { startMeeting } from './use-start-meeting';
 export { leaveMeeting } from './use-leave-meeting';
 export { getActiveMeetings } from './use-get-active-meetings';
+export type {
+  MeetingIceServer,
+  MeetingParticipant,
+  MeetingResponse,
+} from './types';
 export { getMeetingSummary } from './use-get-meeting-summary';
 export { getMeetingSummaries } from './use-get-meeting-summaries';
 export {

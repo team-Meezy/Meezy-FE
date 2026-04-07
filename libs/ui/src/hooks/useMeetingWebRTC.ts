@@ -2,6 +2,7 @@
 
 import { useEffect, useRef, useState, useCallback } from 'react';
 import {
+  type MeetingIceServer,
   useMeetingSignal,
   useMeetingEvents,
   useMeetingVoiceActivity,
@@ -30,40 +31,11 @@ function getMeetingUserId(entity: any) {
   ).trim();
 }
 
-function parseIceServerUrls(value?: string) {
-  return String(value ?? '')
-    .split(',')
-    .map((entry) => entry.trim())
-    .filter(Boolean);
-}
-
-function buildIceServers(): RTCIceServer[] {
-  const turnUrls = parseIceServerUrls(process.env.NEXT_PUBLIC_TURN_URLS);
-  const turnUsername = String(process.env.NEXT_PUBLIC_TURN_USERNAME ?? '').trim();
-  const turnCredential = String(process.env.NEXT_PUBLIC_TURN_CREDENTIAL ?? '').trim();
-
-  const iceServers: RTCIceServer[] = [{ urls: 'stun:stun.l.google.com:19302' }];
-
-  if (turnUrls.length > 0) {
-    iceServers.push({
-      urls: turnUrls,
-      username: turnUsername || undefined,
-      credential: turnCredential || undefined,
-    });
-  }
-
-  return iceServers;
-}
-
 function normalizeIceServers(
-  value?: Array<{
-    urls: string | string[];
-    username?: string | null;
-    credential?: string | null;
-  }>
+  value?: MeetingIceServer[]
 ): RTCIceServer[] {
   if (!Array.isArray(value) || value.length === 0) {
-    return buildIceServers();
+    return [];
   }
 
   return value

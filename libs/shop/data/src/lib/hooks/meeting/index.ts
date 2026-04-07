@@ -1,5 +1,5 @@
 export { startMeeting } from './use-start-meeting';
-export { leaveMeeting } from './use-leave-meeting';
+export { leaveMeeting, leaveMeetingOnUnload } from './use-leave-meeting';
 export { getActiveMeetings } from './use-get-active-meetings';
 export type {
   MeetingIceServer,

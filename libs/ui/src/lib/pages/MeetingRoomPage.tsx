@@ -337,6 +337,7 @@ export const MeetingRoomPage = () => {
       id: myId,
       name: `${profile?.name || '나'} (나)`,
       isLocal: true,
+      mirrorVideo: true,
       stream: localStream,
       isSpeaking,
       isMike,
@@ -354,6 +355,7 @@ export const MeetingRoomPage = () => {
         id: participantId || participant.name,
         name: participant.name || '참가자',
         isLocal: false,
+        mirrorVideo: false,
         stream: remoteStream?.stream,
         isSpeaking: !!remoteVoices[String(participantId)],
         isMike: true,
@@ -459,12 +461,15 @@ export const MeetingRoomPage = () => {
         >
           {allParticipants.map((participant, index) => (
             <div
-              key={String(participant.id)}
+              key={`${participant.isLocal ? 'local' : 'remote'}:${String(
+                participant.id || participant.name
+              )}`}
               className={`min-h-0 ${getCardWrapperClassName(index)}`}
             >
               <VideoCard
                 name={participant.name}
                 isLocal={participant.isLocal}
+                mirrorVideo={participant.mirrorVideo}
                 isSpeaking={participant.isSpeaking}
                 isMike={participant.isMike}
                 isKamera={participant.isKamera}

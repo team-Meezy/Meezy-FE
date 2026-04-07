@@ -5,9 +5,14 @@ import { useEffect, useMemo, useRef } from 'react';
 interface WebRTCProps {
   stream: MediaStream | null;
   isLocal?: boolean;
+  mirror?: boolean;
 }
 
-export default function WebRTC({ stream, isLocal }: WebRTCProps) {
+export default function WebRTC({
+  stream,
+  isLocal,
+  mirror = false,
+}: WebRTCProps) {
   const videoRef = useRef<HTMLVideoElement | null>(null);
   const audioRef = useRef<HTMLAudioElement | null>(null);
 
@@ -95,7 +100,7 @@ export default function WebRTC({ stream, isLocal }: WebRTCProps) {
         muted
         playsInline
         style={{
-          transform: isLocal ? 'scaleX(-1)' : 'none',
+          transform: mirror ? 'scaleX(-1)' : 'none',
           objectFit: 'contain',
         }}
         className="w-full h-full bg-black"

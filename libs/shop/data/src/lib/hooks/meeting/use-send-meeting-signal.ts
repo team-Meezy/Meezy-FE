@@ -39,7 +39,7 @@ export function useMeetingSignal(
     if (!teamId || !myId || !BASE_URL) return;
 
     const token = localStorage.getItem('accessToken');
-    const socketUrl = `${STOMP_SOCKET_URL}${token ? `?token=${token}` : ''}`;
+    const socketUrl = STOMP_SOCKET_URL;
 
     console.log('[DEBUG] useMeetingSignal: attempting connection', {
       socketUrl,
@@ -63,8 +63,8 @@ export function useMeetingSignal(
           }
         : {},
       reconnectDelay: 5000,
-      heartbeatIncoming: 4000,
-      heartbeatOutgoing: 4000,
+      heartbeatIncoming: 10000,
+      heartbeatOutgoing: 10000,
       debug: (str) => console.log('STOMP Signaling Debug:', str),
       onConnect: () => {
         console.log('STOMP Connected for Signaling (SockJS)');

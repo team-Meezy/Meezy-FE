@@ -24,7 +24,7 @@ export function useMeetingVoiceActivity(
     if (!meetingId || !BASE_URL) return;
 
     const token = localStorage.getItem('accessToken');
-    const socketUrl = `${STOMP_SOCKET_URL}${token ? `?token=${token}` : ''}`;
+    const socketUrl = STOMP_SOCKET_URL;
 
     console.log('Voice Activity SockJS Debug:', socketUrl);
 
@@ -37,6 +37,8 @@ export function useMeetingVoiceActivity(
           }
         : {},
       reconnectDelay: 5000,
+      heartbeatIncoming: 10000,
+      heartbeatOutgoing: 10000,
       debug: (str) => console.log('STOMP Voice Activity Debug:', str),
       onConnect: () => {
         console.log(
@@ -74,6 +76,12 @@ export function useMeetingVoiceActivity(
   return {
     sendVoiceActivity: (isSpeaking: boolean) => {
       if (client.current?.connected && userId) {
+        if (isSpeaking) {
+          client.current.publish({
+            destination: `/app/meetings/${meetingId}/participation/voice`,
+          });
+        }
+
         client.current.publish({
           destination: `/app/meetings/${meetingId}/voice`,
           body: JSON.stringify({ userId, isSpeaking }),

@@ -11,7 +11,7 @@ export function useMeetingChatActivity(meetingId: string, myId: string) {
     if (!meetingId || !myId || !BASE_URL) return;
 
     const token = localStorage.getItem('accessToken');
-    const socketUrl = `${STOMP_SOCKET_URL}${token ? `?token=${token}` : ''}`;
+    const socketUrl = STOMP_SOCKET_URL;
     console.log('Chat Activity SockJS Attempt:', socketUrl);
 
     client.current = new Client({
@@ -23,8 +23,8 @@ export function useMeetingChatActivity(meetingId: string, myId: string) {
           }
         : {},
       reconnectDelay: 5000,
-      heartbeatIncoming: 4000,
-      heartbeatOutgoing: 4000,
+      heartbeatIncoming: 10000,
+      heartbeatOutgoing: 10000,
       debug: (str) => console.log('STOMP Chat Activity Debug:', str),
       onConnect: () => {
         console.log('STOMP Connected for Chat Activity (SockJS)', {

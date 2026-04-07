@@ -5,6 +5,9 @@ export type {
   MeetingIceServer,
   MeetingParticipant,
   MeetingResponse,
+  ParticipantEngagementMetrics,
+  TotalEngagementResponse,
+  IndividualEngagementResponse,
 } from './types';
 export { getMeetingSummary } from './use-get-meeting-summary';
 export { getMeetingSummaries } from './use-get-meeting-summaries';

@@ -27,7 +27,7 @@ export function useMeetingEvents(
     if (!teamId || !BASE_URL) return;
 
     const token = localStorage.getItem('accessToken');
-    const socketUrl = `${STOMP_SOCKET_URL}${token ? `?token=${token}` : ''}`;
+    const socketUrl = STOMP_SOCKET_URL;
 
     console.log('[DEBUG] useMeetingEvents: attempting connection', {
       socketUrl,
@@ -50,6 +50,8 @@ export function useMeetingEvents(
           }
         : {},
       reconnectDelay: 5000,
+      heartbeatIncoming: 10000,
+      heartbeatOutgoing: 10000,
       debug: (str) => console.log('STOMP Meeting Events Debug:', str),
       onConnect: () => {
         console.log(

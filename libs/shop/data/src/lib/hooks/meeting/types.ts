@@ -21,3 +21,28 @@ export type MeetingResponse = {
   participants: MeetingParticipant[];
   iceServers: MeetingIceServer[];
 };
+
+export type ParticipantEngagementMetrics = {
+  userId: string;
+  voiceCount: number;
+  chatCount: number;
+  connectionSeconds: number;
+  participationRate: number;
+  participated: boolean;
+};
+
+export type TotalEngagementResponse = {
+  meetingId: string;
+  teamId: string;
+  meetingDurationSeconds: number;
+  createdAt: string;
+  participants: ParticipantEngagementMetrics[];
+};
+
+export type IndividualEngagementResponse = {
+  meetingId: string;
+  userId: string;
+  currentRate: number;
+  averageRate: number;
+  meetingCount: number;
+};

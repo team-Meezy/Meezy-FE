@@ -4,6 +4,7 @@ import { useEffect, useMemo, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import {
   getIndividualEngagement,
+  getMeetingSummaries,
   getTeamDetail,
   getTotalEngagement,
   useServerIdStore,
@@ -47,15 +48,39 @@ export function MainRoomPage() {
   useEffect(() => {
     if (!serverId) return;
 
+    const getLatestMeetingId = async () => {
+      const summaries = await getMeetingSummaries(serverId);
+      if (!Array.isArray(summaries) || summaries.length === 0) {
+        return '';
+      }
+
+      const latestSummary = [...summaries].sort((a: any, b: any) => {
+        const left = new Date(
+          a?.createdAt || a?.startedAt || a?.updatedAt || 0
+        ).getTime();
+        const right = new Date(
+          b?.createdAt || b?.startedAt || b?.updatedAt || 0
+        ).getTime();
+
+        return right - left;
+      })[0];
+
+      return String(latestSummary?.meetingId || '').trim();
+    };
+
     const fetchParticipation = async () => {
       try {
-        const totalEngagement = await getTotalEngagement(serverId, serverId);
-        const fetchedMeetingId = totalEngagement?.meetingId;
+        const latestMeetingId = await getLatestMeetingId();
 
-        if (!fetchedMeetingId) {
-          console.warn('No meetingId from totalEngagement, skipping individual');
+        if (!latestMeetingId) {
+          console.warn('No latest meetingId found, skipping participation fetch');
           return;
         }
+
+        const totalEngagement = await getTotalEngagement(serverId, latestMeetingId);
+        const fetchedMeetingId = totalEngagement?.meetingId;
+
+        if (!fetchedMeetingId) return;
 
         const individualEngagement = await getIndividualEngagement(
           serverId,

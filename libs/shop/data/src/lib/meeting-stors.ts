@@ -11,6 +11,7 @@ interface MeetingState {
   isRecording: boolean;
   hasActiveMeeting: boolean;
   startTime: string | null;
+  recordingElapsedMs: number;
   setMeetingId: (value: string) => void;
   setTeamId: (value: string) => void;
   setLastEndedMeeting: (meetingId: string, teamId: string) => void;
@@ -19,6 +20,7 @@ interface MeetingState {
   setIsRecording: (value: boolean) => void;
   setHasActiveMeeting: (value: boolean) => void;
   setStartTime: (value: string | null) => void;
+  setRecordingElapsedMs: (value: number) => void;
 }
 
 export const useMeetingStore = create<MeetingState>()((set) => ({
@@ -31,6 +33,7 @@ export const useMeetingStore = create<MeetingState>()((set) => ({
   isRecording: false,
   hasActiveMeeting: false,
   startTime: null,
+  recordingElapsedMs: 0,
   setMeetingId: (value: string) => set({ meetingId: value }),
   setTeamId: (value: string) => set({ teamId: value }),
   setLastEndedMeeting: (meetingId: string, teamId: string) =>
@@ -40,4 +43,5 @@ export const useMeetingStore = create<MeetingState>()((set) => ({
   setIsRecording: (value: boolean) => set({ isRecording: value }),
   setHasActiveMeeting: (value: boolean) => set({ hasActiveMeeting: value }),
   setStartTime: (value: string | null) => set({ startTime: value }),
+  setRecordingElapsedMs: (value: number) => set({ recordingElapsedMs: value }),
 }));

@@ -101,6 +101,8 @@ export function useMeetingWebRTC(
     isRecording,
     setIsRecording,
     setStartTime,
+    recordingElapsedMs,
+    setRecordingElapsedMs,
   } = useMeetingStore();
   const iceServers = useRef<RTCIceServer[]>(normalizeIceServers(meetingIceServers));
   const [localStream, setLocalStream] = useState<MediaStream | null>(null);
@@ -334,12 +336,13 @@ export function useMeetingWebRTC(
     setLocalStream(null);
     setIsRecording(false);
     setStartTime(null);
+    setRecordingElapsedMs(0);
     recordingStartedAtRef.current = null;
     recordingMimeTypeRef.current = '';
     mediaRecorderRef.current = null;
     recordedChunksRef.current = [];
     cleanupRecordingMix();
-  }, [cleanupRecordingMix, setIsRecording, setStartTime]);
+  }, [cleanupRecordingMix, setIsRecording, setRecordingElapsedMs, setStartTime]);
 
   const getMeetingParticipantIds = useCallback(async () => {
     const activeMeeting = await getActiveMeetings(teamIdRef.current);
@@ -354,7 +357,11 @@ export function useMeetingWebRTC(
   }, []);
 
   const broadcastRecordingState = useCallback(
-    async (type: 'recording-started' | 'recording-stopped', startedAt?: string) => {
+    async (
+      type: 'recording-started' | 'recording-stopped',
+      startedAt?: string,
+      elapsedMs?: number
+    ) => {
       try {
         const participantIds = await getMeetingParticipantIds();
         participantIds.forEach((participantId: string) => {
@@ -363,6 +370,7 @@ export function useMeetingWebRTC(
             fromUserId: myId,
             toUserId: participantId,
             startedAt,
+            elapsedMs,
           });
         });
       } catch (error) {
@@ -558,11 +566,13 @@ export function useMeetingWebRTC(
         recordingStartedAtRef.current = signal.startedAt || new Date().toISOString();
         setIsRecording(true);
         setStartTime(recordingStartedAtRef.current);
+        setRecordingElapsedMs(Math.max(0, signal.elapsedMs ?? 0));
         return;
       } else if (type === 'recording-stopped') {
         recordingStartedAtRef.current = null;
         setIsRecording(false);
         setStartTime(null);
+        setRecordingElapsedMs(Math.max(0, signal.elapsedMs ?? 0));
         return;
       } else if (type === 'offer') {
         try {
@@ -744,11 +754,15 @@ export function useMeetingWebRTC(
 
     const startedAt = recordingStartedAtRef.current || new Date().toISOString();
     const intervalId = setInterval(() => {
-      void broadcastRecordingState('recording-started', startedAt);
+      void broadcastRecordingState(
+        'recording-started',
+        startedAt,
+        recordingElapsedMs
+      );
     }, 3000);
 
     return () => clearInterval(intervalId);
-  }, [broadcastRecordingState, isRecording, meetingId, teamId]);
+  }, [broadcastRecordingState, isRecording, meetingId, recordingElapsedMs, teamId]);
 
   useEffect(() => {
     if (!isRecording || !recordingDestinationRef.current) {
@@ -927,7 +941,11 @@ export function useMeetingWebRTC(
       recorder.start(1000);
       setIsRecording(true);
       setStartTime(startedAt);
-      void broadcastRecordingState('recording-started', startedAt);
+      void broadcastRecordingState(
+        'recording-started',
+        startedAt,
+        recordingElapsedMs
+      );
       log('MediaRecorder SUCCESS. state:', recorder.state);
       log('MIME Type selected:', recorder.mimeType || mimeType);
     };
@@ -970,20 +988,36 @@ export function useMeetingWebRTC(
     cleanupRecordingMix,
     ensureMixedRecordingStream,
     log,
+    recordingElapsedMs,
     setIsRecording,
+    setRecordingElapsedMs,
     setStartTime,
   ]);
 
   const stopRecording = useCallback(() => {
     log('stopRecording triggered manually');
+    const startedAt = recordingStartedAtRef.current;
+    const nextElapsedMs =
+      startedAt != null
+        ? recordingElapsedMs +
+          Math.max(0, Date.now() - new Date(startedAt).getTime())
+        : recordingElapsedMs;
     if (mediaRecorderRef.current && mediaRecorderRef.current.state !== 'inactive') {
       mediaRecorderRef.current.stop();
     }
     setIsRecording(false);
     setStartTime(null);
+    setRecordingElapsedMs(nextElapsedMs);
     recordingStartedAtRef.current = null;
-    void broadcastRecordingState('recording-stopped');
-  }, [broadcastRecordingState, log, setIsRecording, setStartTime]);
+    void broadcastRecordingState('recording-stopped', undefined, nextElapsedMs);
+  }, [
+    broadcastRecordingState,
+    log,
+    recordingElapsedMs,
+    setIsRecording,
+    setRecordingElapsedMs,
+    setStartTime,
+  ]);
 
   const initLocalMedia = useCallback(async () => {
     log('initLocalMedia starting...');

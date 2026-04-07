@@ -8,6 +8,7 @@ import WebRTC from './WebRTC';
 type VideoCardProps = {
   name: string;
   isLocal?: boolean;
+  mirrorVideo?: boolean;
   isSpeaking?: boolean;
   isMike: boolean;
   isKamera: boolean;
@@ -19,6 +20,7 @@ type VideoCardProps = {
 export const VideoCard = ({
   name,
   isLocal = false,
+  mirrorVideo = false,
   isSpeaking,
   isMike,
   isKamera,
@@ -53,6 +55,7 @@ export const VideoCard = ({
             key={`${isLocal ? 'local' : 'remote'}:${name}:${streamSignature}`}
             stream={videoStream}
             isLocal={isLocal}
+            mirror={mirrorVideo}
           />
         </div>
       )}

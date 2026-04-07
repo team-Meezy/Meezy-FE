@@ -4,6 +4,7 @@ import {
   getActiveMeetings,
   joinMeeting,
   leaveMeeting,
+  leaveMeetingOnUnload,
   MeetingEvent,
   startMeeting,
   useLoadingStore,
@@ -96,6 +97,8 @@ export function Header() {
   const { teamMembers } = useServerState();
   const { setLoading, setLoadingState } = useLoadingStore();
   const {
+    meetingId,
+    teamId: activeMeetingTeamId,
     setMeetingId,
     setTeamId,
     setIceServers,
@@ -110,6 +113,8 @@ export function Header() {
   const pathnameRef = useRef(pathname);
   const meetingRef = useRef(meeting);
   const isUploadingRef = useRef(isUploading);
+  const activeMeetingTeamIdRef = useRef(activeMeetingTeamId);
+  const meetingIdRef = useRef(meetingId);
 
   useEffect(() => {
     pathnameRef.current = pathname;
@@ -122,6 +127,14 @@ export function Header() {
   useEffect(() => {
     isUploadingRef.current = isUploading;
   }, [isUploading]);
+
+  useEffect(() => {
+    activeMeetingTeamIdRef.current = activeMeetingTeamId;
+  }, [activeMeetingTeamId]);
+
+  useEffect(() => {
+    meetingIdRef.current = meetingId;
+  }, [meetingId]);
 
   const myProfileIds = useMemo(() => getProfileIds(profile), [profile]);
   const myNames = useMemo(
@@ -174,12 +187,17 @@ export function Header() {
     );
   }, [currentTeamId, myMemberInfo, teamMembers.length]);
 
+  const isMeetingInCurrentTeam = useMemo(() => {
+    return Boolean(
+      meeting && meetingId && activeMeetingTeamId && activeMeetingTeamId === currentTeamId
+    );
+  }, [activeMeetingTeamId, currentTeamId, meeting, meetingId]);
+
   const checkActiveMeeting = useCallback(async () => {
     if (!currentTeamId || !profile) return;
 
     try {
       setIsSyncing(true);
-      setTeamId(currentTeamId);
 
       const activeMeeting = await getActiveMeetings(currentTeamId);
       const currentPath = pathnameRef.current;
@@ -187,11 +205,18 @@ export function Header() {
       if (!activeMeeting || !activeMeeting.meetingId) {
         setHasActiveMeeting(false);
         setStartTime(null);
-        setIceServers([]);
+        if (activeMeetingTeamIdRef.current === currentTeamId) {
+          setIceServers([]);
+        }
 
-        if (!meetingRef.current && !currentPath.includes('/meeting')) {
+        if (
+          activeMeetingTeamIdRef.current === currentTeamId &&
+          !currentPath.includes('/meeting')
+        ) {
           setMeeting(false);
           setMeetingId('');
+          setTeamId('');
+          setIceServers([]);
         }
         return;
       }
@@ -225,10 +250,16 @@ export function Header() {
         setMeeting(true);
         setMeetingId(activeMeeting.meetingId);
         setTeamId(currentTeamId);
-        setIceServers(Array.isArray(activeMeeting.iceServers) ? activeMeeting.iceServers : []);
-      } else if (!meetingRef.current && !currentPath.includes('/meeting')) {
+        setIceServers(
+          Array.isArray(activeMeeting.iceServers) ? activeMeeting.iceServers : []
+        );
+      } else if (
+        activeMeetingTeamIdRef.current === currentTeamId &&
+        !currentPath.includes('/meeting')
+      ) {
         setMeeting(false);
         setMeetingId('');
+        setTeamId('');
         setIceServers([]);
       }
     } catch (error) {
@@ -309,14 +340,19 @@ export function Header() {
 
   useEffect(() => {
     const handleUnload = () => {
-      if (meetingRef.current && currentTeamId) {
-        leaveMeeting(currentTeamId).catch(() => {});
+      const teamIdToLeave = activeMeetingTeamIdRef.current;
+      if (meetingRef.current && teamIdToLeave && meetingIdRef.current) {
+        leaveMeetingOnUnload(teamIdToLeave);
       }
     };
 
+    window.addEventListener('pagehide', handleUnload);
     window.addEventListener('beforeunload', handleUnload);
-    return () => window.removeEventListener('beforeunload', handleUnload);
-  }, [currentTeamId]);
+    return () => {
+      window.removeEventListener('pagehide', handleUnload);
+      window.removeEventListener('beforeunload', handleUnload);
+    };
+  }, []);
 
   useEffect(() => {
     let timeoutId: ReturnType<typeof setTimeout> | undefined;
@@ -368,7 +404,7 @@ export function Header() {
   const onClickMeeting = async () => {
     if (!currentTeamId) return;
 
-    if (meeting) {
+    if (isMeetingInCurrentTeam) {
       try {
         setLoading(true);
         setLoadingState(MESSAGE_LEAVING_MEETING);
@@ -433,7 +469,7 @@ export function Header() {
     }
   };
 
-  const meetingButtonLabel = meeting
+  const meetingButtonLabel = isMeetingInCurrentTeam
     ? LABEL_LEAVE_MEETING
     : isLeader
     ? LABEL_START_MEETING
@@ -481,7 +517,7 @@ export function Header() {
             className="py-3 px-6 rounded-full cursor-pointer transition-opacity hover:opacity-80"
             style={{
               color: colors.white[100],
-              backgroundColor: meeting
+              backgroundColor: isMeetingInCurrentTeam
                 ? colors.system.error[500]
                 : isLeader || hasActiveMeeting
                 ? colors.primary[500]

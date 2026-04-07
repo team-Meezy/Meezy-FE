@@ -19,6 +19,7 @@ export interface MeetingSignal {
   sdpMid?: string;
   sdpMLineIndex?: number;
   startedAt?: string;
+  elapsedMs?: number;
 }
 
 export function useMeetingSignal(

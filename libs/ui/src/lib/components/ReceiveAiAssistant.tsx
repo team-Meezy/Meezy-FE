@@ -14,7 +14,7 @@ export const ReceiveAiAssistant = () => {
   const { serverId } = useServerIdStore();
   const { meeting } = useServerJoinedTeam();
   const { isRecording, startRecording, stopRecording } = useMeeting();
-  const { startTime, hasActiveMeeting } = useMeetingStore();
+  const { startTime, hasActiveMeeting, recordingElapsedMs } = useMeetingStore();
   const { profile } = useProfile();
   const { teamMembers } = useServerState();
 
@@ -52,20 +52,23 @@ export const ReceiveAiAssistant = () => {
     }
 
     const updateTimer = () => {
-      let startValue = startTime;
-      if (
-        typeof startValue === 'string' &&
-        !startValue.includes('T') &&
-        startValue.includes(' ')
-      ) {
-        startValue = startValue.replace(' ', 'T');
+      let diff = Math.max(0, recordingElapsedMs);
+      if (startTime) {
+        let startValue = startTime;
+        if (
+          typeof startValue === 'string' &&
+          !startValue.includes('T') &&
+          startValue.includes(' ')
+        ) {
+          startValue = startValue.replace(' ', 'T');
+        }
+
+        const start = new Date(startValue).getTime();
+        if (!Number.isNaN(start)) {
+          diff += Math.max(0, Date.now() - start);
+        }
       }
 
-      const start = new Date(startValue).getTime();
-      if (Number.isNaN(start)) return;
-
-      const now = Date.now();
-      const diff = Math.max(0, now - start);
       const hours = Math.floor(diff / 3600000);
       const minutes = Math.floor((diff % 3600000) / 60000);
       const seconds = Math.floor((diff % 60000) / 1000);
@@ -82,7 +85,7 @@ export const ReceiveAiAssistant = () => {
     updateTimer();
     const intervalId = setInterval(updateTimer, 1000);
     return () => clearInterval(intervalId);
-  }, [hasActiveMeeting, meeting, startTime]);
+  }, [hasActiveMeeting, meeting, recordingElapsedMs, startTime]);
 
   const isSummary = pathname?.includes('/summary');
   const isFeedback = pathname?.includes('/feedback');

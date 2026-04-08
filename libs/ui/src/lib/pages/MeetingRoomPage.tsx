@@ -20,12 +20,41 @@ function getMeetingUserId(entity: any) {
   return String(
     entity?.userId ||
       entity?.user_id ||
+      entity?.accountId ||
+      entity?.memberId ||
+      entity?.teamMemberId ||
       entity?.user?.userId ||
       entity?.user?.user_id ||
+      entity?.user?.accountId ||
+      entity?.user?.memberId ||
+      entity?.user?.teamMemberId ||
       entity?.user?.id ||
       entity?.id ||
       ''
   ).trim();
+}
+
+function getMeetingUserIds(entity: any) {
+  return Array.from(
+    new Set(
+      [
+        entity?.userId,
+        entity?.user_id,
+        entity?.accountId,
+        entity?.memberId,
+        entity?.teamMemberId,
+        entity?.id,
+        entity?.user?.userId,
+        entity?.user?.user_id,
+        entity?.user?.accountId,
+        entity?.user?.memberId,
+        entity?.user?.teamMemberId,
+        entity?.user?.id,
+      ]
+        .map((value) => String(value ?? '').trim())
+        .filter(Boolean)
+    )
+  );
 }
 
 function getUserIdFromAccessToken() {
@@ -99,6 +128,10 @@ export const MeetingRoomPage = () => {
 
   const getParticipantId = useCallback((participant: any) => {
     return getMeetingUserId(participant);
+  }, []);
+
+  const getParticipantIds = useCallback((participant: any) => {
+    return getMeetingUserIds(participant);
   }, []);
 
   const myComparableNames = useMemo(() => {
@@ -317,6 +350,26 @@ export const MeetingRoomPage = () => {
     (participant) => !isCurrentUser(participant)
   );
 
+  const getRemoteMediaState = useCallback(
+    (participant: any, remoteUserId?: string) => {
+      const candidateIds = Array.from(
+        new Set(
+          [...getParticipantIds(participant), String(remoteUserId ?? '').trim()].filter(Boolean)
+        )
+      );
+
+      for (const candidateId of candidateIds) {
+        const mediaState = remoteMediaStates[candidateId];
+        if (mediaState) {
+          return mediaState;
+        }
+      }
+
+      return null;
+    },
+    [getParticipantIds, remoteMediaStates]
+  );
+
   const remoteOnlyParticipants = remoteStreams.reduce<any[]>((acc, remote) => {
     const remoteId = String(remote.userId);
 
@@ -325,10 +378,10 @@ export const MeetingRoomPage = () => {
     }
 
     const existsInParticipants = others.some(
-      (participant) => String(getParticipantId(participant)) === remoteId
+      (participant) => getParticipantIds(participant).includes(remoteId)
     );
     const existsInAccumulator = acc.some(
-      (participant) => String(getParticipantId(participant)) === remoteId
+      (participant) => getParticipantIds(participant).includes(remoteId)
     );
 
     if (existsInParticipants || existsInAccumulator) {
@@ -360,8 +413,11 @@ export const MeetingRoomPage = () => {
     ...[...others, ...remoteOnlyParticipants].map((participant) => {
       const participantId = getParticipantId(participant);
       const remoteStream = remoteStreams.find(
-        (stream) => String(stream.userId) === String(participantId)
+        (stream) =>
+          getParticipantIds(participant).includes(String(stream.userId)) ||
+          String(stream.userId) === String(participantId)
       );
+      const remoteMediaState = getRemoteMediaState(participant, remoteStream?.userId);
 
       return {
         id: participantId || participant.name,
@@ -371,10 +427,10 @@ export const MeetingRoomPage = () => {
         stream: remoteStream?.stream,
         isSpeaking: !!remoteVoices[String(participantId)],
         isMike:
-          remoteMediaStates[String(participantId)]?.audioEnabled ??
+          remoteMediaState?.audioEnabled ??
           hasEnabledAudioTrack(remoteStream?.stream),
         isKamera:
-          remoteMediaStates[String(participantId)]?.videoEnabled ??
+          remoteMediaState?.videoEnabled ??
           hasLiveVideoTrack(remoteStream?.stream),
         onMikeClick: () => {},
         onKameraClick: () => {},

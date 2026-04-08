@@ -129,17 +129,30 @@ export function ChatRoomPage() {
   }, [teamMembers]);
 
   const sendMessage = () => {
-    if (input.trim() && currentRoomId) {
-      // 1. 실제 채팅 메시지 발송
-      emitChatMessage(input.trim());
+    const trimmedInput = input.trim();
 
-      // 2. 회의 중이라면 채팅 활동 기록 신호 발송
+    if (trimmedInput && currentRoomId) {
+      const isSent = emitChatMessage(trimmedInput);
+
+      if (!isSent) return;
+
+      addMessage({
+        chatMessageId: `temp-${Date.now()}`,
+        chatRoomId: currentRoomId,
+        senderName:
+          profile?.name || profile?.userName || profile?.nickName || 'Me',
+        profileImage: profile?.profileImage || profile?.profileImageUrl,
+        senderProfileImageUrl:
+          profile?.profileImageUrl || profile?.profileImage,
+        content: trimmedInput,
+        createdAt: new Date().toISOString(),
+        isOptimistic: true,
+      });
+
       if (meetingId) {
         sendChatActivity();
       }
 
-      // 3. (옵션) 내 메시지는 즉시 화면에 표시하거나 소켓 수신을 기다림
-      // 여기서는 소켓 수신 시 addMessage가 호출되므로 setInput만 비움
       setInput('');
     }
   };

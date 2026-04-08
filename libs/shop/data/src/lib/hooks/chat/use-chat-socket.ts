@@ -70,7 +70,7 @@ export function useChatSocket(teamId: string, chatRoomId: string) {
   }, [chatRoomId, addMessage]);
 
   // 메시지 보내기 (STOMP Publish)
-  const sendMessage = async (content: string) => {
+  const sendMessage = (content: string) => {
     if (client.current?.connected) {
       try {
         console.log(' 📤 [STOMP] Publishing message:', content);
@@ -80,11 +80,14 @@ export function useChatSocket(teamId: string, chatRoomId: string) {
             content,
           }),
         });
+        return true;
       } catch (err) {
         console.error(' ❌ [STOMP] Failed to publish message:', err);
+        return false;
       }
     } else {
       console.warn(' ⚠️ [STOMP] Cannot send message: Not connected');
+      return false;
     }
   };
 

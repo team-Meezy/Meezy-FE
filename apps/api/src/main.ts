@@ -115,6 +115,4 @@ app.get('/api/products/:id', (req, res) => {
   }
 });
 
-app.listen(port, host, () => {
-  console.log(`[ ready ] http://${host}:${port}`);
-});
+app.listen(port, host);

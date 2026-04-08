@@ -1,4 +1,5 @@
 import { privateApi } from '../axios';
+import { logRecordingUpload } from '../../recording-console';
 
 export const uploadMeetingRecording = async (
   teamId: string,
@@ -14,10 +15,24 @@ export const uploadMeetingRecording = async (
       `/teams/${teamId}/meetings/${meetingId}/recording`,
       formData
     );
-    console.log('uploadMeetingRecording response', response);
+    logRecordingUpload('success', {
+      teamId,
+      meetingId,
+      status: response.status,
+      fileName,
+      size: recordingBlob.size,
+      type: recordingBlob.type,
+    });
     return response.data;
   } catch (error) {
-    console.log('uploadMeetingRecording error', error);
+    logRecordingUpload('error', {
+      teamId,
+      meetingId,
+      fileName,
+      size: recordingBlob.size,
+      type: recordingBlob.type,
+      error,
+    });
     throw error;
   }
 };

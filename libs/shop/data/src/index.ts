@@ -15,3 +15,4 @@ export * from './lib/serverId-store';
 export * from './lib/chat-store';
 export * from './lib/team-store';
 export * from './lib/meeting-stors';
+export * from './lib/recording-console';

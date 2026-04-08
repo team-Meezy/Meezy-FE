@@ -8,6 +8,7 @@ import {
   useMeetingVoiceActivity,
   useMeetingStore,
   uploadMeetingRecording,
+  logRecordingUpload,
   getActiveMeetings,
   MeetingEvent,
   MeetingSignal,
@@ -146,11 +147,7 @@ export function useMeetingWebRTC(
   const meetingIdRef = useRef(meetingId);
   const localIdsRef = useRef<string[]>([]);
 
-  // Helper for verbose logging
-  const log = useCallback((msg: string, data?: any) => {
-    const time = new Date().toLocaleTimeString();
-    console.log(`[${time}] useMeetingWebRTC: ${msg}`, data || '');
-  }, []);
+  const log = useCallback((_msg: string, _data?: any) => {}, []);
 
   useEffect(() => {
     teamIdRef.current = teamId;
@@ -1386,27 +1383,34 @@ export function useMeetingWebRTC(
         }
 
         if (blob) {
-          log('[DEBUG] final blob generated', {
-            size: blob.size,
-            mimeType: resolvedMimeType,
-            fileName: recordingFileName,
-          });
           if (tId && mId && blob.size > 0) {
-            log('[DEBUG] initializing uploadMeetingRecording API call...');
-            const res = await uploadMeetingRecording(
+            logRecordingUpload('request', {
+              teamId: tId,
+              meetingId: mId,
+              fileName: recordingFileName,
+              size: blob.size,
+              type: resolvedMimeType,
+            });
+            await uploadMeetingRecording(
               tId,
               mId,
               blob,
               recordingFileName
             );
-            console.log('[SUCCESS] API call completed', res);
           } else {
-            log('[WARN] upload conditions NOT met (IDs missing or zero size)', {
+            logRecordingUpload('skipped', {
               tIdExists: !!tId,
               mIdExists: !!mId,
               blobSize: blob.size,
+              fileName: recordingFileName,
             });
           }
+        } else {
+          logRecordingUpload('skipped', {
+            teamId: tId,
+            meetingId: mId,
+            reason: 'no-recording-blob',
+          });
         }
       } catch (err) {
         log('[ERROR] handleStopAndUpload task failed', err);

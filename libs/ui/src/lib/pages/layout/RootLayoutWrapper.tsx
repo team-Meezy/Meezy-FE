@@ -1,5 +1,6 @@
 'use client';
 
+import { useEffect } from 'react';
 import {
   ServerCreateProvider,
   ServerJoinedTeamProvider,
@@ -9,7 +10,7 @@ import {
 } from '../../../context';
 import { LoadingOverlay } from '../../components';
 import { ServerModal } from '../../modals';
-import { useModalStore } from '@org/shop-data';
+import { silenceBrowserConsole, useModalStore } from '@org/shop-data';
 
 export const metadata = {
   title: 'Welcome to web',
@@ -17,7 +18,13 @@ export const metadata = {
 };
 
 export function RootLayoutWrapper({ children }: { children: React.ReactNode }) {
+  silenceBrowserConsole();
+
   const { isModalOpen, setIsModalOpen } = useModalStore();
+
+  useEffect(() => {
+    silenceBrowserConsole();
+  }, []);
 
   return (
     <html lang="en">

@@ -30,6 +30,17 @@ interface JoinedSidebarProps {
   }[];
 }
 
+function formatSidebarName(name?: string | null) {
+  const trimmed = String(name ?? '').trim();
+  const characters = Array.from(trimmed);
+
+  if (characters.length >= 3) {
+    return `${characters.slice(0, 2).join('')}...`;
+  }
+
+  return trimmed;
+}
+
 export function JoinedSidebar({
   setChatRoom,
   sidebarList,
@@ -161,7 +172,7 @@ export function JoinedSidebar({
 
   return (
     <nav
-      className={`hidden lg:flex w-[120px] h-screen flex-col items-center shrink-0 ${className || ''}`}
+      className={`hidden lg:flex w-[156px] h-screen flex-col items-center shrink-0 ${className || ''}`}
       style={{
         backgroundColor: colors.black[100],
       }}
@@ -225,8 +236,8 @@ export function JoinedSidebar({
                     ) : (
                       <div className="rounded-full w-6 h-6 shrink-0 bg-gray-700 border border-white/5" />
                     )}
-                    <span className="truncate text-xs opacity-60" style={{ ...typography.body.BodyB }}>
-                      {currentUserName}
+                <span className="truncate text-xs opacity-60" style={{ ...typography.body.BodyB }}>
+                      {formatSidebarName(currentUserName)}
                     </span>
                   </div>
                   {contextMenuUserId === currentUserId && (

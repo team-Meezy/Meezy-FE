@@ -13,6 +13,107 @@ import { useEffect, useCallback } from 'react';
 import { useServerIdStore, useTeamSocket, useModalStore } from '@org/shop-data';
 import { useParams, useRouter } from 'next/navigation';
 
+function normalizeTeamMember(eventMember: any) {
+  if (!eventMember) return null;
+
+  const teamMemberId = String(
+    eventMember?.teamMemberId ||
+      eventMember?.memberId ||
+      eventMember?.joinedUserId ||
+      eventMember?.userId ||
+      eventMember?.user_id ||
+      eventMember?.accountId ||
+      eventMember?.id ||
+      eventMember?.user?.teamMemberId ||
+      eventMember?.user?.memberId ||
+      eventMember?.user?.userId ||
+      eventMember?.user?.user_id ||
+      eventMember?.user?.accountId ||
+      eventMember?.user?.id ||
+      ''
+  ).trim();
+
+  const name = String(
+    eventMember?.name ||
+      eventMember?.joinedUserName ||
+      eventMember?.nickname ||
+      eventMember?.nickName ||
+      eventMember?.userName ||
+      eventMember?.user?.name ||
+      eventMember?.user?.nickname ||
+      eventMember?.user?.nickName ||
+      ''
+  ).trim();
+
+  if (!teamMemberId && !name) {
+    return null;
+  }
+
+  return {
+    ...eventMember,
+    teamMemberId,
+    name: name || '참가자',
+    role: eventMember?.role || eventMember?.user?.role || 'MEMBER',
+    profileImage:
+      eventMember?.profileImage || eventMember?.user?.profileImage || undefined,
+    profileImageUrl:
+      eventMember?.profileImageUrl ||
+      eventMember?.joinedUserProfileImageUrl ||
+      eventMember?.user?.profileImageUrl ||
+      undefined,
+  };
+}
+
+function extractTeamMembersFromEvent(event: any) {
+  const eventMembers = [
+    event?.member,
+    event?.teamMember,
+    event?.user,
+    event?.joinedMember,
+    event?.joinedUser,
+    event?.payload?.member,
+    event?.payload?.teamMember,
+    event?.payload?.user,
+    event?.data?.member,
+    event?.data?.teamMember,
+    event?.data?.user,
+    event?.joinedUserId || event?.joinedUserName
+      ? {
+          joinedUserId: event?.joinedUserId,
+          joinedUserName: event?.joinedUserName,
+          joinedUserProfileImageUrl: event?.joinedUserProfileImageUrl,
+        }
+      : null,
+  ];
+
+  const eventMemberLists = [
+    event?.members,
+    event?.teamMembers,
+    event?.payload?.members,
+    event?.payload?.teamMembers,
+    event?.data?.members,
+    event?.data?.teamMembers,
+  ];
+
+  const normalizedMembers = [
+    ...eventMembers,
+    ...eventMemberLists.flatMap((members) =>
+      Array.isArray(members) ? members : []
+    ),
+  ]
+    .map((member) => normalizeTeamMember(member))
+    .filter(Boolean);
+
+  return Array.from(
+    new Map(
+      normalizedMembers.map((member: any) => [
+        member.teamMemberId || member.name,
+        member,
+      ])
+    ).values()
+  );
+}
+
 export function ServerIdLayoutWrapper({
   children,
 }: {
@@ -61,6 +162,26 @@ export function ServerIdLayoutWrapper({
     (event: any) => {
       const eventType = String(event?.type || '').toUpperCase();
       const eventCategory = String(event?.category || '').toUpperCase();
+      const eventMembers = extractTeamMembersFromEvent(event);
+
+      if (eventMembers.length > 0) {
+        setTeamMembers((prev) => {
+          const mergedMembers = new Map(
+            prev.map((member: any) => [
+              String(member?.teamMemberId || member?.name || ''),
+              member,
+            ])
+          );
+
+          eventMembers.forEach((member: any) => {
+            const memberKey = String(member?.teamMemberId || member?.name || '');
+            const previous = mergedMembers.get(memberKey);
+            mergedMembers.set(memberKey, previous ? { ...previous, ...member } : member);
+          });
+
+          return Array.from(mergedMembers.values());
+        });
+      }
 
       if (
         eventType === 'CHAT_ROOM_UPDATE' ||
@@ -77,8 +198,8 @@ export function ServerIdLayoutWrapper({
         eventType === 'PARTICIPANT_LEFT' ||
         eventCategory === 'MEMBER'
       ) {
-        updateTeamMembers(currentServerId);
-        updateChatRooms(currentServerId);
+        void updateTeamMembers(currentServerId);
+        void updateChatRooms(currentServerId);
       } else if (
         eventType === 'MEETING_STARTED' ||
         eventType === 'MEETING_ENDED' ||
@@ -90,12 +211,12 @@ export function ServerIdLayoutWrapper({
         window.dispatchEvent(new CustomEvent('meezy:sync-meeting'));
       } else {
         // Fallback for any other team events
-        updateChatRooms(currentServerId);
-        updateTeamMembers(currentServerId);
+        void updateChatRooms(currentServerId);
+        void updateTeamMembers(currentServerId);
         window.dispatchEvent(new CustomEvent('meezy:sync-meeting'));
       }
     },
-    [currentServerId, updateChatRooms, updateTeamMembers]
+    [currentServerId, setTeamMembers, updateChatRooms, updateTeamMembers]
   );
 
   useTeamSocket(currentServerId, handleTeamEvent);
@@ -104,7 +225,7 @@ export function ServerIdLayoutWrapper({
     <div className="flex flex-1 overflow-hidden relative">
       {/* Mobile Drawer (JoinedSidebar focus) - Offset by TeamSidebar width */}
       {isSidebarOpen && (
-        <div className="lg:hidden fixed top-0 bottom-0 left-[80px] z-[100] w-[200px] bg-[#0c0c0c] animate-in slide-in-from-left duration-300">
+        <div className="lg:hidden fixed top-0 bottom-0 left-[80px] z-[100] w-[240px] bg-[#0c0c0c] animate-in slide-in-from-left duration-300">
           <JoinedSidebar
             className="!flex !w-full"
             setChatRoom={setChatRoom}

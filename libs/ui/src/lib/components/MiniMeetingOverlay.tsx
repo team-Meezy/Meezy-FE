@@ -19,7 +19,8 @@ export function MiniMeetingOverlay() {
     setTeamId,
     setLastEndedMeeting,
   } = useMeetingStore();
-  const { localStream, remoteStreams, isSpeaking, startRecording, stopRecording } = useMeeting();
+  const { localStream, remoteStreams, isSpeaking, toggleAudioEnabled, toggleVideoEnabled } =
+    useMeeting();
   const { setMeeting } = useServerJoinedTeam();
   const { setLoading, setLoadingState } = useLoadingStore();
   const pathname = usePathname();
@@ -34,6 +35,12 @@ export function MiniMeetingOverlay() {
   const displayName = activeRemote ? (remoteStreams[0]?.name || '참가자') : '나';
 
   const isMeetingPage = pathname.includes('/meeting');
+  const isMikeEnabled =
+    localStream?.getAudioTracks().some((track) => track.readyState === 'live' && track.enabled) ??
+    false;
+  const isKameraEnabled =
+    localStream?.getVideoTracks().some((track) => track.readyState === 'live' && track.enabled) ??
+    false;
 
   useEffect(() => {
     if (videoRef.current && displayStream) {
@@ -48,15 +55,13 @@ export function MiniMeetingOverlay() {
 
   const toggleMike = () => {
     if (localStream) {
-      const audioTrack = localStream.getAudioTracks()[0];
-      if (audioTrack) audioTrack.enabled = !audioTrack.enabled;
+      void toggleAudioEnabled(!isMikeEnabled);
     }
   };
 
   const toggleKamera = () => {
     if (localStream) {
-      const videoTrack = localStream.getVideoTracks()[0];
-      if (videoTrack) videoTrack.enabled = !videoTrack.enabled;
+      void toggleVideoEnabled(!isKameraEnabled);
     }
   };
 
@@ -132,10 +137,10 @@ export function MiniMeetingOverlay() {
           
           <div className="flex justify-center gap-4">
              <button onClick={toggleMike} className="p-1.5 hover:bg-white/10 rounded-full transition-colors">
-                <Image src={Mike} alt="mike" width={14} height={14} />
+                <Image src={isMikeEnabled ? Mike : NoMike} alt="mike" width={14} height={14} />
              </button>
              <button onClick={toggleKamera} className="p-1.5 hover:bg-white/10 rounded-full transition-colors">
-                <Image src={Kamera} alt="camera" width={14} height={14} />
+                <Image src={isKameraEnabled ? Kamera : Nokamera} alt="camera" width={14} height={14} />
              </button>
           </div>
         </div>

@@ -7,6 +7,7 @@ export type SignalType =
   | 'offer'
   | 'answer'
   | 'ice-candidate'
+  | 'media-state'
   | 'recording-started'
   | 'recording-stopped';
 
@@ -18,6 +19,8 @@ export interface MeetingSignal {
   candidate?: string;
   sdpMid?: string;
   sdpMLineIndex?: number;
+  audioEnabled?: boolean;
+  videoEnabled?: boolean;
   startedAt?: string;
   elapsedMs?: number;
 }

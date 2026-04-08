@@ -85,9 +85,12 @@ export const MeetingRoomPage = () => {
   const {
     localStream,
     remoteStreams,
+    remoteMediaStates,
     isSpeaking,
     remoteVoices,
     initLocalMedia,
+    toggleAudioEnabled,
+    toggleVideoEnabled,
   } = useMeeting();
 
   const normalizeName = useCallback((name?: string | null) => {
@@ -187,6 +190,14 @@ export const MeetingRoomPage = () => {
       .some((track) => track.readyState === 'live' && track.enabled);
   }, []);
 
+  const hasEnabledAudioTrack = useCallback((stream?: MediaStream | null) => {
+    if (!stream) return false;
+
+    return stream
+      .getAudioTracks()
+      .some((track) => track.readyState === 'live' && track.enabled);
+  }, []);
+
   useEffect(() => {
     if (!currentTeamId || localIds.length === 0) return;
 
@@ -271,11 +282,9 @@ export const MeetingRoomPage = () => {
 
   const onMikeClick = async () => {
     if (localStream) {
-      const audioTrack = localStream.getAudioTracks()[0];
-      if (audioTrack) {
-        audioTrack.enabled = !audioTrack.enabled;
-        setIsMike(audioTrack.enabled);
-      }
+      const nextEnabled = !hasEnabledAudioTrack(localStream);
+      const applied = await toggleAudioEnabled(nextEnabled);
+      setIsMike(applied);
       return;
     }
 
@@ -287,11 +296,9 @@ export const MeetingRoomPage = () => {
 
   const onKameraClick = async () => {
     if (localStream) {
-      const videoTrack = localStream.getVideoTracks()[0];
-      if (videoTrack) {
-        videoTrack.enabled = !videoTrack.enabled;
-        setIsKamera(videoTrack.enabled);
-      }
+      const nextEnabled = !hasLiveVideoTrack(localStream);
+      const applied = await toggleVideoEnabled(nextEnabled);
+      setIsKamera(applied);
       return;
     }
 
@@ -300,6 +307,11 @@ export const MeetingRoomPage = () => {
       setIsKamera(true);
     }
   };
+
+  useEffect(() => {
+    setIsMike(hasEnabledAudioTrack(localStream));
+    setIsKamera(hasLiveVideoTrack(localStream));
+  }, [hasEnabledAudioTrack, hasLiveVideoTrack, localStream]);
 
   const others = participants.filter(
     (participant) => !isCurrentUser(participant)
@@ -358,8 +370,12 @@ export const MeetingRoomPage = () => {
         mirrorVideo: false,
         stream: remoteStream?.stream,
         isSpeaking: !!remoteVoices[String(participantId)],
-        isMike: true,
-        isKamera: hasLiveVideoTrack(remoteStream?.stream),
+        isMike:
+          remoteMediaStates[String(participantId)]?.audioEnabled ??
+          hasEnabledAudioTrack(remoteStream?.stream),
+        isKamera:
+          remoteMediaStates[String(participantId)]?.videoEnabled ??
+          hasLiveVideoTrack(remoteStream?.stream),
         onMikeClick: () => {},
         onKameraClick: () => {},
       };

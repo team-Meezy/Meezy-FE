@@ -16,6 +16,7 @@ export interface Message {
   senderImage?: string;
   content: string;
   createdAt: string;
+  isOptimistic?: boolean;
 }
 
 interface ChatState {
@@ -37,6 +38,42 @@ export const useChatStore = create<ChatState>()((set) => ({
   // 액션
   setMessages: (messages: Message[]) => set({ messages: [...messages] }),
   addMessage: (msg: Message) =>
-    set((state) => ({ messages: [...state.messages, msg] })),
+    set((state) => {
+      const existingIndex = state.messages.findIndex(
+        (message) => message.chatMessageId === msg.chatMessageId
+      );
+
+      if (existingIndex >= 0) {
+        const messages = [...state.messages];
+        messages[existingIndex] = {
+          ...messages[existingIndex],
+          ...msg,
+          isOptimistic: msg.isOptimistic ?? messages[existingIndex].isOptimistic,
+        };
+        return { messages };
+      }
+
+      if (!msg.isOptimistic) {
+        const optimisticIndex = state.messages.findIndex((message) => {
+          if (!message.isOptimistic) return false;
+          if (message.chatRoomId !== msg.chatRoomId) return false;
+          if (message.senderName !== msg.senderName) return false;
+          if (message.content !== msg.content) return false;
+
+          const optimisticTime = new Date(message.createdAt).getTime();
+          const incomingTime = new Date(msg.createdAt).getTime();
+
+          return Math.abs(incomingTime - optimisticTime) <= 30000;
+        });
+
+        if (optimisticIndex >= 0) {
+          const messages = [...state.messages];
+          messages[optimisticIndex] = msg;
+          return { messages };
+        }
+      }
+
+      return { messages: [...state.messages, msg] };
+    }),
   setChatRooms: (chatRooms: ChatRoom[]) => set({ chatRooms: [...chatRooms] }),
 }));

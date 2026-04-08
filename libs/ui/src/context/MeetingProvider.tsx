@@ -10,11 +10,14 @@ import { useServerState } from './ServerStateProvider';
 interface MeetingContextType {
   localStream: MediaStream | null;
   remoteStreams: any[];
+  remoteMediaStates: Record<string, { audioEnabled: boolean; videoEnabled: boolean }>;
   isSpeaking: boolean;
   remoteVoices: Record<string, boolean>;
   isRecording: boolean;
   connectToUser: (targetUserId: string) => Promise<void>;
   initLocalMedia: () => Promise<MediaStream | null>;
+  toggleAudioEnabled: (enabled: boolean) => Promise<boolean>;
+  toggleVideoEnabled: (enabled: boolean) => Promise<boolean>;
   startRecording: () => void;
   stopRecording: () => void;
 }

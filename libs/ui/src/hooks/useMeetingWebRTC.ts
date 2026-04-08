@@ -19,6 +19,11 @@ interface ParticipantStream {
   name?: string;
 }
 
+interface RemoteMediaState {
+  audioEnabled: boolean;
+  videoEnabled: boolean;
+}
+
 function getMeetingUserId(entity: any) {
   return String(
     entity?.userId ||
@@ -107,6 +112,9 @@ export function useMeetingWebRTC(
   const iceServers = useRef<RTCIceServer[]>(normalizeIceServers(meetingIceServers));
   const [localStream, setLocalStream] = useState<MediaStream | null>(null);
   const [remoteStreams, setRemoteStreams] = useState<ParticipantStream[]>([]);
+  const [remoteMediaStates, setRemoteMediaStates] = useState<
+    Record<string, RemoteMediaState>
+  >({});
   const [isSpeaking, setIsSpeaking] = useState(false);
   const [remoteVoices, setRemoteVoices] = useState<Record<string, boolean>>({});
   const remoteVoiceTimers = useRef<Record<string, NodeJS.Timeout>>({});
@@ -205,6 +213,12 @@ export function useMeetingWebRTC(
     }
     pendingIceCandidates.current.delete(userId);
     setRemoteVoices((prev) => {
+      if (!(userId in prev)) return prev;
+      const next = { ...prev };
+      delete next[userId];
+      return next;
+    });
+    setRemoteMediaStates((prev) => {
       if (!(userId in prev)) return prev;
       const next = { ...prev };
       delete next[userId];
@@ -327,6 +341,7 @@ export function useMeetingWebRTC(
     pcs.current.forEach((pc) => pc.close());
     pcs.current.clear();
     setRemoteVoices({});
+    setRemoteMediaStates({});
     setRemoteStreams([]);
 
     if (localStreamRef.current) {
@@ -353,8 +368,50 @@ export function useMeetingWebRTC(
       .filter(
         (participantId: string) =>
           participantId && !localIdsRef.current.includes(participantId)
-      );
+        );
   }, []);
+
+  const getLocalMediaState = useCallback((): RemoteMediaState => {
+    const stream = localStreamRef.current;
+
+    return {
+      audioEnabled:
+        stream?.getAudioTracks().some((track) => track.readyState === 'live' && track.enabled) ??
+        false,
+      videoEnabled:
+        stream?.getVideoTracks().some((track) => track.readyState === 'live' && track.enabled) ??
+        false,
+    };
+  }, []);
+
+  const broadcastLocalMediaState = useCallback(
+    async (targetUserIds?: string[]) => {
+      if (!sendSignalRef.current || !myId) {
+        return;
+      }
+
+      const participantIds =
+        targetUserIds?.filter(
+          (participantId) => participantId && !localIdsRef.current.includes(String(participantId))
+        ) ?? (await getMeetingParticipantIds());
+
+      if (participantIds.length === 0) {
+        return;
+      }
+
+      const mediaState = getLocalMediaState();
+      participantIds.forEach((participantId) => {
+        sendSignalRef.current?.(participantId, {
+          type: 'media-state',
+          fromUserId: myId,
+          toUserId: participantId,
+          audioEnabled: mediaState.audioEnabled,
+          videoEnabled: mediaState.videoEnabled,
+        });
+      });
+    },
+    [getLocalMediaState, getMeetingParticipantIds, myId]
+  );
 
   const broadcastRecordingState = useCallback(
     async (
@@ -574,6 +631,15 @@ export function useMeetingWebRTC(
         setStartTime(null);
         setRecordingElapsedMs(Math.max(0, signal.elapsedMs ?? 0));
         return;
+      } else if (type === 'media-state') {
+        setRemoteMediaStates((prev) => ({
+          ...prev,
+          [fromUserId]: {
+            audioEnabled: signal.audioEnabled ?? true,
+            videoEnabled: signal.videoEnabled ?? true,
+          },
+        }));
+        return;
       } else if (type === 'offer') {
         try {
           const pc = getOrCreatePC(fromUserId);
@@ -789,6 +855,58 @@ export function useMeetingWebRTC(
     [myId, getOrCreatePC]
   );
 
+  const toggleAudioEnabled = useCallback(
+    async (enabled: boolean) => {
+      const stream = localStreamRef.current;
+
+      if (!stream) {
+        return false;
+      }
+
+      const audioTracks = stream
+        .getAudioTracks()
+        .filter((track) => track.readyState === 'live');
+
+      if (audioTracks.length === 0) {
+        return false;
+      }
+
+      audioTracks.forEach((track) => {
+        track.enabled = enabled;
+      });
+
+      await broadcastLocalMediaState();
+      return enabled;
+    },
+    [broadcastLocalMediaState]
+  );
+
+  const toggleVideoEnabled = useCallback(
+    async (enabled: boolean) => {
+      const stream = localStreamRef.current;
+
+      if (!stream) {
+        return false;
+      }
+
+      const videoTracks = stream
+        .getVideoTracks()
+        .filter((track) => track.readyState === 'live');
+
+      if (videoTracks.length === 0) {
+        return false;
+      }
+
+      videoTracks.forEach((track) => {
+        track.enabled = enabled;
+      });
+
+      await broadcastLocalMediaState();
+      return enabled;
+    },
+    [broadcastLocalMediaState]
+  );
+
   const onMeetingEvent = useCallback(
     async (event: MeetingEvent) => {
       log('[WebRTC] onMeetingEvent entered', {
@@ -810,6 +928,9 @@ export function useMeetingWebRTC(
             event.existingParticipantIds
           ) {
             log(`I joined. Connecting to existing participants: ${event.existingParticipantIds}`);
+            const remoteParticipantIds = event.existingParticipantIds.filter(
+              (pId) => !localIdsRef.current.includes(String(pId))
+            );
             event.existingParticipantIds.forEach((pId) => {
               if (!localIdsRef.current.includes(String(pId))) {
                 // Polite 발송 전략: ID가 더 작은 쪽이 먼저 Offer를 보냄
@@ -821,12 +942,14 @@ export function useMeetingWebRTC(
                 }
               }
             });
+            void broadcastLocalMediaState(remoteParticipantIds);
           }
           // 2. 다른 사람이 접속했을 때: 해당 참가자에게 연결 시도
           else if (
             event.joinedUserId &&
             !localIdsRef.current.includes(String(event.joinedUserId))
           ) {
+            void broadcastLocalMediaState([event.joinedUserId]);
             if (shouldInitiateOffer(myId, event.joinedUserId)) {
               log(`polite initiation (newcomer): sending offer to ${event.joinedUserId}`);
               void createAndSendOffer(event.joinedUserId);
@@ -846,7 +969,7 @@ export function useMeetingWebRTC(
           break;
       }
     },
-    [createAndSendOffer, myId, removeParticipant, connectToUser, log, shouldInitiateOffer, teardownMeetingMedia]
+    [broadcastLocalMediaState, createAndSendOffer, myId, removeParticipant, connectToUser, log, shouldInitiateOffer, teardownMeetingMedia]
   );
 
   useMeetingEvents(teamId, onMeetingEvent);
@@ -1067,12 +1190,13 @@ export function useMeetingWebRTC(
       });
 
       previousStream?.getTracks().forEach((track) => track.stop());
+      void broadcastLocalMediaState();
       return stream;
     } catch (error) {
       log('[ERROR] initLocalMedia failed', error);
       return null;
     }
-  }, [log]);
+  }, [broadcastLocalMediaState, log]);
 
   // VAD Loop logic
   useEffect(() => {
@@ -1354,11 +1478,14 @@ export function useMeetingWebRTC(
   return {
     localStream,
     remoteStreams,
+    remoteMediaStates,
     isSpeaking,
     remoteVoices,
     isRecording,
     connectToUser,
     initLocalMedia,
+    toggleAudioEnabled,
+    toggleVideoEnabled,
     startRecording,
     stopRecording,
   };

@@ -34,8 +34,8 @@ export const VideoCard = ({
         ...videoStream.getAudioTracks().map((track) => `a:${track.id}`),
       ].join('|')
     : 'no-stream';
-  const shouldShowVideo = Boolean(videoStream) && (isLocal ? isKamera : true);
-  const shouldShowPlaceholder = !videoStream || (isLocal ? !isKamera : !shouldShowVideo);
+  const shouldShowVideo = Boolean(videoStream) && isKamera;
+  const shouldShowPlaceholder = !videoStream || !shouldShowVideo;
 
   return (
     <div

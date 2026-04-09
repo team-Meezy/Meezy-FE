@@ -60,10 +60,7 @@ export function MainRoomPage() {
 
   useEffect(() => {
     if (!serverId) return;
-    if (
-      resolvedLastEndedTeamId !== serverId ||
-      !resolvedLastEndedMeetingId
-    ) {
+    if (resolvedLastEndedTeamId !== serverId || !resolvedLastEndedMeetingId) {
       return;
     }
 
@@ -123,12 +120,7 @@ export function MainRoomPage() {
     return () => {
       isCancelled = true;
     };
-  }, [
-    profile,
-    resolvedLastEndedMeetingId,
-    resolvedLastEndedTeamId,
-    serverId,
-  ]);
+  }, [profile, resolvedLastEndedMeetingId, resolvedLastEndedTeamId, serverId]);
 
   return (
     <main
@@ -147,15 +139,18 @@ export function MainRoomPage() {
         <div className="flex flex-col justify-center gap-4 text-center lg:text-left">
           <h1 className="text-[clamp(1.1rem,1.7vw,2rem)] font-bold leading-[1.22] tracking-[-0.04em] text-white">
             <span className="block break-keep lg:whitespace-nowrap">
-              {displayName}님의 가장 최근 <span className="text-[#ff5c00]">회의 참여율</span>은
+              {displayName}님의 가장 최근{' '}
+              <span className="text-[#ff5c00]">회의 참여율</span>은
             </span>
             <span className="mt-1 block break-keep lg:whitespace-nowrap">
-              전체 팀원 중 <span className="text-[#ff5c00]">{ratePercent}%</span> 입니다!
+              전체 팀원 중{' '}
+              <span className="text-[#ff5c00]">{ratePercent}%</span> 입니다!
             </span>
           </h1>
           <p className="mx-auto max-w-[38rem] break-keep text-[clamp(0.8rem,0.95vw,0.96rem)] leading-[1.7] text-[#8d93a7] lg:mx-0">
-            참여율 기준은 회의 중 말의 빈도수가 얼마나 많았는지 리시브가
-            체크하여 반영됩니다.
+            참여율 기준은 회의 중 채팅과 말의 빈도 수, 회의 참여 시간을 기준으로
+            <br />
+            리시브가 체크하여 반영됩니다.
           </p>
           <p className="text-[clamp(0.65rem,1vw,0.75rem)] font-medium uppercase tracking-[0.24em] text-white/20 lg:hidden">
             {summaryText}

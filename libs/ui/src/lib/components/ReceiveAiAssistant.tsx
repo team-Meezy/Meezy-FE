@@ -115,14 +115,14 @@ export const ReceiveAiAssistant = () => {
         </div>
 
         {meeting ? (
-          <div className="relative z-10 flex min-h-[120px] flex-col justify-center gap-3 p-8 text-center">
+          <div className="relative z-10 flex min-h-[112px] flex-col justify-center gap-3 p-6 text-center">
             {isLeader ? (
               <button
                 onClick={() => (isRecording ? stopRecording() : startRecording())}
-                className={`transition-colors ${
+                className={`inline-flex h-9 items-center justify-center self-center rounded-lg px-4 transition-colors ${
                   isRecording
-                    ? 'text-red-500 hover:text-red-400'
-                    : 'text-white hover:text-[#ff5c00]'
+                    ? 'text-red-500 hover:bg-white/5 hover:text-red-400'
+                    : 'text-white hover:bg-white/5 hover:text-[#ff5c00]'
                 }`}
                 style={{ ...typography.body.BodyB }}
               >

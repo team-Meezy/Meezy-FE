@@ -9,10 +9,15 @@ import {
   useMeetingStore,
   uploadMeetingRecording,
   logRecordingUpload,
+  logRecordingVoice,
   getActiveMeetings,
   MeetingEvent,
   MeetingSignal,
 } from '@org/shop-data';
+import {
+  convertRecordingBlobToMp3,
+  encodePcmChunksToMp3,
+} from './meeting-recording-mp3';
 
 interface ParticipantStream {
   userId: string;
@@ -139,9 +144,17 @@ export function useMeetingWebRTC(
   const recordingMixContextRef = useRef<AudioContext | null>(null);
   const recordingDestinationRef =
     useRef<MediaStreamAudioDestinationNode | null>(null);
+  const recordingMixGainRef = useRef<GainNode | null>(null);
   const recordingSourceNodesRef = useRef<MediaStreamAudioSourceNode[]>([]);
   const recordingSourceStreamsRef = useRef<MediaStream[]>([]);
   const mixedRecordingStreamRef = useRef<MediaStream | null>(null);
+  const recordingProcessorRef = useRef<ScriptProcessorNode | null>(null);
+  const recordingMonitorGainRef = useRef<GainNode | null>(null);
+  const recordingPcmLeftChunksRef = useRef<Float32Array[]>([]);
+  const recordingPcmRightChunksRef = useRef<Float32Array[]>([]);
+  const recordingPcmSampleRateRef = useRef<number>(44100);
+  const stopAndUploadInProgressRef = useRef(false);
+  const lastUploadedMeetingIdRef = useRef<string>('');
 
   const teamIdRef = useRef(teamId);
   const meetingIdRef = useRef(meetingId);
@@ -225,6 +238,28 @@ export function useMeetingWebRTC(
   }, []);
 
   const cleanupRecordingMix = useCallback(() => {
+    if (recordingProcessorRef.current) {
+      try {
+        recordingProcessorRef.current.disconnect();
+      } catch {}
+      recordingProcessorRef.current.onaudioprocess = null;
+      recordingProcessorRef.current = null;
+    }
+
+    if (recordingMixGainRef.current) {
+      try {
+        recordingMixGainRef.current.disconnect();
+      } catch {}
+      recordingMixGainRef.current = null;
+    }
+
+    if (recordingMonitorGainRef.current) {
+      try {
+        recordingMonitorGainRef.current.disconnect();
+      } catch {}
+      recordingMonitorGainRef.current = null;
+    }
+
     recordingSourceNodesRef.current.forEach((sourceNode) => {
       try {
         sourceNode.disconnect();
@@ -241,6 +276,8 @@ export function useMeetingWebRTC(
     }
 
     recordingDestinationRef.current = null;
+    recordingPcmLeftChunksRef.current = [];
+    recordingPcmRightChunksRef.current = [];
 
     if (recordingMixContextRef.current) {
       const context = recordingMixContextRef.current;
@@ -255,8 +292,9 @@ export function useMeetingWebRTC(
     async (streams: ParticipantStream[]) => {
       const context = recordingMixContextRef.current;
       const destination = recordingDestinationRef.current;
+      const mixGain = recordingMixGainRef.current;
 
-      if (!context || !destination) {
+      if (!context || !destination || !mixGain) {
         return 0;
       }
 
@@ -285,7 +323,7 @@ export function useMeetingWebRTC(
 
         const audioOnlyStream = new MediaStream(activeAudioTracks);
         const sourceNode = context.createMediaStreamSource(audioOnlyStream);
-        sourceNode.connect(destination);
+        sourceNode.connect(mixGain);
         recordingSourceNodesRef.current.push(sourceNode);
         sourceStreams.push(audioOnlyStream);
       };
@@ -317,8 +355,12 @@ export function useMeetingWebRTC(
 
     const context = new AudioContextClass();
     const destination = context.createMediaStreamDestination();
+    const mixGain = context.createGain();
+    mixGain.gain.value = 1;
     recordingMixContextRef.current = context;
     recordingDestinationRef.current = destination;
+    recordingMixGainRef.current = mixGain;
+    mixGain.connect(destination);
 
     const sourceCount = await syncRecordingMix(remoteStreams);
     if (sourceCount === 0) {
@@ -328,10 +370,41 @@ export function useMeetingWebRTC(
     }
 
     mixedRecordingStreamRef.current = destination.stream;
+    recordingPcmSampleRateRef.current = context.sampleRate;
+    const processor = context.createScriptProcessor(4096, 2, 2);
+    const monitorGain = context.createGain();
+    monitorGain.gain.value = 0;
+
+    processor.onaudioprocess = (event) => {
+      const inputBuffer = event.inputBuffer;
+      if (!inputBuffer || inputBuffer.length === 0) {
+        return;
+      }
+
+      const left = new Float32Array(inputBuffer.getChannelData(0));
+      recordingPcmLeftChunksRef.current.push(left);
+
+      if (inputBuffer.numberOfChannels > 1) {
+        const right = new Float32Array(inputBuffer.getChannelData(1));
+        recordingPcmRightChunksRef.current.push(right);
+      }
+    };
+
+    mixGain.connect(processor);
+    processor.connect(monitorGain);
+    monitorGain.connect(context.destination);
+
+    recordingProcessorRef.current = processor;
+    recordingMonitorGainRef.current = monitorGain;
     return destination.stream;
   }, [cleanupRecordingMix, log, remoteStreams, syncRecordingMix]);
 
   const teardownMeetingMedia = useCallback(() => {
+    const shouldPreserveRecordingState =
+      stopAndUploadInProgressRef.current ||
+      mediaRecorderRef.current?.state === 'recording' ||
+      Boolean(recordingStartedAtRef.current);
+
     Object.values(remoteVoiceTimers.current).forEach((timer) => clearTimeout(timer));
     remoteVoiceTimers.current = {};
     pendingIceCandidates.current.clear();
@@ -341,22 +414,31 @@ export function useMeetingWebRTC(
     setRemoteMediaStates({});
     setRemoteStreams([]);
 
-    if (localStreamRef.current) {
+    if (!shouldPreserveRecordingState && localStreamRef.current) {
       localStreamRef.current.getTracks().forEach((track) => track.stop());
       localStreamRef.current = null;
     }
-    setLocalStream(null);
+    if (!shouldPreserveRecordingState) {
+      setLocalStream(null);
+    }
     setIsRecording(false);
     setStartTime(null);
     setRecordingElapsedMs(0);
-    recordingStartedAtRef.current = null;
-    recordingMimeTypeRef.current = '';
-    mediaRecorderRef.current = null;
-    recordedChunksRef.current = [];
-    cleanupRecordingMix();
+
+    if (!shouldPreserveRecordingState) {
+      recordingStartedAtRef.current = null;
+      recordingMimeTypeRef.current = '';
+      mediaRecorderRef.current = null;
+      recordedChunksRef.current = [];
+      cleanupRecordingMix();
+    }
   }, [cleanupRecordingMix, setIsRecording, setRecordingElapsedMs, setStartTime]);
 
   const getMeetingParticipantIds = useCallback(async () => {
+    if (!teamIdRef.current) {
+      return [];
+    }
+
     const activeMeeting = await getActiveMeetings(teamIdRef.current);
     if (!Array.isArray(activeMeeting?.participants)) return [];
 
@@ -492,8 +574,8 @@ export function useMeetingWebRTC(
           );
 
           if (existingParticipant) {
-            // 🔥 중요: MediaStream 객체의 참조를 새로 생성해야 React가 변경을 감지하고 
-            // Video 요소의 srcObject를 갱신하여 오디오/비디오가 모두 정상 출력됩니다.
+            // ?뵦 以묒슂: MediaStream 媛앹껜??李몄“瑜??덈줈 ?앹꽦?댁빞 React媛 蹂寃쎌쓣 媛먯??섍퀬 
+            // Video ?붿냼??srcObject瑜?媛깆떊?섏뿬 ?ㅻ뵒??鍮꾨뵒?ㅺ? 紐⑤몢 ?뺤긽 異쒕젰?⑸땲??
             const newStream = new MediaStream(existingParticipant.stream.getTracks());
             const incomingTracks = event.streams[0] 
               ? event.streams[0].getTracks() 
@@ -516,7 +598,7 @@ export function useMeetingWebRTC(
             );
           }
 
-          // 첫 트랙인 경우에도 새로운 MediaStream으로 감싸서 관리
+          // 泥??몃옓??寃쎌슦?먮룄 ?덈줈??MediaStream?쇰줈 媛먯떥??愿由?
           const firstStream = event.streams[0] 
             ? new MediaStream(event.streams[0].getTracks()) 
             : new MediaStream([event.track]);
@@ -563,10 +645,10 @@ export function useMeetingWebRTC(
       pc.onnegotiationneeded = async () => {
         try {
           if (pc.signalingState !== 'stable') return;
-          // [PATCH] 레이스 컨디션 해결을 위해 모든 참가자가 offer를 보낼 수 있도록 허용하되,
-          // onSignal 에서 "polite" 전략으로 glare(동시 오퍼) 충돌을 해결합니다.
-          // 또는, 안전하게 ID가 작은 쪽만 신규 트랙에 대한 오퍼를 보내도록 유지할 수 있지만,
-          // 이 경우 Impolite 사용자가 트랙을 추가했을 때 상대가 알 방법이 없으므로 오퍼를 보냅니다.
+          // [PATCH] ?덉씠??而⑤뵒???닿껐???꾪빐 紐⑤뱺 李멸??먭? offer瑜?蹂대궪 ???덈룄濡??덉슜?섎릺,
+          // onSignal ?먯꽌 "polite" ?꾨왂?쇰줈 glare(?숈떆 ?ㅽ띁) 異⑸룎???닿껐?⑸땲??
+          // ?먮뒗, ?덉쟾?섍쾶 ID媛 ?묒? 履쎈쭔 ?좉퇋 ?몃옓??????ㅽ띁瑜?蹂대궡?꾨줉 ?좎??????덉?留?
+          // ??寃쎌슦 Impolite ?ъ슜?먭? ?몃옓??異붽??덉쓣 ???곷?媛 ??諛⑸쾿???놁쑝誘濡??ㅽ띁瑜?蹂대깄?덈떎.
           log(`[WebRTC] Negotiation needed for ${targetUserId}, sending offer`);
           const offer = await pc.createOffer();
           log(`[WebRTC] offer created for ${targetUserId}`);
@@ -918,7 +1000,7 @@ export function useMeetingWebRTC(
       log('meeting event received', event);
       switch (event.type) {
         case 'participant-joined':
-          // 1. 내가 접속했을 때: 이미 있는 참가자들(existingParticipantIds)에게 연결 시도
+          // 1. ?닿? ?묒냽?덉쓣 ?? ?대? ?덈뒗 李멸??먮뱾(existingParticipantIds)?먭쾶 ?곌껐 ?쒕룄
           if (
             event.joinedUserId &&
             localIdsRef.current.includes(String(event.joinedUserId)) &&
@@ -930,7 +1012,7 @@ export function useMeetingWebRTC(
             );
             event.existingParticipantIds.forEach((pId) => {
               if (!localIdsRef.current.includes(String(pId))) {
-                // Polite 발송 전략: ID가 더 작은 쪽이 먼저 Offer를 보냄
+                // Polite 諛쒖넚 ?꾨왂: ID媛 ???묒? 履쎌씠 癒쇱? Offer瑜?蹂대깂
                 if (shouldInitiateOffer(myId, pId)) {
                   log(`polite initiation (existing): sending offer to ${pId}`);
                   void createAndSendOffer(pId);
@@ -941,7 +1023,7 @@ export function useMeetingWebRTC(
             });
             void broadcastLocalMediaState(remoteParticipantIds);
           }
-          // 2. 다른 사람이 접속했을 때: 해당 참가자에게 연결 시도
+          // 2. ?ㅻⅨ ?щ엺???묒냽?덉쓣 ?? ?대떦 李멸??먯뿉寃??곌껐 ?쒕룄
           else if (
             event.joinedUserId &&
             !localIdsRef.current.includes(String(event.joinedUserId))
@@ -1167,11 +1249,11 @@ export function useMeetingWebRTC(
       setLocalStream(stream);
       localStreamRef.current = stream;
 
-      // 🔥 레이스 컨디션 해결: 이미 생성된 PeerConnection이 있다면 트랙 추가
+      // ?뵦 ?덉씠??而⑤뵒???닿껐: ?대? ?앹꽦??PeerConnection???덈떎硫??몃옓 異붽?
       pcs.current.forEach((pc, targetId) => {
         const senders = pc.getSenders();
         stream.getTracks().forEach((track) => {
-          // 중복 추가 방지
+          // 以묐났 異붽? 諛⑹?
           const sender = senders.find((s) => s.track?.kind === track.kind);
           if (sender) {
             log(`Replacing ${track.kind} track on existing PC: ${targetId}`);
@@ -1182,8 +1264,8 @@ export function useMeetingWebRTC(
           }
         });
 
-        // Offer 재발송이 필요한 경우 (필요 시 negotiationneeded 이벤트 활용 가능)
-        // 여기서는 간단히 다시 offer를 보낼 수도 있음
+        // Offer ?щ컻?≪씠 ?꾩슂??寃쎌슦 (?꾩슂 ??negotiationneeded ?대깽???쒖슜 媛??
+        // ?ш린?쒕뒗 媛꾨떒???ㅼ떆 offer瑜?蹂대궪 ?섎룄 ?덉쓬
       });
 
       previousStream?.getTracks().forEach((track) => track.stop());
@@ -1219,18 +1301,33 @@ export function useMeetingWebRTC(
         }
         if (!analyserRef.current) return;
 
-        const dataArray = new Uint8Array(analyserRef.current.frequencyBinCount);
+        const frequencyData = new Uint8Array(
+          analyserRef.current.frequencyBinCount
+        );
+        const timeDomainData = new Uint8Array(analyserRef.current.fftSize);
 
         const checkVolume = () => {
           if (!analyserRef.current) return;
-          
-          // 마이크 음소거 상태 확인
+          const activeMeetingId = meetingIdRef.current || meetingId;
+          const shouldLogVoice =
+            Boolean(activeMeetingId) &&
+            (mediaRecorderRef.current?.state === 'recording' ||
+              Boolean(recordingStartedAtRef.current));
+
+          // 留덉씠???뚯냼嫄??곹깭 ?뺤씤
           const isMuted = localStream.getAudioTracks().every(t => !t.enabled);
           if (isMuted) {
             if (localSpeakingRef.current) {
               localSpeakingRef.current = false;
               setIsSpeaking(false);
               sendVoiceActivity(false);
+              if (shouldLogVoice) {
+                logRecordingVoice('silent', {
+                  meetingId: activeMeetingId,
+                  userId: myId,
+                  reason: 'muted',
+                });
+              }
             }
             if (speakingTimeoutRef.current) {
               clearTimeout(speakingTimeoutRef.current);
@@ -1240,18 +1337,31 @@ export function useMeetingWebRTC(
             return;
           }
 
-          analyserRef.current.getByteFrequencyData(dataArray);
-          
-          // Peak volume detection (Math.max)
-          // 단순 평균보다는 피크 함량을 체크하는 것이 목소리 감지에 더 정교합니다.
-          const maxVolume = Math.max(...dataArray);
+          analyserRef.current.getByteFrequencyData(frequencyData);
+          analyserRef.current.getByteTimeDomainData(timeDomainData);
 
-          // threshold 70 (0~255 범위)
-          if (maxVolume > 70 && ctx && ctx.state === 'running') {
+          const maxVolume = Math.max(...frequencyData);
+          const rms =
+            Math.sqrt(
+              timeDomainData.reduce((sum, value) => {
+                const normalized = (value - 128) / 128;
+                return sum + normalized * normalized;
+              }, 0) / timeDomainData.length
+            ) || 0;
+
+          if ((maxVolume > 45 || rms > 0.02) && ctx && ctx.state === 'running') {
             if (!localSpeakingRef.current) {
               localSpeakingRef.current = true;
               setIsSpeaking(true);
               sendVoiceActivity(true);
+              if (shouldLogVoice) {
+                logRecordingVoice('speaking', {
+                  meetingId: activeMeetingId,
+                  userId: myId,
+                  maxVolume,
+                  rms,
+                });
+              }
             }
             if (speakingTimeoutRef.current)
               clearTimeout(speakingTimeoutRef.current);
@@ -1261,6 +1371,13 @@ export function useMeetingWebRTC(
                   localSpeakingRef.current = false;
                   setIsSpeaking(false);
                   sendVoiceActivity(false);
+                  if (shouldLogVoice) {
+                    logRecordingVoice('silent', {
+                      meetingId: activeMeetingId,
+                      userId: myId,
+                      reason: 'timeout',
+                    });
+                  }
                 }
                 speakingTimeoutRef.current = null;
               },
@@ -1270,6 +1387,13 @@ export function useMeetingWebRTC(
             localSpeakingRef.current = false;
             setIsSpeaking(false);
             sendVoiceActivity(false);
+            if (shouldLogVoice) {
+              logRecordingVoice('silent', {
+                meetingId: activeMeetingId,
+                userId: myId,
+                reason: 'below-threshold',
+              });
+            }
           }
           animationFrameIdRef.current = requestAnimationFrame(checkVolume);
         };
@@ -1313,10 +1437,24 @@ export function useMeetingWebRTC(
   // Main Event Handler for Upload
   useEffect(() => {
     const handleStopAndUpload = async () => {
-      log('[EVENT] meezy:stop-and-upload start');
-      setIsUploading(true);
       const tId = teamIdRef.current;
       const mId = meetingIdRef.current;
+
+      if (stopAndUploadInProgressRef.current) {
+        return;
+      }
+
+      if (
+        mId &&
+        lastUploadedMeetingIdRef.current &&
+        lastUploadedMeetingIdRef.current === mId
+      ) {
+        return;
+      }
+
+      log('[EVENT] meezy:stop-and-upload start');
+      stopAndUploadInProgressRef.current = true;
+      setIsUploading(true);
       const recorder = mediaRecorderRef.current;
       const stream = localStreamRef.current;
 
@@ -1329,6 +1467,16 @@ export function useMeetingWebRTC(
       });
 
       try {
+        if (
+          !tId &&
+          !mId &&
+          !recorder &&
+          recordedChunksRef.current.length === 0 &&
+          recordingPcmLeftChunksRef.current.length === 0
+        ) {
+          return;
+        }
+
         let blob: Blob | null = null;
         const resolvedMimeType =
           recordingMimeTypeRef.current ||
@@ -1384,42 +1532,84 @@ export function useMeetingWebRTC(
 
         if (blob) {
           if (tId && mId && blob.size > 0) {
+            const pcmLeftChunks = [...recordingPcmLeftChunksRef.current];
+            const pcmRightChunks = [...recordingPcmRightChunksRef.current];
+            const hasCapturedPcm = pcmLeftChunks.length > 0;
+
+            logRecordingUpload('request', {
+              teamId: tId,
+              meetingId: mId,
+              stage: 'prepare-upload',
+              recorderState: recorder?.state ?? 'missing',
+              recordedChunkCount: recordedChunksRef.current.length,
+              pcmLeftChunkCount: pcmLeftChunks.length,
+              pcmRightChunkCount: pcmRightChunks.length,
+              blobSize: blob.size,
+              blobType: blob.type,
+            });
+
+            const mp3Blob = hasCapturedPcm
+              ? await encodePcmChunksToMp3({
+                  leftChunks: pcmLeftChunks,
+                  rightChunks: pcmRightChunks,
+                  sampleRate: recordingPcmSampleRateRef.current,
+                })
+              : await convertRecordingBlobToMp3(blob);
+            const recordingFileName = 'recording.mp3';
+
             logRecordingUpload('request', {
               teamId: tId,
               meetingId: mId,
               fileName: recordingFileName,
-              size: blob.size,
-              type: resolvedMimeType,
+              size: mp3Blob.size,
+              type: mp3Blob.type,
             });
             await uploadMeetingRecording(
               tId,
               mId,
-              blob,
+              mp3Blob,
               recordingFileName
             );
+            lastUploadedMeetingIdRef.current = mId;
           } else {
-            logRecordingUpload('skipped', {
-              tIdExists: !!tId,
-              mIdExists: !!mId,
-              blobSize: blob.size,
-              fileName: recordingFileName,
-            });
+            if (tId || mId) {
+              logRecordingUpload('skipped', {
+                tIdExists: !!tId,
+                mIdExists: !!mId,
+                blobSize: blob.size,
+                fileName: recordingFileName,
+              });
+            }
           }
         } else {
-          logRecordingUpload('skipped', {
-            teamId: tId,
-            meetingId: mId,
-            reason: 'no-recording-blob',
-          });
+          if (tId || mId) {
+            logRecordingUpload('skipped', {
+              teamId: tId,
+              meetingId: mId,
+              reason: 'no-recording-blob',
+            });
+          }
         }
       } catch (err) {
-        log('[ERROR] handleStopAndUpload task failed', err);
+        logRecordingUpload('error', {
+          teamId: tId,
+          meetingId: mId,
+          stage: 'prepare-upload',
+          recorderState: recorder?.state ?? 'missing',
+          recordedChunkCount: recordedChunksRef.current.length,
+          pcmLeftChunkCount: recordingPcmLeftChunksRef.current.length,
+          pcmRightChunkCount: recordingPcmRightChunksRef.current.length,
+          error: err,
+        });
       } finally {
         mediaRecorderRef.current = null;
         recordedChunksRef.current = [];
         recordingMimeTypeRef.current = '';
+        recordingPcmLeftChunksRef.current = [];
+        recordingPcmRightChunksRef.current = [];
         cleanupRecordingMix();
         setIsUploading(false);
+        stopAndUploadInProgressRef.current = false;
       }
 
       // Clean up tracks always at the end
@@ -1429,6 +1619,8 @@ export function useMeetingWebRTC(
         localStreamRef.current = null;
         setLocalStream(null);
       }
+
+      teardownMeetingMedia();
     };
 
     window.addEventListener('meezy:stop-and-upload', handleStopAndUpload);
@@ -1438,7 +1630,7 @@ export function useMeetingWebRTC(
       );
       window.removeEventListener('meezy:stop-and-upload', handleStopAndUpload);
     };
-  }, [log]);
+  }, [log, teardownMeetingMedia]);
 
   useEffect(() => {
     if (myId && meetingId && teamId && isActive) {

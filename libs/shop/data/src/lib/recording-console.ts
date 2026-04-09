@@ -66,3 +66,43 @@ export function logRecordingUpload(
 
   originalConsole.log(prefix, payload);
 }
+
+export function logRecordingVoice(
+  status: 'speaking' | 'silent',
+  payload?: unknown
+) {
+  const originalConsole = getOriginalConsole();
+
+  if (!originalConsole) {
+    return;
+  }
+
+  originalConsole.log(`[Meeting Recording Voice] ${status}`, payload);
+}
+
+export function logMeetingParticipation(
+  kind: 'voice' | 'chat',
+  status: 'send' | 'queued',
+  payload?: unknown
+) {
+  const originalConsole = getOriginalConsole();
+
+  if (!originalConsole) {
+    return;
+  }
+
+  originalConsole.log(`[Meeting Participation ${kind}] ${status}`, payload);
+}
+
+export function logMeetingStomp(
+  status: 'connect' | 'connected' | 'queue' | 'flush' | 'send' | 'close' | 'disconnect',
+  payload?: unknown
+) {
+  const originalConsole = getOriginalConsole();
+
+  if (!originalConsole) {
+    return;
+  }
+
+  originalConsole.log(`[Meeting STOMP] ${status}`, payload);
+}

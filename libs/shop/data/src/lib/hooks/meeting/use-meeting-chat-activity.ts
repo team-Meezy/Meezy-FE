@@ -1,90 +1,60 @@
 import { useEffect, useRef, useCallback } from 'react';
-import { Client } from '@stomp/stompjs';
-import SockJS from 'sockjs-client';
-import { BASE_URL, STOMP_SOCKET_URL } from '../axios';
+import { BASE_URL } from '../axios';
+import { logMeetingParticipation } from '../../recording-console';
+import {
+  isSharedMeetingStompConnected,
+  publishSharedMeetingMessage,
+  releaseSharedMeetingStomp,
+  retainSharedMeetingStomp,
+} from './shared-meeting-stomp';
 
 export function useMeetingChatActivity(meetingId: string, myId: string) {
-  const client = useRef<Client | null>(null);
   const pendingSendCount = useRef(0);
 
   useEffect(() => {
-    if (!meetingId || !myId || !BASE_URL) return;
-
-    const token = localStorage.getItem('accessToken');
-    const socketUrl = STOMP_SOCKET_URL;
-    console.log('Chat Activity SockJS Attempt:', socketUrl);
-
-    client.current = new Client({
-      webSocketFactory: () =>
-        new SockJS(socketUrl, null, { transports: ['websocket'] }),
-      connectHeaders: token
-        ? {
-            Authorization: `Bearer ${token}`,
-          }
-        : {},
-      reconnectDelay: 5000,
-      heartbeatIncoming: 10000,
-      heartbeatOutgoing: 10000,
-      debug: (str) => console.log('STOMP Chat Activity Debug:', str),
-      onConnect: () => {
-        console.log('STOMP Connected for Chat Activity (SockJS)', {
-          meetingId,
-          myId,
-          pendingSendCount: pendingSendCount.current,
-        });
-
-        while (pendingSendCount.current > 0 && client.current?.connected) {
-          client.current.publish({
-            destination: `/app/meetings/${meetingId}/participation/chat`,
-          });
-          pendingSendCount.current -= 1;
-          console.log('[chat] flush-send', {
-            meetingId,
-            myId,
-            remainingPending: pendingSendCount.current,
-          });
-        }
-      },
-      onStompError: (frame) => {
-        console.error(
-          'STOMP Error in Chat Activity:',
-          frame.headers['message']
-        );
-      },
-      onWebSocketError: (event) => {
-        console.error('SockJS Error in Chat Activity:', event);
-      },
-    });
-
-    client.current.activate();
+    if (!meetingId || !BASE_URL) return;
+    retainSharedMeetingStomp();
 
     return () => {
       pendingSendCount.current = 0;
-      client.current?.deactivate();
+      releaseSharedMeetingStomp();
     };
   }, [meetingId, myId]);
 
   const sendChatActivity = useCallback(() => {
-    if (client.current?.connected) {
-      console.log('[chat] send', {
+    if (isSharedMeetingStompConnected()) {
+      logMeetingParticipation('chat', 'send', {
         meetingId,
-        myId,
         destination: `/app/meetings/${meetingId}/participation/chat`,
+        connected: true,
       });
-      client.current.publish({
+      publishSharedMeetingMessage({
         destination: `/app/meetings/${meetingId}/participation/chat`,
       });
       return;
     }
 
     pendingSendCount.current += 1;
-    console.log('[chat] queued', {
+    logMeetingParticipation('chat', 'queued', {
       meetingId,
-      myId,
-      connected: client.current?.connected ?? false,
+      destination: `/app/meetings/${meetingId}/participation/chat`,
+      connected: false,
       pendingSendCount: pendingSendCount.current,
     });
-  }, [meetingId, myId]);
+    while (pendingSendCount.current > 0) {
+      logMeetingParticipation('chat', 'send', {
+        meetingId,
+        destination: `/app/meetings/${meetingId}/participation/chat`,
+        connected: false,
+        flushedFromQueue: true,
+        pendingSendCount: pendingSendCount.current,
+      });
+      publishSharedMeetingMessage({
+        destination: `/app/meetings/${meetingId}/participation/chat`,
+      });
+      pendingSendCount.current -= 1;
+    }
+  }, [meetingId]);
 
   return { sendChatActivity };
 }

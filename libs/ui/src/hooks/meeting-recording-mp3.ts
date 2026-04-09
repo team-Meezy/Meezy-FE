@@ -170,10 +170,11 @@ export async function encodePcmChunksToMp3(params: {
     mp3Chunks.push(new Uint8Array(flushData));
   }
 
-  const blobParts: BlobPart[] = mp3Chunks.map(
-    (chunk) =>
-      new Uint8Array(chunk.buffer.slice(chunk.byteOffset, chunk.byteOffset + chunk.byteLength))
-  );
+  const blobParts: BlobPart[] = mp3Chunks.map((chunk) => {
+    const copiedChunk = new Uint8Array(chunk.byteLength);
+    copiedChunk.set(chunk);
+    return copiedChunk.buffer as ArrayBuffer;
+  });
 
   return new Blob(blobParts, { type: 'audio/mpeg' });
 }

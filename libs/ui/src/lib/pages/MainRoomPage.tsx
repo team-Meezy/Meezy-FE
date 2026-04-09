@@ -1,26 +1,78 @@
 'use client';
 
-import { useEffect, useMemo, useState } from 'react';
+import { useCallback, useEffect, useMemo, useState } from 'react';
 import { useParams, useRouter } from 'next/navigation';
 import {
   getTotalEngagement,
   type ParticipantEngagementMetrics,
   useMeetingStore,
 } from '@org/shop-data';
-import { useProfile } from '../../context';
+import { useProfile, useServerState } from '../../context';
 import { colors } from '../../design';
 import { DashboardCard } from '../components/DashboardCard';
 import { ParticipationChart } from '../components/ParticipationChart';
 
+function getMeetingUserId(entity: any) {
+  return String(
+    entity?.userId ||
+      entity?.user_id ||
+      entity?.accountId ||
+      entity?.memberId ||
+      entity?.teamMemberId ||
+      entity?.user?.userId ||
+      entity?.user?.user_id ||
+      entity?.user?.accountId ||
+      entity?.user?.memberId ||
+      entity?.user?.teamMemberId ||
+      entity?.user?.id ||
+      entity?.id ||
+      ''
+  ).trim();
+}
+
+function getUserIdFromAccessToken() {
+  if (typeof window === 'undefined') return '';
+
+  try {
+    const token = localStorage.getItem('accessToken');
+    if (!token) return '';
+
+    const payload = token.split('.')[1];
+    if (!payload) return '';
+
+    const decoded = JSON.parse(
+      atob(payload.replace(/-/g, '+').replace(/_/g, '/'))
+    );
+
+    return String(
+      decoded?.userId ||
+        decoded?.user_id ||
+        decoded?.id ||
+        decoded?.sub ||
+        decoded?.accountId ||
+        ''
+    ).trim();
+  } catch {
+    return '';
+  }
+}
+
 export function MainRoomPage() {
   const params = useParams();
   const serverId = params.serverId as string;
-  const { lastEndedMeetingId, lastEndedTeamId } = useMeetingStore();
   const router = useRouter();
-  const { profile } = useProfile();
+  const { lastEndedMeetingId, lastEndedTeamId } = useMeetingStore();
+  const { profile, loading: profileLoading } = useProfile();
+  const { teamMembers } = useServerState();
   const [participationRate, setParticipationRate] = useState<number | null>(
     null
   );
+
+  const teamMemberList = useMemo(
+    () => (Array.isArray(teamMembers) ? teamMembers : []),
+    [teamMembers]
+  );
+
   const persistedLastEndedMeeting = useMemo(() => {
     if (typeof window === 'undefined') {
       return { meetingId: '', teamId: '' };
@@ -45,6 +97,7 @@ export function MainRoomPage() {
       return { meetingId: '', teamId: '' };
     }
   }, [lastEndedMeetingId, lastEndedTeamId]);
+
   const resolvedLastEndedMeetingId =
     lastEndedMeetingId || persistedLastEndedMeeting.meetingId;
   const resolvedLastEndedTeamId =
@@ -54,18 +107,106 @@ export function MainRoomPage() {
     profile?.nickname || profile?.name || profile?.username || '팀원';
   const ratePercent =
     participationRate != null ? Math.round(participationRate * 100) : 0;
-  const summaryText = useMemo(() => {
-    return `${displayName}님의 가장 최근 회의 참여율은 전체 팀원 중 ${ratePercent}%입니다!`;
-  }, [displayName, ratePercent]);
+
+  const normalizeName = useCallback((name?: string | null) => {
+    return String(name ?? '')
+      .trim()
+      .toLowerCase();
+  }, []);
+
+  const profileIds = useMemo(
+    () =>
+      [
+        profile?.userId,
+        profile?.id,
+        profile?.user_id,
+        profile?.accountId,
+        profile?.memberId,
+        profile?.teamMemberId,
+        getMeetingUserId(profile),
+        getUserIdFromAccessToken(),
+      ]
+        .map((value) => String(value ?? '').trim())
+        .filter(Boolean),
+    [profile]
+  );
+
+  const myComparableNames = useMemo(() => {
+    return [
+      profile?.name,
+      profile?.nickname,
+      profile?.username,
+      (profile as any)?.userName,
+      (profile as any)?.nickName,
+    ]
+      .map(normalizeName)
+      .filter(Boolean);
+  }, [normalizeName, profile]);
+
+  const myMemberInfo = useMemo(() => {
+    return teamMemberList.find((member: any) => {
+      const memberIds = [
+        member?.userId,
+        member?.user_id,
+        member?.accountId,
+        member?.memberId,
+        member?.teamMemberId,
+        member?.id,
+        member?.user?.id,
+        member?.user?.userId,
+        member?.user?.user_id,
+        member?.user?.accountId,
+        member?.user?.memberId,
+        member?.user?.teamMemberId,
+      ]
+        .map((value) => String(value ?? '').trim())
+        .filter(Boolean);
+
+      if (memberIds.some((value) => profileIds.includes(value))) {
+        return true;
+      }
+
+      const memberNames = [
+        member?.name,
+        member?.nickname,
+        member?.nickName,
+        member?.user?.name,
+        member?.user?.nickname,
+        member?.user?.nickName,
+      ]
+        .map(normalizeName)
+        .filter(Boolean);
+
+      return memberNames.some((value) => myComparableNames.includes(value));
+    });
+  }, [myComparableNames, normalizeName, profileIds, teamMemberList]);
+
+  const localIds = useMemo(() => {
+    const member = myMemberInfo as any;
+
+    return Array.from(
+      new Set(
+        [
+          getMeetingUserId(member),
+          getMeetingUserId(member?.user),
+          getMeetingUserId(profile),
+          getUserIdFromAccessToken(),
+        ]
+          .map((value) => String(value ?? '').trim())
+          .filter(Boolean)
+      )
+    );
+  }, [myMemberInfo, profile]);
 
   useEffect(() => {
     if (!serverId) return;
-    if (
-      resolvedLastEndedTeamId !== serverId ||
-      !resolvedLastEndedMeetingId
-    ) {
+    if (resolvedLastEndedTeamId !== serverId || !resolvedLastEndedMeetingId) {
       return;
     }
+
+    let isCancelled = false;
+    let attempts = 0;
+    const maxAttempts = 20;
 
     const fetchParticipation = async () => {
       const totalEngagement = await getTotalEngagement(
@@ -80,27 +221,30 @@ export function MainRoomPage() {
         return false;
       }
 
-      const profileIds = [
-        profile?.userId,
-        profile?.id,
-        profile?.user_id,
-        profile?.accountId,
-      ]
-        .map((value) => String(value ?? '').trim())
-        .filter(Boolean);
-
       const myMetrics = totalEngagement.participants.find(
         (participant: ParticipantEngagementMetrics) =>
-          profileIds.includes(String(participant.userId ?? '').trim())
+          localIds.includes(String(participant.userId ?? '').trim())
       );
 
-      setParticipationRate(myMetrics?.participationRate ?? 0);
+      if (myMetrics) {
+        setParticipationRate(myMetrics.participationRate ?? 0);
+        return true;
+      }
+
+      if (totalEngagement.participants.length === 1) {
+        setParticipationRate(
+          totalEngagement.participants[0]?.participationRate ?? 0
+        );
+        return true;
+      }
+
+      if (profileLoading || localIds.length === 0) {
+        return false;
+      }
+
+      setParticipationRate(0);
       return true;
     };
-
-    let isCancelled = false;
-    let attempts = 0;
-    const maxAttempts = 20;
 
     const pollParticipation = async () => {
       if (isCancelled || attempts >= maxAttempts) return;
@@ -113,8 +257,12 @@ export function MainRoomPage() {
             void pollParticipation();
           }, 3000);
         }
-      } catch (error) {
-        console.error('fetchParticipation error', error);
+      } catch {
+        if (!isCancelled) {
+          window.setTimeout(() => {
+            void pollParticipation();
+          }, 3000);
+        }
       }
     };
 
@@ -124,7 +272,8 @@ export function MainRoomPage() {
       isCancelled = true;
     };
   }, [
-    profile,
+    localIds,
+    profileLoading,
     resolvedLastEndedMeetingId,
     resolvedLastEndedTeamId,
     serverId,
@@ -147,18 +296,17 @@ export function MainRoomPage() {
         <div className="flex flex-col justify-center gap-4 text-center lg:text-left">
           <h1 className="text-[clamp(1.1rem,1.7vw,2rem)] font-bold leading-[1.22] tracking-[-0.04em] text-white">
             <span className="block break-keep lg:whitespace-nowrap">
-              {displayName}님의 가장 최근 <span className="text-[#ff5c00]">회의 참여율</span>은
+              {displayName}님의 가장 최근 회의 참여율은
             </span>
             <span className="mt-1 block break-keep lg:whitespace-nowrap">
-              전체 팀원 중 <span className="text-[#ff5c00]">{ratePercent}%</span> 입니다!
+              전체 팀원 중 <span className="text-[#ff5c00]">{ratePercent}%</span>{' '}
+              입니다!
             </span>
           </h1>
           <p className="mx-auto max-w-[38rem] break-keep text-[clamp(0.8rem,0.95vw,0.96rem)] leading-[1.7] text-[#8d93a7] lg:mx-0">
-            참여율 기준은 회의 중 말의 빈도수가 얼마나 많았는지 리시브가
-            체크하여 반영됩니다.
-          </p>
-          <p className="text-[clamp(0.65rem,1vw,0.75rem)] font-medium uppercase tracking-[0.24em] text-white/20 lg:hidden">
-            {summaryText}
+            참여율 기준은 회의 중 채팅과 말의 빈도 수, 회의 참여 시간을 기준으로
+            <br />
+            리시버가 체크하여 반영됩니다.
           </p>
         </div>
       </section>
@@ -166,15 +314,15 @@ export function MainRoomPage() {
       <section className="mx-auto grid w-full max-w-6xl flex-1 min-h-0 grid-cols-1 gap-4 lg:grid-cols-2 xl:gap-5">
         <DashboardCard
           title="회의 피드백"
-          description="Meezy.의 AI 도우미 '리시브'가 회의를 정리해 피드백 해서 회의의 질을 높여 드려요!"
-          buttonText="회의 피드백 보기"
+          description="Meezy의 AI 도우미 리시버가 회의를 정리한 피드백에서 회의의 질을 더 높여 드려요."
+          buttonText="회의 피드백 보러가기"
           onClick={() => serverId && router.push(`/main/${serverId}/feedback`)}
         />
 
         <DashboardCard
           title="회의 요약"
-          description="Meezy.의 AI 도우미 '리시브'가 회의를 정리해 요약해서 회의를 보다 더 관리하기 쉽게 도와줘요!"
-          buttonText="회의 요약 보기"
+          description="Meezy의 AI 도우미 리시버가 회의를 정리한 요약에서 회의를 보다 더 관리하기 쉽게 도와줘요!"
+          buttonText="회의 요약 보러가기"
           onClick={() => serverId && router.push(`/main/${serverId}/summary`)}
         />
       </section>

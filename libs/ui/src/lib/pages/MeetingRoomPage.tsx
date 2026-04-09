@@ -281,7 +281,7 @@ export const MeetingRoomPage = () => {
               ...prev,
               {
                 userId: joinedId,
-                name: event.joinedUserName || '참가자',
+                name: event.joinedUserName || '',
                 profileImageUrl: event.joinedUserProfileImageUrl,
               },
             ];
@@ -392,7 +392,7 @@ export const MeetingRoomPage = () => {
       ...acc,
       {
         userId: remote.userId,
-        name: '참가자',
+        name: '',
       },
     ];
   }, []);
@@ -421,7 +421,7 @@ export const MeetingRoomPage = () => {
 
       return {
         id: participantId || participant.name,
-        name: participant.name || '참가자',
+        name: participant.name || '',
         isLocal: false,
         mirrorVideo: false,
         stream: remoteStream?.stream,

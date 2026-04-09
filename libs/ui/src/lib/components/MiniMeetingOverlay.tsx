@@ -41,7 +41,7 @@ export function MiniMeetingOverlay() {
   const activeRemote = remoteStreams?.[0]?.stream;
   const displayStream = activeRemote || localStream;
   const displayName = formatDisplayName(
-    activeRemote ? remoteStreams[0]?.name || '참가자' : '나'
+    activeRemote ? remoteStreams[0]?.name || '' : ''
   );
 
   const isMeetingPage = pathname.includes('/meeting');
@@ -80,7 +80,7 @@ export function MiniMeetingOverlay() {
 
   const handleExit = async () => {
     setLoading(true);
-    setLoadingState('회의 내용을 저장 중입니다...');
+    setLoadingState('회의 내용을 정리 중입니다...');
     window.dispatchEvent(new CustomEvent('meezy:stop-and-upload'));
 
     try {
@@ -91,8 +91,7 @@ export function MiniMeetingOverlay() {
       setMeeting(false);
       setMeetingId('');
       setTeamId('');
-    } catch (error) {
-      console.log('leaveMeeting error', error);
+    } catch {
       alert('회의 나가기에 실패했습니다.');
     } finally {
       setLoading(false);
@@ -101,7 +100,7 @@ export function MiniMeetingOverlay() {
   };
 
   return (
-    <div className="fixed bottom-6 right-6 z-[100] flex aspect-video w-64 flex-col overflow-hidden rounded-xl border border-white/10 bg-[#1e1e1e] shadow-2xl group">
+    <div className="group fixed bottom-6 right-6 z-[100] flex aspect-video w-64 flex-col overflow-hidden rounded-xl border border-white/10 bg-[#1e1e1e] shadow-2xl">
       <div className="relative flex-1 bg-black">
         <video
           ref={videoRef}
@@ -116,9 +115,13 @@ export function MiniMeetingOverlay() {
 
         <div className="absolute inset-0 flex flex-col justify-between bg-gradient-to-t from-black/60 via-transparent to-transparent p-2 opacity-0 transition-opacity group-hover:opacity-100">
           <div className="flex items-start justify-between">
-            <span className="rounded bg-black/40 px-2 py-0.5 text-[10px] text-white/80 backdrop-blur-sm">
-              {displayName}
-            </span>
+            {displayName ? (
+              <span className="rounded bg-black/40 px-2 py-0.5 text-[10px] text-white/80 backdrop-blur-sm">
+                {displayName}
+              </span>
+            ) : (
+              <span />
+            )}
             <div className="flex gap-1.5">
               <button
                 onClick={handleExit}
@@ -168,7 +171,7 @@ export function MiniMeetingOverlay() {
           통화 중...
         </span>
         {isSpeaking && (
-          <div className="h-1.5 w-1.5 rounded-full bg-green-500 animate-pulse" />
+          <div className="h-1.5 w-1.5 animate-pulse rounded-full bg-green-500" />
         )}
       </div>
     </div>

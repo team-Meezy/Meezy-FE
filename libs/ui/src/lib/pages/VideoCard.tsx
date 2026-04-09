@@ -78,9 +78,11 @@ export const VideoCard = ({
               isSpeaking ? 'ring-4 ring-[#3b82f6]' : 'ring-0'
             }`}
           />
-          <span className="mt-4 text-white font-bold text-base md:text-lg">
-            {displayName}
-          </span>
+          {displayName ? (
+            <span className="mt-4 text-white font-bold text-base md:text-lg">
+              {displayName}
+            </span>
+          ) : null}
         </>
       )}
 

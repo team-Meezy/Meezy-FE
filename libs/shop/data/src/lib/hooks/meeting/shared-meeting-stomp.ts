@@ -23,11 +23,13 @@ function getConnectHeaders() {
       ? localStorage.getItem('accessToken')
       : null;
 
-  return token
-    ? {
-        Authorization: `Bearer ${token}`,
-      }
-    : {};
+  const headers: Record<string, string> = {};
+
+  if (token) {
+    headers.Authorization = `Bearer ${token}`;
+  }
+
+  return headers;
 }
 
 function subscribeDestination(destination: string) {

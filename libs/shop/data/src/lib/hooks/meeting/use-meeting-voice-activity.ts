@@ -1,7 +1,13 @@
 import { useEffect, useRef } from 'react';
-import { Client } from '@stomp/stompjs';
-import SockJS from 'sockjs-client';
-import { BASE_URL, STOMP_SOCKET_URL } from '../axios';
+import { BASE_URL } from '../axios';
+import { logMeetingParticipation } from '../../recording-console';
+import {
+  isSharedMeetingStompConnected,
+  publishSharedMeetingMessage,
+  releaseSharedMeetingStomp,
+  retainSharedMeetingStomp,
+  subscribeSharedMeetingTopic,
+} from './shared-meeting-stomp';
 
 interface VoiceActivity {
   userId: string;
@@ -13,8 +19,9 @@ export function useMeetingVoiceActivity(
   userId?: string,
   onActivity?: (activity: VoiceActivity) => void
 ) {
-  const client = useRef<Client | null>(null);
   const onActivityRef = useRef(onActivity);
+  const pendingSpeakingStateRef = useRef<boolean | null>(null);
+  const pendingVoiceCountRef = useRef(0);
 
   useEffect(() => {
     onActivityRef.current = onActivity;
@@ -22,67 +29,76 @@ export function useMeetingVoiceActivity(
 
   useEffect(() => {
     if (!meetingId || !BASE_URL) return;
-
-    const token = localStorage.getItem('accessToken');
-    const socketUrl = STOMP_SOCKET_URL;
-
-    console.log('Voice Activity SockJS Debug:', socketUrl);
-
-    client.current = new Client({
-      webSocketFactory: () =>
-        new SockJS(socketUrl, null, { transports: ['websocket'] }),
-      connectHeaders: token
-        ? {
-            Authorization: `Bearer ${token}`,
-          }
-        : {},
-      reconnectDelay: 5000,
-      heartbeatIncoming: 10000,
-      heartbeatOutgoing: 10000,
-      debug: (str) => console.log('STOMP Voice Activity Debug:', str),
-      onConnect: () => {
-        console.log(
-          `STOMP Connected for Voice Activity (SockJS): ${meetingId}`
-        );
-
-        if (onActivityRef.current) {
-          client.current?.subscribe(
-            `/topic/meetings/${meetingId}/voice`,
-            (message) => {
-              const activity = JSON.parse(message.body);
-              onActivityRef.current?.(activity);
-            }
-          );
+    retainSharedMeetingStomp();
+    const unsubscribe = subscribeSharedMeetingTopic(
+      `/topic/meetings/${meetingId}/voice`,
+      (message) => {
+        if (!onActivityRef.current) {
+          return;
         }
-      },
-      onStompError: (frame) => {
-        console.error(
-          'STOMP Error in Voice Activity:',
-          frame.headers['message']
-        );
-      },
-      onWebSocketError: (event) => {
-        console.error('SockJS Error in Voice Activity:', event);
-      },
-    });
 
-    client.current.activate();
+        const activity = JSON.parse(message.body);
+        onActivityRef.current(activity);
+      }
+    );
 
     return () => {
-      client.current?.deactivate();
+      unsubscribe();
+      releaseSharedMeetingStomp();
     };
   }, [meetingId]);
 
   return {
     sendVoiceActivity: (isSpeaking: boolean) => {
-      if (client.current?.connected && userId) {
+      pendingSpeakingStateRef.current = isSpeaking;
+
+      if (isSharedMeetingStompConnected()) {
         if (isSpeaking) {
-          client.current.publish({
+          logMeetingParticipation('voice', 'send', {
+            meetingId,
+            destination: `/app/meetings/${meetingId}/participation/voice`,
+            connected: true,
+          });
+          publishSharedMeetingMessage({
             destination: `/app/meetings/${meetingId}/participation/voice`,
           });
         }
 
-        client.current.publish({
+        if (userId) {
+          publishSharedMeetingMessage({
+            destination: `/app/meetings/${meetingId}/voice`,
+            body: JSON.stringify({ userId, isSpeaking }),
+          });
+        }
+        return;
+      }
+
+      if (isSpeaking) {
+        pendingVoiceCountRef.current += 1;
+        logMeetingParticipation('voice', 'queued', {
+          meetingId,
+          destination: `/app/meetings/${meetingId}/participation/voice`,
+          connected: false,
+          pendingVoiceCount: pendingVoiceCountRef.current,
+        });
+      }
+
+      while (pendingVoiceCountRef.current > 0) {
+        logMeetingParticipation('voice', 'send', {
+          meetingId,
+          destination: `/app/meetings/${meetingId}/participation/voice`,
+          connected: false,
+          flushedFromQueue: true,
+          pendingVoiceCount: pendingVoiceCountRef.current,
+        });
+        publishSharedMeetingMessage({
+          destination: `/app/meetings/${meetingId}/participation/voice`,
+        });
+        pendingVoiceCountRef.current -= 1;
+      }
+
+      if (userId) {
+        publishSharedMeetingMessage({
           destination: `/app/meetings/${meetingId}/voice`,
           body: JSON.stringify({ userId, isSpeaking }),
         });

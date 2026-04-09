@@ -5,11 +5,14 @@ export const uploadMeetingRecording = async (
   teamId: string,
   meetingId: string,
   recordingBlob: Blob,
-  fileName = 'recording.webm'
+  fileName = 'recording.mp3'
 ) => {
   try {
     const formData = new FormData();
-    formData.append('file', recordingBlob, fileName);
+    const recordingFile = new File([recordingBlob], fileName, {
+      type: 'audio/mpeg',
+    });
+    formData.append('file', recordingFile);
 
     const response = await privateApi.post(
       `/teams/${teamId}/meetings/${meetingId}/recording`,
@@ -20,8 +23,8 @@ export const uploadMeetingRecording = async (
       meetingId,
       status: response.status,
       fileName,
-      size: recordingBlob.size,
-      type: recordingBlob.type,
+      size: recordingFile.size,
+      type: recordingFile.type,
     });
     return response.data;
   } catch (error) {
@@ -30,7 +33,7 @@ export const uploadMeetingRecording = async (
       meetingId,
       fileName,
       size: recordingBlob.size,
-      type: recordingBlob.type,
+      type: 'audio/mpeg',
       error,
     });
     throw error;

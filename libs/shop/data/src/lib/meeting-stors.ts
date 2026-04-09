@@ -1,6 +1,19 @@
 import { create } from 'zustand';
 import type { MeetingIceServer } from './hooks/meeting/types';
 
+const LAST_ENDED_MEETING_STORAGE_KEY = 'meezy:last-ended-meeting';
+
+function persistLastEndedMeeting(meetingId: string, teamId: string) {
+  if (typeof window === 'undefined') {
+    return;
+  }
+
+  sessionStorage.setItem(
+    LAST_ENDED_MEETING_STORAGE_KEY,
+    JSON.stringify({ meetingId, teamId })
+  );
+}
+
 interface MeetingState {
   meetingId: string;
   teamId: string;
@@ -36,8 +49,10 @@ export const useMeetingStore = create<MeetingState>()((set) => ({
   recordingElapsedMs: 0,
   setMeetingId: (value: string) => set({ meetingId: value }),
   setTeamId: (value: string) => set({ teamId: value }),
-  setLastEndedMeeting: (meetingId: string, teamId: string) =>
-    set({ lastEndedMeetingId: meetingId, lastEndedTeamId: teamId }),
+  setLastEndedMeeting: (meetingId: string, teamId: string) => {
+    persistLastEndedMeeting(meetingId, teamId);
+    set({ lastEndedMeetingId: meetingId, lastEndedTeamId: teamId });
+  },
   setIceServers: (value: MeetingIceServer[]) => set({ iceServers: value }),
   setIsUploading: (value: boolean) => set({ isUploading: value }),
   setIsRecording: (value: boolean) => set({ isRecording: value }),

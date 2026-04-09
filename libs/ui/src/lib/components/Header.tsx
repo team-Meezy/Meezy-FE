@@ -116,6 +116,7 @@ export function Header() {
   const isUploadingRef = useRef(isUploading);
   const activeMeetingTeamIdRef = useRef(activeMeetingTeamId);
   const meetingIdRef = useRef(meetingId);
+  const lastHandledEndedMeetingIdRef = useRef('');
 
   useEffect(() => {
     pathnameRef.current = pathname;
@@ -194,6 +195,78 @@ export function Header() {
     );
   }, [activeMeetingTeamId, currentTeamId, meeting, meetingId]);
 
+  const shouldPollActiveMeeting = useMemo(() => {
+    return (
+      pathname.includes('/meeting') ||
+      isMeetingInCurrentTeam ||
+      hasActiveMeeting
+    );
+  }, [hasActiveMeeting, isMeetingInCurrentTeam, pathname]);
+
+  const finalizeMeetingEnded = useCallback(
+    (endedMeetingId: string, endedTeamId: string) => {
+      if (!endedMeetingId || !endedTeamId) {
+        return;
+      }
+
+      if (lastHandledEndedMeetingIdRef.current === endedMeetingId) {
+        return;
+      }
+
+      lastHandledEndedMeetingIdRef.current = endedMeetingId;
+      setLastEndedMeeting(endedMeetingId, endedTeamId);
+      setMeeting(false);
+      setHasActiveMeeting(false);
+      setMeetingId('');
+      setTeamId('');
+      setIceServers([]);
+      setStartTime(null);
+      meetingRef.current = false;
+      window.dispatchEvent(new CustomEvent('meezy:stop-and-upload'));
+      if (currentTeamId === endedTeamId) {
+        alert('회의가 종료되었습니다.');
+        router.push(`/main/${endedTeamId}`);
+        return;
+      }
+
+      if (pathnameRef.current.includes('/meeting')) {
+        alert('회의가 종료되었습니다.');
+      }
+
+      if (pathnameRef.current.includes('/meeting') && endedTeamId) {
+        router.push(`/main/${endedTeamId}`);
+      }
+    },
+    [
+      currentTeamId,
+      router,
+      setHasActiveMeeting,
+      setIceServers,
+      setLastEndedMeeting,
+      setMeeting,
+      setMeetingId,
+      setStartTime,
+      setTeamId,
+    ]
+  );
+
+  useEffect(() => {
+    if (!pathname.includes('/meeting')) {
+      return;
+    }
+
+    if (meeting || hasActiveMeeting || isUploading) {
+      return;
+    }
+
+    if (meetingIdRef.current && activeMeetingTeamIdRef.current) {
+      finalizeMeetingEnded(
+        meetingIdRef.current,
+        activeMeetingTeamIdRef.current
+      );
+    }
+  }, [finalizeMeetingEnded, hasActiveMeeting, isUploading, meeting, pathname]);
+
   const checkActiveMeeting = useCallback(async () => {
     if (!currentTeamId || !profile) return;
 
@@ -204,10 +277,21 @@ export function Header() {
       const currentPath = pathnameRef.current;
 
       if (!activeMeeting || !activeMeeting.meetingId) {
+        const previousMeetingId = meetingIdRef.current;
+        const previousMeetingTeamId = activeMeetingTeamIdRef.current;
+
         setHasActiveMeeting(false);
         setStartTime(null);
         if (activeMeetingTeamIdRef.current === currentTeamId) {
           setIceServers([]);
+        }
+
+        if (
+          previousMeetingId &&
+          previousMeetingTeamId === currentTeamId
+        ) {
+          finalizeMeetingEnded(previousMeetingId, previousMeetingTeamId);
+          return;
         }
 
         if (
@@ -271,6 +355,7 @@ export function Header() {
     }
   }, [
     currentTeamId,
+    finalizeMeetingEnded,
     myNames,
     myProfileIds,
     profile,
@@ -287,14 +372,14 @@ export function Header() {
   }, [checkActiveMeeting]);
 
   useEffect(() => {
-    if (!currentTeamId) return;
+    if (!currentTeamId || !shouldPollActiveMeeting) return;
 
     const intervalId = setInterval(() => {
       void checkActiveMeeting();
     }, 3000);
 
     return () => clearInterval(intervalId);
-  }, [checkActiveMeeting, currentTeamId]);
+  }, [checkActiveMeeting, currentTeamId, shouldPollActiveMeeting]);
 
   useEffect(() => {
     const handleSync = () => {
@@ -308,24 +393,10 @@ export function Header() {
   const handleGlobalMeetingEvent = useCallback(
     (event: MeetingEvent) => {
       if (event.type === 'meeting-ended') {
-        if (meetingIdRef.current && activeMeetingTeamIdRef.current) {
-          setLastEndedMeeting(
-            meetingIdRef.current,
-            activeMeetingTeamIdRef.current
-          );
-        }
-        setMeeting(false);
-        setHasActiveMeeting(false);
-        setMeetingId('');
-        setTeamId('');
-        setIceServers([]);
-        setStartTime(null);
-        meetingRef.current = false;
-        window.dispatchEvent(new CustomEvent('meezy:stop-and-upload'));
-
-        if (pathnameRef.current.includes('/meeting') && currentTeamId) {
-          router.push(`/main/${currentTeamId}`);
-        }
+        finalizeMeetingEnded(
+          meetingIdRef.current,
+          activeMeetingTeamIdRef.current || currentTeamId
+        );
         return;
       }
 
@@ -334,13 +405,7 @@ export function Header() {
     [
       checkActiveMeeting,
       currentTeamId,
-      router,
-      setHasActiveMeeting,
-      setLastEndedMeeting,
-      setMeeting,
-      setMeetingId,
-      setStartTime,
-      setTeamId,
+      finalizeMeetingEnded,
     ]
   );
 

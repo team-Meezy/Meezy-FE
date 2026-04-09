@@ -5,6 +5,16 @@ import NoMike from '../../assets/NoMike.svg';
 import Nokamera from '../../assets/Nokamera.svg';
 import WebRTC from './WebRTC';
 
+function formatDisplayName(name: string) {
+  const trimmedName = String(name ?? '').trim();
+
+  if (trimmedName.length <= 4) {
+    return trimmedName;
+  }
+
+  return `${trimmedName.slice(0, 4)}...`;
+}
+
 type VideoCardProps = {
   name: string;
   isLocal?: boolean;
@@ -28,6 +38,7 @@ export const VideoCard = ({
   onMikeClick,
   onKameraClick,
 }: VideoCardProps) => {
+  const displayName = formatDisplayName(name);
   const streamSignature = videoStream
     ? [
         ...videoStream.getVideoTracks().map((track) => `v:${track.id}`),
@@ -68,7 +79,7 @@ export const VideoCard = ({
             }`}
           />
           <span className="mt-4 text-white font-bold text-base md:text-lg">
-            {name}
+            {displayName}
           </span>
         </>
       )}

@@ -1,13 +1,11 @@
 'use client';
 
 import { useEffect, useMemo, useState } from 'react';
-import { useRouter } from 'next/navigation';
+import { useParams, useRouter } from 'next/navigation';
 import {
-  getTeamDetail,
   getTotalEngagement,
   type ParticipantEngagementMetrics,
   useMeetingStore,
-  useServerIdStore,
 } from '@org/shop-data';
 import { useProfile } from '../../context';
 import { colors } from '../../design';
@@ -15,13 +13,42 @@ import { DashboardCard } from '../components/DashboardCard';
 import { ParticipationChart } from '../components/ParticipationChart';
 
 export function MainRoomPage() {
-  const { serverId } = useServerIdStore();
+  const params = useParams();
+  const serverId = params.serverId as string;
   const { lastEndedMeetingId, lastEndedTeamId } = useMeetingStore();
   const router = useRouter();
   const { profile } = useProfile();
   const [participationRate, setParticipationRate] = useState<number | null>(
     null
   );
+  const persistedLastEndedMeeting = useMemo(() => {
+    if (typeof window === 'undefined') {
+      return { meetingId: '', teamId: '' };
+    }
+
+    try {
+      const rawValue = sessionStorage.getItem('meezy:last-ended-meeting');
+      if (!rawValue) {
+        return { meetingId: '', teamId: '' };
+      }
+
+      const parsed = JSON.parse(rawValue) as {
+        meetingId?: string;
+        teamId?: string;
+      };
+
+      return {
+        meetingId: String(parsed?.meetingId ?? '').trim(),
+        teamId: String(parsed?.teamId ?? '').trim(),
+      };
+    } catch {
+      return { meetingId: '', teamId: '' };
+    }
+  }, [lastEndedMeetingId, lastEndedTeamId]);
+  const resolvedLastEndedMeetingId =
+    lastEndedMeetingId || persistedLastEndedMeeting.meetingId;
+  const resolvedLastEndedTeamId =
+    lastEndedTeamId || persistedLastEndedMeeting.teamId;
 
   const displayName =
     profile?.nickname || profile?.name || profile?.username || '팀원';
@@ -33,30 +60,23 @@ export function MainRoomPage() {
 
   useEffect(() => {
     if (!serverId) return;
-
-    const getDetail = async () => {
-      try {
-        const data = await getTeamDetail(serverId);
-        console.log('getTeamDetail data', data);
-      } catch (error) {
-        console.error('Failed to get team detail:', error);
-      }
-    };
-
-    void getDetail();
-  }, [serverId]);
-
-  useEffect(() => {
-    if (!serverId) return;
-    if (lastEndedTeamId !== serverId || !lastEndedMeetingId) return;
+    if (
+      resolvedLastEndedTeamId !== serverId ||
+      !resolvedLastEndedMeetingId
+    ) {
+      return;
+    }
 
     const fetchParticipation = async () => {
       const totalEngagement = await getTotalEngagement(
         serverId,
-        lastEndedMeetingId
+        resolvedLastEndedMeetingId
       );
 
-      if (!('participants' in totalEngagement)) {
+      if (
+        !('participants' in totalEngagement) ||
+        !Array.isArray(totalEngagement.participants)
+      ) {
         return false;
       }
 
@@ -103,7 +123,12 @@ export function MainRoomPage() {
     return () => {
       isCancelled = true;
     };
-  }, [lastEndedMeetingId, lastEndedTeamId, profile, serverId]);
+  }, [
+    profile,
+    resolvedLastEndedMeetingId,
+    resolvedLastEndedTeamId,
+    serverId,
+  ]);
 
   return (
     <main

@@ -34,8 +34,8 @@ function formatSidebarName(name?: string | null) {
   const trimmed = String(name ?? '').trim();
   const characters = Array.from(trimmed);
 
-  if (characters.length >= 3) {
-    return `${characters.slice(0, 2).join('')}...`;
+  if (characters.length > 4) {
+    return `${characters.slice(0, 4).join('')}...`;
   }
 
   return trimmed;
@@ -191,15 +191,18 @@ export function JoinedSidebar({
       <div className="flex flex-col items-center flex-1 overflow-y-auto no-scrollbar w-full text-white">
         {Array.isArray(teamRoomMap) && teamRoomMap.map((team, index) => (
           <div key={`team-section-${team.team_id}-${index}`} className="w-full">
-            <div className="flex justify-center items-center gap-4 mt-5">
+            <div className="mt-5 flex w-full items-center gap-3 px-4">
               <div
-                className="min-w-14 min-h-6 flex items-center justify-center rounded-lg transition-colors overflow-hidden truncate px-2"
+                className="flex h-9 w-full items-center overflow-hidden rounded-lg px-2 transition-colors"
                 style={{ color: colors.gray[300], ...typography.body.LBodyB }}
               >
                 {team.room_name}
               </div>
               {isLeader && (
-                <button onClick={() => onOpenModal(team.type)}>
+                <button
+                  onClick={() => onOpenModal(team.type)}
+                  className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg hover:bg-white/5 transition-colors"
+                >
                   <Image src={JoinedPlus} alt="addRoom" className="w-5" />
                 </button>
               )}
@@ -208,11 +211,13 @@ export function JoinedSidebar({
             {Array.isArray(team.rooms) && team.rooms.map((room) => (
               <div
                 key={`room-${room.chatRoomId}`}
-                className="w-full px-4 min-h-12 mt-3 flex gap-3 items-center justify-start rounded-xl transition-all hover:bg-white/5 cursor-pointer group"
+                className="group mt-1 flex min-h-12 w-full items-center justify-start gap-3 rounded-xl px-5 transition-all hover:bg-white/5 cursor-pointer"
                 onClick={() => onClickChatRoom(room.chatRoomId)}
               >
-                <Image src={Shrap} alt="shrap" className="w-4 shrink-0 opacity-50 group-hover:opacity-100 transition-opacity" />
-                <span className="truncate text-sm opacity-70 group-hover:opacity-100 transition-opacity" style={{ ...typography.body.BodyB }}>
+                <div className="flex w-6 shrink-0 items-center justify-center">
+                  <Image src={Shrap} alt="shrap" className="w-4 opacity-50 transition-opacity group-hover:opacity-100" />
+                </div>
+                <span className="block min-w-0 flex-1 truncate text-sm opacity-70 transition-opacity group-hover:opacity-100" style={{ ...typography.body.BodyB }}>
                   {room.name}
                 </span>
               </div>
@@ -222,9 +227,9 @@ export function JoinedSidebar({
               const currentUserId = user.teamMemberId || (user as any).user_id || userIdx;
               const currentUserName = user.name || (user as any).user_name || '사용자';
               return (
-                <div key={`user-${currentUserId}`} className="w-full px-4 mt-3 flex flex-col gap-2">
+                <div key={`user-${currentUserId}`} className="w-full px-4 mt-1 flex flex-col gap-2">
                   <div
-                    className="flex gap-3 items-center justify-start rounded-xl cursor-default overflow-hidden py-1 px-2 hover:bg-white/5 transition-colors"
+                    className="flex min-h-[52px] w-full items-center justify-start gap-3 overflow-hidden rounded-xl px-2.5 py-2.5 transition-colors hover:bg-white/5 cursor-default"
                     onContextMenu={(e) => onContextMenu(e, currentUserId as any)}
                   >
                     {user.profileImageUrl || user.profileImage || (user as any).user?.profileImage ? (
@@ -236,7 +241,7 @@ export function JoinedSidebar({
                     ) : (
                       <div className="rounded-full w-6 h-6 shrink-0 bg-gray-700 border border-white/5" />
                     )}
-                <span className="truncate text-xs opacity-60" style={{ ...typography.body.BodyB }}>
+                    <span className="block min-w-0 flex-1 truncate text-sm leading-[1.3] opacity-70 p-0.5" style={{ ...typography.body.BodyB }}>
                       {formatSidebarName(currentUserName)}
                     </span>
                   </div>

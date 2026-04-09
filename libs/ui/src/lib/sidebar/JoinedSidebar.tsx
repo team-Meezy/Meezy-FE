@@ -211,7 +211,7 @@ export function JoinedSidebar({
             {Array.isArray(team.rooms) && team.rooms.map((room) => (
               <div
                 key={`room-${room.chatRoomId}`}
-                className="group mt-3 flex min-h-12 w-full items-center justify-start gap-3 rounded-xl px-4 transition-all hover:bg-white/5 cursor-pointer"
+                className="group mt-1 flex min-h-12 w-full items-center justify-start gap-3 rounded-xl px-5 transition-all hover:bg-white/5 cursor-pointer"
                 onClick={() => onClickChatRoom(room.chatRoomId)}
               >
                 <div className="flex w-6 shrink-0 items-center justify-center">
@@ -227,7 +227,7 @@ export function JoinedSidebar({
               const currentUserId = user.teamMemberId || (user as any).user_id || userIdx;
               const currentUserName = user.name || (user as any).user_name || '사용자';
               return (
-                <div key={`user-${currentUserId}`} className="w-full px-4 mt-3 flex flex-col gap-2">
+                <div key={`user-${currentUserId}`} className="w-full px-4 mt-1 flex flex-col gap-2">
                   <div
                     className="flex min-h-[52px] w-full items-center justify-start gap-3 overflow-hidden rounded-xl px-2.5 py-2.5 transition-colors hover:bg-white/5 cursor-default"
                     onContextMenu={(e) => onContextMenu(e, currentUserId as any)}
@@ -241,7 +241,7 @@ export function JoinedSidebar({
                     ) : (
                       <div className="rounded-full w-6 h-6 shrink-0 bg-gray-700 border border-white/5" />
                     )}
-                    <span className="block min-w-0 flex-1 truncate text-sm leading-[1.3] opacity-70" style={{ ...typography.body.BodyB }}>
+                    <span className="block min-w-0 flex-1 truncate text-sm leading-[1.3] opacity-70 p-0.5" style={{ ...typography.body.BodyB }}>
                       {formatSidebarName(currentUserName)}
                     </span>
                   </div>

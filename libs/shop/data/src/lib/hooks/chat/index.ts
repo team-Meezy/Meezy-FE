@@ -4,3 +4,4 @@ export { getChatRooms } from './use-get-chat-rooms';
 export { updateChatRoomName } from './use-update-chat-room-name';
 export { getChatMessages } from './use-get-chat-messages';
 export { useChatSocket } from './use-chat-socket';
+export { useTeamChatNotifications } from './use-team-chat-notifications';

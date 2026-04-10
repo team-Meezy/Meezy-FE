@@ -6,6 +6,7 @@ import {
   useState,
   useCallback,
   useMemo,
+  useRef,
   type ReactNode,
 } from 'react';
 import { getTeams, getTeamMembers, getChatRooms } from '@org/shop-data';
@@ -68,6 +69,8 @@ export function ServerStateProvider({ children }: { children: ReactNode }) {
   );
   const { setTeams } = useTeamStore();
   const { setChatRooms } = useChatStore();
+  const latestChatRoomsRequestRef = useRef(0);
+  const latestChatRoomsTeamIdRef = useRef('');
 
   const updateTeams = useCallback(async () => {
     try {
@@ -91,8 +94,20 @@ export function ServerStateProvider({ children }: { children: ReactNode }) {
 
   const updateChatRooms = useCallback(
     async (id: string) => {
+      const requestId = latestChatRoomsRequestRef.current + 1;
+      latestChatRoomsRequestRef.current = requestId;
+      latestChatRoomsTeamIdRef.current = id;
+
       try {
         const data = await getChatRooms(id);
+
+        if (
+          latestChatRoomsRequestRef.current !== requestId ||
+          latestChatRoomsTeamIdRef.current !== id
+        ) {
+          return [];
+        }
+
         setChatRooms(data);
         return data;
       } catch (error) {

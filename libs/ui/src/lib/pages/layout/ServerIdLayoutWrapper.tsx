@@ -140,7 +140,7 @@ export function ServerIdLayoutWrapper({
   const currentChatRoomId =
     typeof params.chatRoomId === 'string' ? params.chatRoomId : null;
   const router = useRouter();
-  const { setActiveChatRoomId } = useChatStore();
+  const { setActiveChatRoomId, setChatRooms } = useChatStore();
 
   useTeamChatNotifications(currentServerId);
 
@@ -170,8 +170,9 @@ export function ServerIdLayoutWrapper({
   }, [currentServerId, setServerId, setTeamMembers, updateTeamMembers, router]);
 
   useEffect(() => {
+    setChatRooms([]);
     setActiveChatRoomId(currentChatRoomId);
-  }, [currentChatRoomId, setActiveChatRoomId]);
+  }, [currentServerId, currentChatRoomId, setActiveChatRoomId, setChatRooms]);
 
   const handleTeamEvent = useCallback(
     (event: any) => {

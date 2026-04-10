@@ -173,7 +173,7 @@ export const ReceiveAiAssistant = () => {
                 color: isTeam ? colors.white[100] : colors.gray[500],
               }}
             >
-              참여 팀 바로 보러 가기
+              참여율 바로 보러 가기
             </button>
           </div>
         )}

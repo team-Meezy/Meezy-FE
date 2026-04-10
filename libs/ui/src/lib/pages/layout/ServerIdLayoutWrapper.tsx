@@ -10,7 +10,13 @@ import { JoinedSidebar } from '../../sidebar';
 import { CalendarMockup, Header } from '../../components';
 import { ReceiveAiAssistant } from '../../components';
 import { useEffect, useCallback } from 'react';
-import { useServerIdStore, useTeamSocket, useModalStore } from '@org/shop-data';
+import {
+  useServerIdStore,
+  useTeamSocket,
+  useModalStore,
+  useChatStore,
+  useTeamChatNotifications,
+} from '@org/shop-data';
 import { useParams, useRouter } from 'next/navigation';
 
 function normalizeTeamMember(eventMember: any) {
@@ -131,7 +137,12 @@ export function ServerIdLayoutWrapper({
   const { isSidebarOpen, setIsSidebarOpen } = useModalStore();
   const params = useParams();
   const currentServerId = params.serverId as string;
+  const currentChatRoomId =
+    typeof params.chatRoomId === 'string' ? params.chatRoomId : null;
   const router = useRouter();
+  const { setActiveChatRoomId, setChatRooms } = useChatStore();
+
+  useTeamChatNotifications(currentServerId);
 
   useEffect(() => {
     if (!currentServerId || currentServerId === 'undefined') {
@@ -157,6 +168,11 @@ export function ServerIdLayoutWrapper({
 
     fetchMembers();
   }, [currentServerId, setServerId, setTeamMembers, updateTeamMembers, router]);
+
+  useEffect(() => {
+    setChatRooms([]);
+    setActiveChatRoomId(currentChatRoomId);
+  }, [currentServerId, currentChatRoomId, setActiveChatRoomId, setChatRooms]);
 
   const handleTeamEvent = useCallback(
     (event: any) => {

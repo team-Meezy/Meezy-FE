@@ -58,7 +58,7 @@ export function JoinedSidebar({
     updateChatRooms,
   } = useServerState();
   const { profile } = useProfile();
-  const { chatRooms } = useChatStore();
+  const { chatRooms, unreadCounts } = useChatStore();
 
   const onOpenModal = (type: 'ROOM' | 'MEMBER' | null) => {
     setModalType(type);
@@ -220,6 +220,13 @@ export function JoinedSidebar({
                 <span className="block min-w-0 flex-1 truncate text-sm opacity-70 transition-opacity group-hover:opacity-100" style={{ ...typography.body.BodyB }}>
                   {room.name}
                 </span>
+                {(unreadCounts[room.chatRoomId] ?? 0) > 0 && (
+                  <span
+                    className="h-2.5 w-2.5 shrink-0 rounded-full"
+                    style={{ backgroundColor: colors.primary[500] }}
+                    aria-hidden="true"
+                  />
+                )}
               </div>
             ))}
 

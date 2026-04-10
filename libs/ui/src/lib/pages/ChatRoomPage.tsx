@@ -38,7 +38,8 @@ export function ChatRoomPage() {
   // 채팅 웹소켓 연결
   const { sendMessage: emitChatMessage } = useChatSocket(
     currentTeamId,
-    currentRoomId
+    currentRoomId,
+    { receiveMessages: false }
   );
 
   // 회의 참여 기록 웹소켓 (회의 중일 때만 작동하도록 함)

@@ -4,6 +4,7 @@ import { MainRoomPage } from '../MainRoomPage';
 import { useParams } from 'next/navigation';
 import { useEffect, useRef, useState } from 'react';
 import {
+  getActiveMeetings,
   getMeetingSummary,
   getMeetingSummaries,
   getMeetingFeedback,
@@ -17,13 +18,88 @@ import { useServerJoinedTeam } from '../../../context';
 export function MainRoomWrapper() {
   const params = useParams();
   const currentServerId = params.serverId as string;
-  const { meetingId } = useMeetingStore();
+  const { meetingId, teamId, lastEndedMeetingId, lastEndedTeamId } =
+    useMeetingStore();
   const fetchedRef = useRef<string | null>(null);
   const { joined, setJoined, meeting, setMeeting } = useServerJoinedTeam();
   const [engagementMeetingId, setEngagementMeetingId] = useState<any>(null);
   const [participationRate, setParticipationRate] = useState<number | null>(
     null
   );
+
+  useEffect(() => {
+    if (!currentServerId) return;
+
+    const persistedLastEndedMeeting =
+      typeof window !== 'undefined'
+        ? (() => {
+            try {
+              const rawValue = sessionStorage.getItem('meezy:last-ended-meeting');
+
+              if (!rawValue) {
+                return { meetingId: '', teamId: '' };
+              }
+
+              const parsed = JSON.parse(rawValue) as {
+                meetingId?: string;
+                teamId?: string;
+              };
+
+              return {
+                meetingId: String(parsed?.meetingId ?? '').trim(),
+                teamId: String(parsed?.teamId ?? '').trim(),
+              };
+            } catch {
+              return { meetingId: '', teamId: '' };
+            }
+          })()
+        : { meetingId: '', teamId: '' };
+
+    let cancelled = false;
+
+    const prefetchParticipation = async () => {
+      let targetMeetingId =
+        teamId === currentServerId && meetingId ? meetingId : '';
+
+      if (!targetMeetingId) {
+        try {
+          const activeMeeting = await getActiveMeetings(currentServerId);
+          targetMeetingId = String(activeMeeting?.meetingId ?? '').trim();
+        } catch (error) {
+          console.error('Failed to fetch active meeting on team route change:', error);
+        }
+      }
+
+      if (!targetMeetingId) {
+        targetMeetingId =
+          lastEndedTeamId === currentServerId && lastEndedMeetingId
+            ? lastEndedMeetingId
+            : persistedLastEndedMeeting.teamId === currentServerId
+              ? persistedLastEndedMeeting.meetingId
+              : '';
+      }
+
+      if (!targetMeetingId || cancelled) return;
+
+      try {
+        await getTotalEngagement(currentServerId, targetMeetingId);
+      } catch (error) {
+        console.error('Failed to prefetch participation on team route change:', error);
+      }
+    };
+
+    void prefetchParticipation();
+
+    return () => {
+      cancelled = true;
+    };
+  }, [
+    currentServerId,
+    lastEndedMeetingId,
+    lastEndedTeamId,
+    meetingId,
+    teamId,
+  ]);
 
   useEffect(() => {
     if (!currentServerId || !meetingId) return;

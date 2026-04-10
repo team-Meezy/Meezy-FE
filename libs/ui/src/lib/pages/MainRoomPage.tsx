@@ -3,6 +3,7 @@
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import { useParams, useRouter } from 'next/navigation';
 import {
+  getActiveMeetings,
   getTotalEngagement,
   type ParticipantEngagementMetrics,
   useMeetingStore,
@@ -61,7 +62,8 @@ export function MainRoomPage() {
   const params = useParams();
   const serverId = params.serverId as string;
   const router = useRouter();
-  const { lastEndedMeetingId, lastEndedTeamId } = useMeetingStore();
+  const { meetingId, teamId, lastEndedMeetingId, lastEndedTeamId } =
+    useMeetingStore();
   const { profile, loading: profileLoading } = useProfile();
   const { teamMembers } = useServerState();
   const [participationRate, setParticipationRate] = useState<number | null>(
@@ -200,18 +202,47 @@ export function MainRoomPage() {
 
   useEffect(() => {
     if (!serverId) return;
-    if (resolvedLastEndedTeamId !== serverId || !resolvedLastEndedMeetingId) {
-      return;
-    }
 
     let isCancelled = false;
     let attempts = 0;
     const maxAttempts = 20;
 
+    const resolveMeetingId = async () => {
+      const activeMeetingId =
+        teamId === serverId ? String(meetingId ?? '').trim() : '';
+
+      if (activeMeetingId) {
+        return activeMeetingId;
+      }
+
+      try {
+        const activeMeeting = await getActiveMeetings(serverId);
+        const fetchedActiveMeetingId = String(activeMeeting?.meetingId ?? '').trim();
+
+        if (fetchedActiveMeetingId) {
+          return fetchedActiveMeetingId;
+        }
+      } catch {
+        // Fall back to last ended meeting id.
+      }
+
+      if (resolvedLastEndedTeamId === serverId && resolvedLastEndedMeetingId) {
+        return resolvedLastEndedMeetingId;
+      }
+
+      return '';
+    };
+
     const fetchParticipation = async () => {
+      const targetMeetingId = await resolveMeetingId();
+
+      if (!targetMeetingId) {
+        return true;
+      }
+
       const totalEngagement = await getTotalEngagement(
         serverId,
-        resolvedLastEndedMeetingId
+        targetMeetingId
       );
 
       if (
@@ -273,10 +304,12 @@ export function MainRoomPage() {
     };
   }, [
     localIds,
+    meetingId,
     profileLoading,
     resolvedLastEndedMeetingId,
     resolvedLastEndedTeamId,
     serverId,
+    teamId,
   ]);
 
   return (

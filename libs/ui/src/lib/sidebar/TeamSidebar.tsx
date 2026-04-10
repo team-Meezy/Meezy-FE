@@ -44,9 +44,9 @@ export function TeamSidebar({ onOpenModal, className }: SidebarProps) {
     setIsModalOpen(true);
   };
 
-  const handleTeamClick = (teamId: string) => {
+  const handleTeamClick = (targetTeamId: string) => {
     setJoined(true);
-    router.push(`/main/${teamId}`);
+    router.push(`/main/${targetTeamId}`);
   };
 
   const onContextMenu = (e: React.MouseEvent, teamId: string) => {

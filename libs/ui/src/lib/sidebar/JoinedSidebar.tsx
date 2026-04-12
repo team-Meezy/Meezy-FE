@@ -182,19 +182,17 @@ export function JoinedSidebar({
     >
       <button
         type="button"
-        className="mt-12 flex justify-center items-center gap-4 bg-transparent border-0 p-0"
-        style={{ ...typography.body.BodyB }}
+        className="mt-8 flex justify-center items-center gap-4"
         onClick={onClickServerProfile}
         aria-label="서버 프로필 열기"
       >
         <span
-          className="flex max-w-[90px] items-center gap-2 truncate"
+          className="max-w-[100px] text-[24px] font-semibold"
           style={{ color: colors.gray[300] }}
         >
-          <Image src={Gear} alt="settings" className="h-4 w-4 shrink-0" />
           <span className="truncate">{currentTeamName}</span>
         </span>
-        <Image src={ChevronRight} alt="ChevronRight" className="w-5" />
+        <Image src={ChevronRight} alt="ChevronRight" />
       </button>
       <div className="w-full h-[1px] bg-white/5 mt-5" />
       <div className="flex flex-col items-center flex-1 overflow-y-auto no-scrollbar w-full text-white">

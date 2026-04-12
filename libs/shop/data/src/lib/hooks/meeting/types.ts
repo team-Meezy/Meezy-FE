@@ -55,6 +55,9 @@ export type MeetingSummaryResponse = {
   title: string;
   content: string;
   createdAt: string;
+  participantCount?: number;
+  participantsCount?: number;
+  memberCount?: number;
 };
 
 export type MeetingFeedbackResponse = {
@@ -64,4 +67,7 @@ export type MeetingFeedbackResponse = {
   title: string;
   content: string;
   createdAt: string;
+  participantCount?: number;
+  participantsCount?: number;
+  memberCount?: number;
 };

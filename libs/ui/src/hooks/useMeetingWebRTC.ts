@@ -1423,37 +1423,6 @@ export function useMeetingWebRTC(
     };
   }, [localStream, sendVoiceActivity]);
 
-  useEffect(() => {
-    if (
-      !shouldAutoStartRecording ||
-      !isActive ||
-      !meetingId ||
-      !localStream ||
-      isRecording
-    ) {
-      return;
-    }
-
-    logRecordingUpload('request', {
-      teamId,
-      meetingId,
-      title: meetingTitle,
-      stage: 'auto-start-recording',
-    });
-    startRecording();
-    setShouldAutoStartRecording(false);
-  }, [
-    isActive,
-    isRecording,
-    localStream,
-    meetingId,
-    meetingTitle,
-    setShouldAutoStartRecording,
-    shouldAutoStartRecording,
-    startRecording,
-    teamId,
-  ]);
-
   /*
   useEffect(() => {
     if (

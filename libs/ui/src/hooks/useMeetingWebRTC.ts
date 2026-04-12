@@ -107,10 +107,14 @@ export function useMeetingWebRTC(
   console.log('[DEBUG] useMeetingWebRTC initialized', { teamId, myId, isActive });
   const {
     meetingId,
+    meetingTitle,
     iceServers: meetingIceServers,
     setIsUploading,
     isRecording,
     setIsRecording,
+    shouldAutoStartRecording,
+    setShouldAutoStartRecording,
+    setMeetingTitle,
     setStartTime,
     recordingElapsedMs,
     setRecordingElapsedMs,
@@ -1419,7 +1423,37 @@ export function useMeetingWebRTC(
     };
   }, [localStream, sendVoiceActivity]);
 
-  // Recording Auto-start Effect - REMOVED (Recording should only start manually via assistant)
+  useEffect(() => {
+    if (
+      !shouldAutoStartRecording ||
+      !isActive ||
+      !meetingId ||
+      !localStream ||
+      isRecording
+    ) {
+      return;
+    }
+
+    logRecordingUpload('request', {
+      teamId,
+      meetingId,
+      title: meetingTitle,
+      stage: 'auto-start-recording',
+    });
+    startRecording();
+    setShouldAutoStartRecording(false);
+  }, [
+    isActive,
+    isRecording,
+    localStream,
+    meetingId,
+    meetingTitle,
+    setShouldAutoStartRecording,
+    shouldAutoStartRecording,
+    startRecording,
+    teamId,
+  ]);
+
   /*
   useEffect(() => {
     if (
@@ -1453,6 +1487,16 @@ export function useMeetingWebRTC(
       }
 
       log('[EVENT] meezy:stop-and-upload start');
+      logRecordingUpload('request', {
+        teamId: tId,
+        meetingId: mId,
+        stage: 'stop-and-upload-start',
+        title: meetingTitle,
+        recorderState: mediaRecorderRef.current?.state ?? 'missing',
+        recordedChunkCount: recordedChunksRef.current.length,
+        pcmLeftChunkCount: recordingPcmLeftChunksRef.current.length,
+        pcmRightChunkCount: recordingPcmRightChunksRef.current.length,
+      });
       stopAndUploadInProgressRef.current = true;
       setIsUploading(true);
       const recorder = mediaRecorderRef.current;
@@ -1561,6 +1605,8 @@ export function useMeetingWebRTC(
               teamId: tId,
               meetingId: mId,
               fileName: recordingFileName,
+              title: meetingTitle,
+              stage: 'before-upload-call',
               size: mp3Blob.size,
               type: mp3Blob.type,
             });
@@ -1568,27 +1614,36 @@ export function useMeetingWebRTC(
               tId,
               mId,
               mp3Blob,
-              recordingFileName
+              recordingFileName,
+              meetingTitle
             );
             lastUploadedMeetingIdRef.current = mId;
           } else {
+              if (tId || mId) {
+                logRecordingUpload('skipped', {
+                  tIdExists: !!tId,
+                  mIdExists: !!mId,
+                  teamId: tId,
+                  meetingId: mId,
+                  title: meetingTitle,
+                  blobSize: blob.size,
+                  fileName: recordingFileName,
+                });
+              }
+            }
+        } else {
             if (tId || mId) {
               logRecordingUpload('skipped', {
-                tIdExists: !!tId,
-                mIdExists: !!mId,
-                blobSize: blob.size,
-                fileName: recordingFileName,
+                teamId: tId,
+                meetingId: mId,
+                title: meetingTitle,
+                recorderState: recorder?.state ?? 'missing',
+                recordedChunkCount: recordedChunksRef.current.length,
+                pcmLeftChunkCount: recordingPcmLeftChunksRef.current.length,
+                pcmRightChunkCount: recordingPcmRightChunksRef.current.length,
+                reason: 'no-recording-blob',
               });
             }
-          }
-        } else {
-          if (tId || mId) {
-            logRecordingUpload('skipped', {
-              teamId: tId,
-              meetingId: mId,
-              reason: 'no-recording-blob',
-            });
-          }
         }
       } catch (err) {
         logRecordingUpload('error', {
@@ -1609,6 +1664,8 @@ export function useMeetingWebRTC(
         recordingPcmRightChunksRef.current = [];
         cleanupRecordingMix();
         setIsUploading(false);
+        setShouldAutoStartRecording(false);
+        setMeetingTitle('');
         stopAndUploadInProgressRef.current = false;
       }
 
@@ -1630,7 +1687,7 @@ export function useMeetingWebRTC(
       );
       window.removeEventListener('meezy:stop-and-upload', handleStopAndUpload);
     };
-  }, [log, teardownMeetingMedia]);
+  }, [log, meetingTitle, setMeetingTitle, teardownMeetingMedia]);
 
   useEffect(() => {
     if (myId && meetingId && teamId && isActive) {

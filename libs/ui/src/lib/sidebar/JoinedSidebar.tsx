@@ -2,11 +2,11 @@
 
 import { colors, typography } from '../../design';
 import Image from 'next/image';
-import { ChevronRight, JoinedPlus, Shrap } from '../../assets/index.client';
+import { ChevronRight, Gear, JoinedPlus, Shrap } from '../../assets/index.client';
 import { useState, useEffect } from 'react';
 import { JoinedModal } from '../modals';
 import { useRouter } from 'next/navigation';
-import { useServerIdStore } from '@org/shop-data';
+import { useServerIdStore, useTeamStore } from '@org/shop-data';
 import { useServerState, useProfile } from '../../context';
 import { expelTeamMember, leaveTeam } from '@org/shop-data';
 import { useChatStore } from '@org/shop-data';
@@ -50,6 +50,7 @@ export function JoinedSidebar({
   const [modalType, setModalType] = useState<'ROOM' | 'MEMBER' | null>(null);
   const router = useRouter();
   const { serverId } = useServerIdStore();
+  const { teams } = useTeamStore();
   const {
     teamMembers,
     setTeamMembers,
@@ -59,6 +60,8 @@ export function JoinedSidebar({
   } = useServerState();
   const { profile } = useProfile();
   const { chatRooms, unreadCounts } = useChatStore();
+  const currentTeamName =
+    teams.find((team) => team.teamId === serverId)?.teamName || '팀 설정';
 
   const onOpenModal = (type: 'ROOM' | 'MEMBER' | null) => {
     setModalType(type);
@@ -184,7 +187,13 @@ export function JoinedSidebar({
         onClick={onClickServerProfile}
         aria-label="서버 프로필 열기"
       >
-        <span style={{ color: colors.gray[300] }}>MEEZY</span>
+        <span
+          className="flex max-w-[90px] items-center gap-2 truncate"
+          style={{ color: colors.gray[300] }}
+        >
+          <Image src={Gear} alt="settings" className="h-4 w-4 shrink-0" />
+          <span className="truncate">{currentTeamName}</span>
+        </span>
         <Image src={ChevronRight} alt="ChevronRight" className="w-5" />
       </button>
       <div className="w-full h-[1px] bg-white/5 mt-5" />

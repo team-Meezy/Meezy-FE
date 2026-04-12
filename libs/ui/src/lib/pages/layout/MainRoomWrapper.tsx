@@ -171,7 +171,7 @@ export function MainRoomWrapper() {
       try {
         const summariesList = await getMeetingSummaries(currentServerId);
 
-        if (summariesList?.status === 404 || !Array.isArray(summariesList)) {
+        if (!Array.isArray(summariesList)) {
           console.log(
             `[Summary] List not yet available. Attempt ${summaryPollingCount}/${MAX_POLLING_ATTEMPTS}`
           );
@@ -219,7 +219,7 @@ export function MainRoomWrapper() {
         const feedbacksList = await getMeetingFeedbacks(currentServerId);
         console.log(feedbacksList, 'feedbacksList');
 
-        if (feedbacksList?.status === 404 || !Array.isArray(feedbacksList)) {
+        if (!Array.isArray(feedbacksList)) {
           console.log(
             `[Feedback] List not yet available. Attempt ${feedbackPollingCount}/${MAX_POLLING_ATTEMPTS}`
           );

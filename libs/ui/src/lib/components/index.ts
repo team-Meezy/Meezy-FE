@@ -11,4 +11,6 @@ export * from './ReceiveAiAssistant';
 export * from './LoadingOverlay';
 export * from './login';
 export * from './MiniMeetingOverlay';
+export * from './MeetingMarkdown';
+export * from './MeetingInsightAccordionList';
 

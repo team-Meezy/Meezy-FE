@@ -1,14 +1,17 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useEffect, useState } from 'react';
 import { useParams } from 'next/navigation';
+import {
+  getMeetingSummaries,
+  type MeetingSummaryResponse,
+} from '@org/shop-data';
 import { typography, colors } from '../../design';
-import { getMeetingSummaries } from '@org/shop-data';
 
 export function SummaryPage() {
   const params = useParams();
   const teamId = params.serverId as string;
-  const [summaries, setSummaries] = useState<any[]>([]);
+  const [summaries, setSummaries] = useState<MeetingSummaryResponse[]>([]);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
@@ -19,12 +22,12 @@ export function SummaryPage() {
         setLoading(true);
         const data = await getMeetingSummaries(teamId);
 
-        if (data && Array.isArray(data)) {
-          // 최신순 정렬 등 필요시 추가 가능
+        if (Array.isArray(data)) {
           setSummaries(data);
-        } else {
-          setSummaries([]);
+          return;
         }
+
+        setSummaries([]);
       } catch (error) {
         console.error('Failed to fetch summaries', error);
       } finally {
@@ -32,7 +35,7 @@ export function SummaryPage() {
       }
     };
 
-    fetchSummaries();
+    void fetchSummaries();
   }, [teamId]);
 
   return (
@@ -58,10 +61,7 @@ export function SummaryPage() {
                 style={{ backgroundColor: colors.gray[700] }}
               >
                 <div className="flex justify-between items-center">
-                  <h2 style={{ ...typography.body.BodyB }}>
-                    {/* API에 title 필드가 없다면 임시로 요약 텍스트의 앞부분이나 meetingId를 활용 */}
-                    {summary.title || '회의 요약본'}
-                  </h2>
+                  <h2 style={{ ...typography.body.BodyB }}>{summary.title}</h2>
                   <p
                     style={{
                       ...typography.body.BodyM,

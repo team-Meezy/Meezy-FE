@@ -5,6 +5,8 @@ export type {
   MeetingIceServer,
   MeetingParticipant,
   MeetingResponse,
+  MeetingSummaryResponse,
+  MeetingFeedbackResponse,
   ParticipantEngagementMetrics,
   TotalEngagementResponse,
   IndividualEngagementResponse,

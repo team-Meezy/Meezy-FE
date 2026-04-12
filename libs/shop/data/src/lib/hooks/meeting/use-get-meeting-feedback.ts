@@ -1,8 +1,12 @@
 import { privateApi } from '../axios';
+import type { MeetingFeedbackResponse } from './types';
 
-export const getMeetingFeedback = async (teamId: string, meetingId: string) => {
+export const getMeetingFeedback = async (
+  teamId: string,
+  meetingId: string
+): Promise<MeetingFeedbackResponse | { status: 404; data: null }> => {
   try {
-    const response = await privateApi.get(
+    const response = await privateApi.get<MeetingFeedbackResponse>(
       `/teams/${teamId}/meetings/${meetingId}/feedback`,
       {
         validateStatus: (status) =>

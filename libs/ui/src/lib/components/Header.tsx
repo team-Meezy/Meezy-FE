@@ -5,14 +5,17 @@ import {
   joinMeeting,
   leaveMeeting,
   leaveMeetingOnUnload,
+  logRecordingUpload,
   MeetingEvent,
   startMeeting,
   useLoadingStore,
   useMeetingEvents,
+  useModalStore,
   useMeetingStore,
 } from '@org/shop-data';
 import { colors, typography } from '../../design';
 import { useProfile, useServerJoinedTeam, useServerState } from '../../context';
+import { MeetingTitleModal } from '../modals';
 
 function normalizeText(value: unknown) {
   return String(value ?? '')
@@ -82,7 +85,10 @@ const MESSAGE_LEAVE_FAILED =
   '\uD68C\uC758 \uB098\uAC00\uAE30\uC5D0 \uC2E4\uD328\uD588\uC2B5\uB2C8\uB2E4.';
 const MESSAGE_UNKNOWN_ERROR = '\uC54C \uC218 \uC5C6\uB294 \uC624\uB958';
 
-import { useModalStore } from '@org/shop-data';
+function resolveMeetingTitle(nextTitle: unknown, fallbackTitle: string) {
+  const normalizedTitle = String(nextTitle ?? '').trim();
+  return normalizedTitle || fallbackTitle;
+}
 
 export function Header() {
   const router = useRouter();
@@ -92,30 +98,35 @@ export function Header() {
 
   const { isSidebarOpen, setIsSidebarOpen } = useModalStore();
   const { setJoined, meeting, setMeeting } = useServerJoinedTeam();
-// ... rest of imports/state ...
   const { profile } = useProfile();
   const { teamMembers } = useServerState();
   const { setLoading, setLoadingState } = useLoadingStore();
   const {
     meetingId,
     teamId: activeMeetingTeamId,
+    meetingTitle,
+    setMeetingTitle,
     setLastEndedMeeting,
     setMeetingId,
     setTeamId,
     setIceServers,
     isUploading,
     setHasActiveMeeting,
+    setShouldAutoStartRecording,
     setStartTime,
     hasActiveMeeting,
   } = useMeetingStore();
 
   const [isSyncing, setIsSyncing] = useState(false);
+  const [isMeetingTitleModalOpen, setIsMeetingTitleModalOpen] = useState(false);
+  const [isStartingMeeting, setIsStartingMeeting] = useState(false);
 
   const pathnameRef = useRef(pathname);
   const meetingRef = useRef(meeting);
   const isUploadingRef = useRef(isUploading);
   const activeMeetingTeamIdRef = useRef(activeMeetingTeamId);
   const meetingIdRef = useRef(meetingId);
+  const meetingTitleRef = useRef(meetingTitle);
   const lastHandledEndedMeetingIdRef = useRef('');
 
   useEffect(() => {
@@ -137,6 +148,10 @@ export function Header() {
   useEffect(() => {
     meetingIdRef.current = meetingId;
   }, [meetingId]);
+
+  useEffect(() => {
+    meetingTitleRef.current = meetingTitle;
+  }, [meetingTitle]);
 
   const myProfileIds = useMemo(() => getProfileIds(profile), [profile]);
   const myNames = useMemo(
@@ -215,12 +230,13 @@ export function Header() {
 
       lastHandledEndedMeetingIdRef.current = endedMeetingId;
       setLastEndedMeeting(endedMeetingId, endedTeamId);
-      setMeeting(false);
-      setHasActiveMeeting(false);
-      setMeetingId('');
-      setTeamId('');
-      setIceServers([]);
-      setStartTime(null);
+        setMeeting(false);
+        setHasActiveMeeting(false);
+        setMeetingId('');
+        setTeamId('');
+        setIceServers([]);
+        setShouldAutoStartRecording(false);
+        setStartTime(null);
       meetingRef.current = false;
       window.dispatchEvent(new CustomEvent('meezy:stop-and-upload'));
       if (currentTeamId === endedTeamId) {
@@ -245,6 +261,7 @@ export function Header() {
       setLastEndedMeeting,
       setMeeting,
       setMeetingId,
+      setMeetingTitle,
       setStartTime,
       setTeamId,
     ]
@@ -334,6 +351,9 @@ export function Header() {
       if (isParticipant) {
         setMeeting(true);
         setMeetingId(activeMeeting.meetingId);
+        setMeetingTitle(
+          resolveMeetingTitle(activeMeeting.title, meetingTitleRef.current)
+        );
         setTeamId(currentTeamId);
         setIceServers(
           Array.isArray(activeMeeting.iceServers) ? activeMeeting.iceServers : []
@@ -362,6 +382,7 @@ export function Header() {
     setHasActiveMeeting,
     setMeeting,
     setMeetingId,
+    setMeetingTitle,
     setIceServers,
     setStartTime,
     setTeamId,
@@ -474,6 +495,62 @@ export function Header() {
     router.push('/main/mypage');
   };
 
+  const startMeetingWithTitle = useCallback(
+    async (title: string) => {
+      if (!currentTeamId) return;
+
+      try {
+        setIsStartingMeeting(true);
+        const response = await startMeeting(currentTeamId, title);
+        const resolvedTitle = String(response?.title ?? title).trim();
+        logRecordingUpload('request', {
+          stage: 'start-meeting-title-resolved',
+          inputTitle: title,
+          responseTitle: response?.title,
+          resolvedTitle,
+        });
+
+        setMeeting(true);
+        setHasActiveMeeting(true);
+        setShouldAutoStartRecording(true);
+        setStartTime(null);
+        setTeamId(currentTeamId);
+        meetingTitleRef.current = resolvedTitle;
+        setMeetingTitle(resolvedTitle);
+        setIceServers(Array.isArray(response?.iceServers) ? response.iceServers : []);
+
+        if (response?.meetingId) {
+          setMeetingId(response.meetingId);
+        }
+
+        setIsMeetingTitleModalOpen(false);
+        void checkActiveMeeting();
+        window.dispatchEvent(new CustomEvent('meezy:sync-meeting'));
+        router.push(`/main/${currentTeamId}/meeting`);
+      } catch (error: any) {
+        console.error('startMeeting error:', error);
+        const errorMsg =
+          error?.response?.data?.message || error?.message || MESSAGE_UNKNOWN_ERROR;
+
+        alert(`${LABEL_START_MEETING}\uC5D0 \uC2E4\uD328\uD588\uC2B5\uB2C8\uB2E4: ${errorMsg}`);
+      } finally {
+        setIsStartingMeeting(false);
+      }
+    },
+    [
+      checkActiveMeeting,
+      currentTeamId,
+      router,
+      setHasActiveMeeting,
+      setIceServers,
+      setMeeting,
+      setMeetingId,
+      setMeetingTitle,
+      setStartTime,
+      setTeamId,
+    ]
+  );
+
   const onClickMeeting = async () => {
     if (!currentTeamId) return;
 
@@ -487,14 +564,15 @@ export function Header() {
         }
         await leaveMeeting(currentTeamId);
 
+        window.dispatchEvent(new CustomEvent('meezy:stop-and-upload'));
         setMeeting(false);
         setHasActiveMeeting(false);
         setMeetingId('');
         setTeamId('');
+        setShouldAutoStartRecording(false);
         setStartTime(null);
         meetingRef.current = false;
 
-        window.dispatchEvent(new CustomEvent('meezy:stop-and-upload'));
         window.dispatchEvent(new CustomEvent('meezy:sync-meeting'));
 
         setLoading(false);
@@ -514,17 +592,28 @@ export function Header() {
     }
 
     try {
-      console.log('[DEBUG] Header: onClickMeeting starting. isLeader:', isLeader);
-      const response = isLeader
-        ? await startMeeting(currentTeamId)
-        : await joinMeeting(currentTeamId);
-      
-      console.log('[DEBUG] Header: Meeting response received:', response);
+      if (isLeader) {
+        setIsMeetingTitleModalOpen(true);
+        return;
+      }
+
+      const response = await joinMeeting(currentTeamId);
+      const resolvedTitle = resolveMeetingTitle(
+        response?.title,
+        meetingTitleRef.current
+      );
 
       setMeeting(true);
       setHasActiveMeeting(true);
+      setShouldAutoStartRecording(false);
       setStartTime(null);
       setTeamId(currentTeamId);
+      console.log('[Meeting Title] joinMeeting resolved title', {
+        responseTitle: response?.title,
+        fallbackTitle: meetingTitleRef.current,
+        resolvedTitle,
+      });
+      setMeetingTitle(resolvedTitle);
       setIceServers(Array.isArray(response?.iceServers) ? response.iceServers : []);
 
       if (response?.meetingId) {
@@ -535,13 +624,11 @@ export function Header() {
       window.dispatchEvent(new CustomEvent('meezy:sync-meeting'));
       router.push(`/main/${currentTeamId}/meeting`);
     } catch (error: any) {
-      console.error(`${isLeader ? 'start' : 'join'}Meeting error:`, error);
+      console.error('joinMeeting error:', error);
       const errorMsg =
         error?.response?.data?.message || error?.message || MESSAGE_UNKNOWN_ERROR;
 
-      alert(
-        `${isLeader ? LABEL_START_MEETING : LABEL_JOIN_MEETING}\uC5D0 \uC2E4\uD328\uD588\uC2B5\uB2C8\uB2E4: ${errorMsg}`
-      );
+      alert(`${LABEL_JOIN_MEETING}\uC5D0 \uC2E4\uD328\uD588\uC2B5\uB2C8\uB2E4: ${errorMsg}`);
     }
   };
 
@@ -552,74 +639,83 @@ export function Header() {
     : LABEL_JOIN_MEETING;
 
   return (
-    <header
-      className="w-full flex justify-between items-center p-6 border-l border-white/5"
-      style={{
-        ...typography.body.BodyM,
-        backgroundColor: colors.black[100],
-      }}
-    >
-      <div className="flex items-center gap-4">
-        <button
-          className="lg:hidden p-2 text-white/60 hover:text-white transition-colors"
-          onClick={() => setIsSidebarOpen(!isSidebarOpen)}
-          aria-label="Toggle Sidebar"
-        >
-          <svg
-            className="w-6 h-6"
-            fill="none"
-            stroke="currentColor"
-            viewBox="0 0 24 24"
-          >
-            <path
-              strokeLinecap="round"
-              strokeLinejoin="round"
-              strokeWidth={2}
-              d="M4 6h16M4 12h16m-7 6h7"
-            />
-          </svg>
-        </button>
-        <h1
-          className="text-[#ff5c00] font-extrabold text-2xl tracking-tight cursor-pointer"
-          onClick={onClickMain}
-        >
-          Meezy.
-        </h1>
-      </div>
-
-      <div className="flex items-center gap-10">
-        {currentTeamId && (
+    <>
+      <header
+        className="w-full flex justify-between items-center p-6 border-l border-white/5"
+        style={{
+          ...typography.body.BodyM,
+          backgroundColor: colors.black[100],
+        }}
+      >
+        <div className="flex items-center gap-4">
           <button
-            className="py-3 px-6 rounded-full cursor-pointer transition-opacity hover:opacity-80"
-            style={{
-              color: colors.white[100],
-              backgroundColor: isMeetingInCurrentTeam
-                ? colors.system.error[500]
-                : isLeader || hasActiveMeeting
-                ? colors.primary[500]
-                : colors.gray[500],
-              ...typography.body.BodyM,
-            }}
-            onClick={onClickMeeting}
+            className="lg:hidden p-2 text-white/60 hover:text-white transition-colors"
+            onClick={() => setIsSidebarOpen(!isSidebarOpen)}
+            aria-label="Toggle Sidebar"
           >
-            {meetingButtonLabel}
+            <svg
+              className="w-6 h-6"
+              fill="none"
+              stroke="currentColor"
+              viewBox="0 0 24 24"
+            >
+              <path
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                strokeWidth={2}
+                d="M4 6h16M4 12h16m-7 6h7"
+              />
+            </svg>
           </button>
-        )}
+          <h1
+            className="text-[#ff5c00] font-extrabold text-2xl tracking-tight cursor-pointer"
+            onClick={onClickMain}
+          >
+            Meezy.
+          </h1>
+        </div>
 
-        {profile?.profileImageUrl || profile?.profileImage ? (
-          <img
-            src={profile.profileImageUrl || profile.profileImage}
-            alt="profile"
-            className="w-10 h-10 rounded-full cursor-pointer hover:opacity-80 transition-opacity object-cover"
-            onClick={onClickMypage}
-          />
-        ) : (
-          <div
-            className="w-10 h-10 bg-[#d9d9d9] rounded-full cursor-pointer hover:opacity-80 transition-opacity"
-            onClick={onClickMypage}
-          />
-        )}
-      </div>
-    </header>
+        <div className="flex items-center gap-10">
+          {currentTeamId && (
+            <button
+              className="py-3 px-6 rounded-full cursor-pointer transition-opacity hover:opacity-80"
+              style={{
+                color: colors.white[100],
+                backgroundColor: isMeetingInCurrentTeam
+                  ? colors.system.error[500]
+                  : isLeader || hasActiveMeeting
+                  ? colors.primary[500]
+                  : colors.gray[500],
+                ...typography.body.BodyM,
+              }}
+              onClick={onClickMeeting}
+            >
+              {meetingButtonLabel}
+            </button>
+          )}
+
+          {profile?.profileImageUrl || profile?.profileImage ? (
+            <img
+              src={profile.profileImageUrl || profile.profileImage}
+              alt="profile"
+              className="w-10 h-10 rounded-full cursor-pointer hover:opacity-80 transition-opacity object-cover"
+              onClick={onClickMypage}
+            />
+          ) : (
+            <div
+              className="w-10 h-10 bg-[#d9d9d9] rounded-full cursor-pointer hover:opacity-80 transition-opacity"
+              onClick={onClickMypage}
+            />
+          )}
+        </div>
+      </header>
+
+      <MeetingTitleModal
+        isOpen={isMeetingTitleModalOpen}
+        isSubmitting={isStartingMeeting}
+        onClose={() => setIsMeetingTitleModalOpen(false)}
+        onSubmit={startMeetingWithTitle}
+      />
+    </>
   );
 }

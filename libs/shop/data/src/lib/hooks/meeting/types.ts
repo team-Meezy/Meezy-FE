@@ -15,6 +15,7 @@ export type MeetingParticipant = {
 export type MeetingResponse = {
   meetingId: string;
   teamId: string;
+  title?: string;
   hostUserId: string;
   status: string;
   startedAt: string;
@@ -45,4 +46,22 @@ export type IndividualEngagementResponse = {
   currentRate: number;
   averageRate: number;
   meetingCount: number;
+};
+
+export type MeetingSummaryResponse = {
+  summaryId: string;
+  meetingId: string;
+  teamId: string;
+  title: string;
+  content: string;
+  createdAt: string;
+};
+
+export type MeetingFeedbackResponse = {
+  feedbackId: string;
+  meetingId: string;
+  teamId: string;
+  title: string;
+  content: string;
+  createdAt: string;
 };

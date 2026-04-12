@@ -3,9 +3,19 @@
   "version": "0.0.1",
   "private": true,
   "dependencies": {
+    "@meezy/ui": "*",
+    "@stomp/stompjs": "7.3.0",
+    "axios": "1.13.6",
     "next": "~16.0.1",
     "react": "^19.0.0",
     "react-dom": "^19.0.0",
-    "@meezy/ui": "*"
+    "sharp": "0.34.5",
+    "sockjs-client": "1.6.1",
+    "typescript": "5.9.3",
+    "ws": "8.18.0",
+    "zustand": "5.0.11"
+  },
+  "scripts": {
+    "start": "next start"
   }
 }

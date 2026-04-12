@@ -1,14 +1,17 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useEffect, useState } from 'react';
 import { useParams } from 'next/navigation';
+import {
+  getMeetingFeedbacks,
+  type MeetingFeedbackResponse,
+} from '@org/shop-data';
 import { typography, colors } from '../../design';
-import { getMeetingFeedbacks } from '@org/shop-data';
 
 export function FeedbackPage() {
   const params = useParams();
   const teamId = params.serverId as string;
-  const [feedbacks, setFeedbacks] = useState<any[]>([]);
+  const [feedbacks, setFeedbacks] = useState<MeetingFeedbackResponse[]>([]);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
@@ -19,12 +22,12 @@ export function FeedbackPage() {
         setLoading(true);
         const data = await getMeetingFeedbacks(teamId);
 
-        if (data && Array.isArray(data)) {
-          // 최신순 정렬 등 필요시 추가 가능
+        if (Array.isArray(data)) {
           setFeedbacks(data);
-        } else {
-          setFeedbacks([]);
+          return;
         }
+
+        setFeedbacks([]);
       } catch (error) {
         console.error('Failed to fetch feedbacks', error);
       } finally {
@@ -32,7 +35,7 @@ export function FeedbackPage() {
       }
     };
 
-    fetchFeedbacks();
+    void fetchFeedbacks();
   }, [teamId]);
 
   return (
@@ -58,10 +61,7 @@ export function FeedbackPage() {
                 style={{ backgroundColor: colors.gray[700] }}
               >
                 <div className="flex justify-between items-center">
-                  <h2 style={{ ...typography.body.BodyB }}>
-                    {/* API에 title 필드가 없다면 임시로 피드백 텍스트의 앞부분이나 meetingId를 활용 */}
-                    {feedback.title || '회의 피드백 내역'}
-                  </h2>
+                  <h2 style={{ ...typography.body.BodyB }}>{feedback.title}</h2>
                   <p
                     style={{
                       ...typography.body.BodyM,

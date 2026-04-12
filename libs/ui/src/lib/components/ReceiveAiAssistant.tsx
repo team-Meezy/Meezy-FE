@@ -46,14 +46,14 @@ export const ReceiveAiAssistant = () => {
   const [elapsedTime, setElapsedTime] = useState('00:00:00');
 
   useEffect(() => {
-    if (!(hasActiveMeeting || meeting) || !startTime) {
+    if (!(hasActiveMeeting || meeting)) {
       setElapsedTime('00:00:00');
       return;
     }
 
     const updateTimer = () => {
       let diff = Math.max(0, recordingElapsedMs);
-      if (startTime) {
+      if (startTime && isRecording) {
         let startValue = startTime;
         if (
           typeof startValue === 'string' &&
@@ -85,7 +85,7 @@ export const ReceiveAiAssistant = () => {
     updateTimer();
     const intervalId = setInterval(updateTimer, 1000);
     return () => clearInterval(intervalId);
-  }, [hasActiveMeeting, meeting, recordingElapsedMs, startTime]);
+  }, [hasActiveMeeting, isRecording, meeting, recordingElapsedMs, startTime]);
 
   const isSummary = pathname?.includes('/summary');
   const isFeedback = pathname?.includes('/feedback');

@@ -512,7 +512,7 @@ export function Header() {
 
         setMeeting(true);
         setHasActiveMeeting(true);
-        setShouldAutoStartRecording(true);
+        setShouldAutoStartRecording(false);
         setStartTime(null);
         setTeamId(currentTeamId);
         meetingTitleRef.current = resolvedTitle;

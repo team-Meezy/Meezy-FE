@@ -187,7 +187,7 @@ export function JoinedSidebar({
         aria-label="서버 프로필 열기"
       >
         <span
-          className="max-w-[100px] text-[24px] font-semibold"
+          className="max-w-[96px] text-[19px] font-semibold"
           style={{ color: colors.gray[300] }}
         >
           <span className="truncate">{currentTeamName}</span>

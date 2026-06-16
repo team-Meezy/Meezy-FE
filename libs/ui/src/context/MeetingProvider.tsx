@@ -18,7 +18,10 @@ interface MeetingContextType {
   initLocalMedia: () => Promise<MediaStream | null>;
   toggleAudioEnabled: (enabled: boolean) => Promise<boolean>;
   toggleVideoEnabled: (enabled: boolean) => Promise<boolean>;
-  startRecording: () => void;
+  startRecording: (options?: {
+    resumePersisted?: boolean;
+    initialElapsedMs?: number;
+  }) => void;
   stopRecording: () => void;
 }
 

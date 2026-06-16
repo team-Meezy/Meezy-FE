@@ -4,7 +4,6 @@ import {
   getActiveMeetings,
   joinMeeting,
   leaveMeeting,
-  leaveMeetingOnUnload,
   logRecordingUpload,
   MeetingEvent,
   startMeeting,
@@ -118,6 +117,8 @@ export function Header() {
   } = useMeetingStore();
 
   const [isSyncing, setIsSyncing] = useState(false);
+  const [hasCheckedActiveMeeting, setHasCheckedActiveMeeting] =
+    useState(false);
   const [isMeetingTitleModalOpen, setIsMeetingTitleModalOpen] = useState(false);
   const [isStartingMeeting, setIsStartingMeeting] = useState(false);
 
@@ -152,6 +153,10 @@ export function Header() {
   useEffect(() => {
     meetingTitleRef.current = meetingTitle;
   }, [meetingTitle]);
+
+  useEffect(() => {
+    setHasCheckedActiveMeeting(false);
+  }, [currentTeamId]);
 
   const myProfileIds = useMemo(() => getProfileIds(profile), [profile]);
   const myNames = useMemo(
@@ -371,6 +376,7 @@ export function Header() {
       console.log('Header: getActiveMeeting error', error);
       setHasActiveMeeting(false);
     } finally {
+      setHasCheckedActiveMeeting(true);
       setIsSyncing(false);
     }
   }, [
@@ -386,6 +392,7 @@ export function Header() {
     setIceServers,
     setStartTime,
     setTeamId,
+    setHasCheckedActiveMeeting,
   ]);
 
   useEffect(() => {
@@ -433,25 +440,15 @@ export function Header() {
   useMeetingEvents(currentTeamId, handleGlobalMeetingEvent);
 
   useEffect(() => {
-    const handleUnload = () => {
-      const teamIdToLeave = activeMeetingTeamIdRef.current;
-      if (meetingRef.current && teamIdToLeave && meetingIdRef.current) {
-        leaveMeetingOnUnload(teamIdToLeave);
-      }
-    };
-
-    window.addEventListener('pagehide', handleUnload);
-    window.addEventListener('beforeunload', handleUnload);
-    return () => {
-      window.removeEventListener('pagehide', handleUnload);
-      window.removeEventListener('beforeunload', handleUnload);
-    };
-  }, []);
-
-  useEffect(() => {
     let timeoutId: ReturnType<typeof setTimeout> | undefined;
 
-    if (!isSyncing && !meeting && !isUploading && pathname.includes('/meeting')) {
+    if (
+      hasCheckedActiveMeeting &&
+      !isSyncing &&
+      !meeting &&
+      !isUploading &&
+      pathname.includes('/meeting')
+    ) {
       timeoutId = setTimeout(() => {
         if (
           !meetingRef.current &&
@@ -472,6 +469,7 @@ export function Header() {
     };
   }, [
     currentTeamId,
+    hasCheckedActiveMeeting,
     isSyncing,
     isUploading,
     meeting,

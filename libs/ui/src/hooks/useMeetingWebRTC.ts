@@ -18,6 +18,14 @@ import {
   convertRecordingBlobToMp3,
   encodePcmChunksToMp3,
 } from './meeting-recording-mp3';
+import {
+  clearPersistedRecordingSession,
+  getPersistedRecordingChunks,
+  getPersistedRecordingSession,
+  getRecordingSessionId,
+  savePersistedRecordingChunk,
+  savePersistedRecordingSession,
+} from './meeting-recording-storage';
 
 interface ParticipantStream {
   userId: string;
@@ -28,6 +36,11 @@ interface ParticipantStream {
 interface RemoteMediaState {
   audioEnabled: boolean;
   videoEnabled: boolean;
+}
+
+interface StartRecordingOptions {
+  resumePersisted?: boolean;
+  initialElapsedMs?: number;
 }
 
 function getMeetingUserId(entity: any) {
@@ -112,7 +125,6 @@ export function useMeetingWebRTC(
     setIsUploading,
     isRecording,
     setIsRecording,
-    shouldAutoStartRecording,
     setShouldAutoStartRecording,
     setMeetingTitle,
     setStartTime,
@@ -159,6 +171,13 @@ export function useMeetingWebRTC(
   const recordingPcmSampleRateRef = useRef<number>(44100);
   const stopAndUploadInProgressRef = useRef(false);
   const lastUploadedMeetingIdRef = useRef<string>('');
+  const recordingSessionIdRef = useRef<string>('');
+  const persistedChunkIndexRef = useRef(0);
+  const persistedChunkWritesRef = useRef<Set<Promise<void>>>(new Set());
+  const recordingSessionWasRestoredRef = useRef(false);
+  const autoRestoredRecordingSessionIdRef = useRef('');
+  const recordingElapsedMsRef = useRef(recordingElapsedMs);
+  const meetingTitleRef = useRef(meetingTitle);
 
   const teamIdRef = useRef(teamId);
   const meetingIdRef = useRef(meetingId);
@@ -166,11 +185,90 @@ export function useMeetingWebRTC(
 
   const log = useCallback((_msg: string, _data?: any) => {}, []);
 
+  const getCurrentRecordingSessionId = useCallback(() => {
+    const tId = teamIdRef.current;
+    const mId = meetingIdRef.current;
+
+    if (!tId || !mId) {
+      return '';
+    }
+
+    return getRecordingSessionId(tId, mId);
+  }, []);
+
+  const persistRecordingSession = useCallback(
+    (params: {
+      active: boolean;
+      sessionId?: string;
+      startedAt?: string;
+      elapsedMs?: number;
+      mimeType?: string;
+    }) => {
+      const tId = teamIdRef.current;
+      const mId = meetingIdRef.current;
+      const sessionId =
+        params.sessionId ||
+        recordingSessionIdRef.current ||
+        getCurrentRecordingSessionId();
+
+      if (!tId || !mId || !sessionId) {
+        return Promise.resolve();
+      }
+
+      recordingSessionIdRef.current = sessionId;
+
+      return savePersistedRecordingSession({
+        sessionId,
+        teamId: tId,
+        meetingId: mId,
+        title: meetingTitleRef.current,
+        mimeType: params.mimeType || recordingMimeTypeRef.current,
+        active: params.active,
+        startedAt:
+          params.startedAt ||
+          recordingStartedAtRef.current ||
+          new Date().toISOString(),
+        elapsedMs: Math.max(
+          0,
+          params.elapsedMs ?? recordingElapsedMsRef.current
+        ),
+        updatedAt: Date.now(),
+      }).catch((error) => {
+        log('[WARN] failed to persist recording session', error);
+      });
+    },
+    [getCurrentRecordingSessionId, log]
+  );
+
+  const trackPersistedChunkWrite = useCallback((writePromise: Promise<void>) => {
+    persistedChunkWritesRef.current.add(writePromise);
+    void writePromise.finally(() => {
+      persistedChunkWritesRef.current.delete(writePromise);
+    });
+  }, []);
+
+  const waitForPersistedChunkWrites = useCallback(async () => {
+    const pendingWrites = Array.from(persistedChunkWritesRef.current);
+    if (pendingWrites.length === 0) {
+      return;
+    }
+
+    await Promise.allSettled(pendingWrites);
+  }, []);
+
   useEffect(() => {
     teamIdRef.current = teamId;
     meetingIdRef.current = meetingId;
     localIdsRef.current = localIds;
   }, [localIds, meetingId, teamId]);
+
+  useEffect(() => {
+    recordingElapsedMsRef.current = recordingElapsedMs;
+  }, [recordingElapsedMs]);
+
+  useEffect(() => {
+    meetingTitleRef.current = meetingTitle;
+  }, [meetingTitle]);
 
   useEffect(() => {
     iceServers.current = normalizeIceServers(meetingIceServers);
@@ -1109,9 +1207,19 @@ export function useMeetingWebRTC(
     }, 3000);
 
     return () => clearInterval(intervalId);
-  }, [connectToUser, createAndSendOffer, getMeetingParticipantIds, isActive, log, meetingId, myId, shouldInitiateOffer, teamId]);
+  }, [
+    connectToUser,
+    createAndSendOffer,
+    getMeetingParticipantIds,
+    isActive,
+    log,
+    meetingId,
+    myId,
+    shouldInitiateOffer,
+    teamId,
+  ]);
 
-  const startRecording = useCallback(() => {
+  const startRecording = useCallback((options: StartRecordingOptions = {}) => {
     log('startRecording entry point');
     if (typeof MediaRecorder === 'undefined') {
       log('[ERROR] MediaRecorder is NOT supported in this browser');
@@ -1122,18 +1230,59 @@ export function useMeetingWebRTC(
       return;
     }
 
+    const sessionId = getCurrentRecordingSessionId();
+    if (!sessionId) {
+      log('[WARN] startRecording aborted: recording session id is unavailable');
+      return;
+    }
+
     log('MediaRecorder initializing...');
     recordedChunksRef.current = [];
+    recordingPcmLeftChunksRef.current = [];
+    recordingPcmRightChunksRef.current = [];
     const selectedMimeType = getSupportedRecordingMimeType();
 
     const startedAt = new Date().toISOString();
+    const baseElapsedMs = Math.max(
+      0,
+      options.initialElapsedMs ?? recordingElapsedMsRef.current
+    );
     const beginRecorder = (recorder: MediaRecorder, mimeType: string) => {
       mediaRecorderRef.current = recorder;
       recordingMimeTypeRef.current = mimeType;
 
       recorder.ondataavailable = (event) => {
         if (event.data.size > 0) {
-          recordedChunksRef.current.push(event.data);
+          const chunk = event.data;
+          const chunkIndex = persistedChunkIndexRef.current;
+          const elapsedMs =
+            baseElapsedMs +
+            Math.max(0, Date.now() - new Date(startedAt).getTime());
+
+          persistedChunkIndexRef.current += 1;
+          recordedChunksRef.current.push(chunk);
+
+          const writePromise = savePersistedRecordingChunk({
+            sessionId,
+            index: chunkIndex,
+            blob: chunk,
+            mimeType: chunk.type || mimeType,
+          })
+            .then(() =>
+              persistRecordingSession({
+                active: true,
+                sessionId,
+                startedAt,
+                elapsedMs,
+                mimeType: chunk.type || mimeType,
+              })
+            )
+            .then(() => undefined)
+            .catch((error) => {
+              log('[WARN] failed to persist recording chunk', error);
+            });
+
+          trackPersistedChunkWrite(writePromise);
         }
       };
 
@@ -1145,21 +1294,42 @@ export function useMeetingWebRTC(
       };
 
       recorder.start(1000);
+      recordingElapsedMsRef.current = baseElapsedMs;
       setIsRecording(true);
       setStartTime(startedAt);
+      setRecordingElapsedMs(baseElapsedMs);
       void broadcastRecordingState(
         'recording-started',
         startedAt,
-        recordingElapsedMs
+        baseElapsedMs
       );
       log('MediaRecorder SUCCESS. state:', recorder.state);
       log('MIME Type selected:', recorder.mimeType || mimeType);
     };
 
     recordingStartedAtRef.current = startedAt;
+    recordingSessionIdRef.current = sessionId;
+    recordingSessionWasRestoredRef.current = Boolean(options.resumePersisted);
 
-    void ensureMixedRecordingStream()
-      .then((mixedStream) => {
+    void (async () => {
+      if (options.resumePersisted) {
+        const persistedChunks = await getPersistedRecordingChunks(sessionId);
+        persistedChunkIndexRef.current = persistedChunks.length;
+      } else {
+        await clearPersistedRecordingSession(sessionId);
+        persistedChunkIndexRef.current = 0;
+      }
+
+      await persistRecordingSession({
+        active: true,
+        sessionId,
+        startedAt,
+        elapsedMs: baseElapsedMs,
+        mimeType: selectedMimeType,
+      });
+
+      try {
+        const mixedStream = await ensureMixedRecordingStream();
         if (!mixedStream) {
           throw new Error('recording mix stream is unavailable');
         }
@@ -1168,61 +1338,163 @@ export function useMeetingWebRTC(
           mimeType: selectedMimeType || undefined,
         });
         beginRecorder(recorder, recorder.mimeType || selectedMimeType);
-      })
-      .catch((error) => {
+      } catch (error) {
         log('[ERROR] MediaRecorder instantiation/start failed', error);
 
         try {
-          const fallbackStream = mixedRecordingStreamRef.current || localStreamRef.current;
+          const fallbackStream =
+            mixedRecordingStreamRef.current || localStreamRef.current;
           if (!fallbackStream) {
             throw new Error('fallback recording stream is unavailable');
           }
 
           const fallbackRecorder = new MediaRecorder(fallbackStream);
-          beginRecorder(fallbackRecorder, fallbackRecorder.mimeType || selectedMimeType);
+          beginRecorder(
+            fallbackRecorder,
+            fallbackRecorder.mimeType || selectedMimeType
+          );
         } catch (fallbackError) {
           log(
             '[CRITICAL ERROR] Fallback MediaRecorder instantiation/start failed',
             fallbackError
           );
           recordingStartedAtRef.current = null;
+          await persistRecordingSession({
+            active: false,
+            sessionId,
+            startedAt,
+            elapsedMs: baseElapsedMs,
+            mimeType: selectedMimeType,
+          });
           cleanupRecordingMix();
         }
+      }
+    })().catch((error) => {
+      log('[ERROR] recording startup failed', error);
+      recordingStartedAtRef.current = null;
+      void persistRecordingSession({
+        active: false,
+        sessionId,
+        startedAt,
+        elapsedMs: baseElapsedMs,
+        mimeType: selectedMimeType,
       });
+      cleanupRecordingMix();
+    });
   }, [
     broadcastRecordingState,
     cleanupRecordingMix,
     ensureMixedRecordingStream,
+    getCurrentRecordingSessionId,
     log,
-    recordingElapsedMs,
+    persistRecordingSession,
     setIsRecording,
     setRecordingElapsedMs,
     setStartTime,
+    trackPersistedChunkWrite,
   ]);
 
   const stopRecording = useCallback(() => {
     log('stopRecording triggered manually');
     const startedAt = recordingStartedAtRef.current;
+    const accumulatedElapsedMs = recordingElapsedMsRef.current;
     const nextElapsedMs =
       startedAt != null
-        ? recordingElapsedMs +
+        ? accumulatedElapsedMs +
           Math.max(0, Date.now() - new Date(startedAt).getTime())
-        : recordingElapsedMs;
-    if (mediaRecorderRef.current && mediaRecorderRef.current.state !== 'inactive') {
+        : accumulatedElapsedMs;
+    if (
+      mediaRecorderRef.current &&
+      mediaRecorderRef.current.state !== 'inactive'
+    ) {
       mediaRecorderRef.current.stop();
     }
     setIsRecording(false);
     setStartTime(null);
+    recordingElapsedMsRef.current = nextElapsedMs;
     setRecordingElapsedMs(nextElapsedMs);
     recordingStartedAtRef.current = null;
+    void waitForPersistedChunkWrites().then(() =>
+      persistRecordingSession({
+        active: false,
+        elapsedMs: nextElapsedMs,
+      })
+    );
     void broadcastRecordingState('recording-stopped', undefined, nextElapsedMs);
   }, [
     broadcastRecordingState,
     log,
-    recordingElapsedMs,
+    persistRecordingSession,
     setIsRecording,
     setRecordingElapsedMs,
     setStartTime,
+    waitForPersistedChunkWrites,
+  ]);
+
+  useEffect(() => {
+    if (!teamId || !meetingId || !isActive || !myId) {
+      return;
+    }
+
+    const sessionId = getRecordingSessionId(teamId, meetingId);
+    let cancelled = false;
+
+    recordingSessionIdRef.current = sessionId;
+
+    void getPersistedRecordingSession(sessionId)
+      .then((session) => {
+        if (cancelled || !session) {
+          return;
+        }
+
+        const elapsedMs = Math.max(0, session.elapsedMs ?? 0);
+        recordingSessionIdRef.current = session.sessionId;
+        recordingElapsedMsRef.current = elapsedMs;
+
+        if (session.mimeType) {
+          recordingMimeTypeRef.current = session.mimeType;
+        }
+
+        if (!isRecording) {
+          setRecordingElapsedMs(elapsedMs);
+        }
+
+        if (!session.active || !localStreamRef.current) {
+          return;
+        }
+
+        const recorderState = mediaRecorderRef.current?.state;
+        if (recorderState && recorderState !== 'inactive') {
+          return;
+        }
+
+        if (autoRestoredRecordingSessionIdRef.current === session.sessionId) {
+          return;
+        }
+
+        autoRestoredRecordingSessionIdRef.current = session.sessionId;
+        startRecording({
+          resumePersisted: true,
+          initialElapsedMs: elapsedMs,
+        });
+      })
+      .catch((error) => {
+        log('[WARN] failed to restore persisted recording session', error);
+      });
+
+    return () => {
+      cancelled = true;
+    };
+  }, [
+    isActive,
+    isRecording,
+    localStream,
+    log,
+    meetingId,
+    myId,
+    setRecordingElapsedMs,
+    startRecording,
+    teamId,
   ]);
 
   const initLocalMedia = useCallback(async () => {
@@ -1470,6 +1742,10 @@ export function useMeetingWebRTC(
       setIsUploading(true);
       const recorder = mediaRecorderRef.current;
       const stream = localStreamRef.current;
+      const activeRecordingSessionId =
+        recordingSessionIdRef.current ||
+        (tId && mId ? getRecordingSessionId(tId, mId) : '');
+      let uploadedRecordingSessionId = '';
 
       log('[DEBUG] current context extracted', {
         teamId: tId,
@@ -1485,19 +1761,24 @@ export function useMeetingWebRTC(
           !mId &&
           !recorder &&
           recordedChunksRef.current.length === 0 &&
-          recordingPcmLeftChunksRef.current.length === 0
+          recordingPcmLeftChunksRef.current.length === 0 &&
+          !activeRecordingSessionId
         ) {
           return;
         }
 
         let blob: Blob | null = null;
-        const resolvedMimeType =
+        let persistedChunks: Awaited<
+          ReturnType<typeof getPersistedRecordingChunks>
+        > = [];
+        let shouldUsePersistedChunks = false;
+        let resolvedMimeType =
           recordingMimeTypeRef.current ||
           recorder?.mimeType ||
           recordedChunksRef.current[0]?.type ||
           getSupportedRecordingMimeType() ||
           'audio/webm';
-        const recordingFileName = getRecordingFileName(resolvedMimeType);
+        let recordingFileName = getRecordingFileName(resolvedMimeType);
 
         if (recorder && recorder.state !== 'inactive') {
           log('[DEBUG] calling recorder.stop()');
@@ -1543,11 +1824,46 @@ export function useMeetingWebRTC(
           );
         }
 
+        await waitForPersistedChunkWrites();
+
+        if (activeRecordingSessionId) {
+          persistedChunks = await getPersistedRecordingChunks(
+            activeRecordingSessionId
+          );
+
+          const persistedMimeType =
+            persistedChunks[0]?.mimeType || persistedChunks[0]?.blob.type || '';
+
+          if (persistedMimeType) {
+            resolvedMimeType = persistedMimeType;
+            recordingFileName = getRecordingFileName(resolvedMimeType);
+          }
+
+          const persistedBlobParts = persistedChunks
+            .map((chunk) => chunk.blob)
+            .filter((chunk) => chunk.size > 0);
+
+          shouldUsePersistedChunks =
+            persistedBlobParts.length > 0 &&
+            (recordingSessionWasRestoredRef.current ||
+              persistedBlobParts.length > recordedChunksRef.current.length ||
+              recordedChunksRef.current.length === 0);
+
+          if (
+            shouldUsePersistedChunks ||
+            (!blob && persistedBlobParts.length > 0)
+          ) {
+            blob = new Blob(persistedBlobParts, { type: resolvedMimeType });
+            shouldUsePersistedChunks = true;
+          }
+        }
+
         if (blob) {
           if (tId && mId && blob.size > 0) {
             const pcmLeftChunks = [...recordingPcmLeftChunksRef.current];
             const pcmRightChunks = [...recordingPcmRightChunksRef.current];
-            const hasCapturedPcm = pcmLeftChunks.length > 0;
+            const hasCapturedPcm =
+              !shouldUsePersistedChunks && pcmLeftChunks.length > 0;
 
             logRecordingUpload('request', {
               teamId: tId,
@@ -1555,6 +1871,8 @@ export function useMeetingWebRTC(
               stage: 'prepare-upload',
               recorderState: recorder?.state ?? 'missing',
               recordedChunkCount: recordedChunksRef.current.length,
+              persistedChunkCount: persistedChunks.length,
+              usedPersistedChunks: shouldUsePersistedChunks,
               pcmLeftChunkCount: pcmLeftChunks.length,
               pcmRightChunkCount: pcmRightChunks.length,
               blobSize: blob.size,
@@ -1587,32 +1905,34 @@ export function useMeetingWebRTC(
               meetingTitle
             );
             lastUploadedMeetingIdRef.current = mId;
+            uploadedRecordingSessionId = activeRecordingSessionId;
           } else {
-              if (tId || mId) {
-                logRecordingUpload('skipped', {
-                  tIdExists: !!tId,
-                  mIdExists: !!mId,
-                  teamId: tId,
-                  meetingId: mId,
-                  title: meetingTitle,
-                  blobSize: blob.size,
-                  fileName: recordingFileName,
-                });
-              }
-            }
-        } else {
             if (tId || mId) {
               logRecordingUpload('skipped', {
+                tIdExists: !!tId,
+                mIdExists: !!mId,
                 teamId: tId,
                 meetingId: mId,
                 title: meetingTitle,
-                recorderState: recorder?.state ?? 'missing',
-                recordedChunkCount: recordedChunksRef.current.length,
-                pcmLeftChunkCount: recordingPcmLeftChunksRef.current.length,
-                pcmRightChunkCount: recordingPcmRightChunksRef.current.length,
-                reason: 'no-recording-blob',
+                blobSize: blob.size,
+                fileName: recordingFileName,
               });
             }
+          }
+        } else {
+          if (tId || mId) {
+            logRecordingUpload('skipped', {
+              teamId: tId,
+              meetingId: mId,
+              title: meetingTitle,
+              recorderState: recorder?.state ?? 'missing',
+              recordedChunkCount: recordedChunksRef.current.length,
+              persistedChunkCount: persistedChunks.length,
+              pcmLeftChunkCount: recordingPcmLeftChunksRef.current.length,
+              pcmRightChunkCount: recordingPcmRightChunksRef.current.length,
+              reason: 'no-recording-blob',
+            });
+          }
         }
       } catch (err) {
         logRecordingUpload('error', {
@@ -1626,11 +1946,40 @@ export function useMeetingWebRTC(
           error: err,
         });
       } finally {
+        if (uploadedRecordingSessionId) {
+          await clearPersistedRecordingSession(uploadedRecordingSessionId).catch(
+            (error) => {
+              log('[WARN] failed to clear persisted recording session', error);
+            }
+          );
+        } else if (activeRecordingSessionId) {
+          const startedAt = recordingStartedAtRef.current;
+          const elapsedMs =
+            startedAt != null
+              ? recordingElapsedMsRef.current +
+                Math.max(0, Date.now() - new Date(startedAt).getTime())
+              : recordingElapsedMsRef.current;
+
+          await persistRecordingSession({
+            active: false,
+            sessionId: activeRecordingSessionId,
+            elapsedMs,
+          });
+        }
+
         mediaRecorderRef.current = null;
         recordedChunksRef.current = [];
         recordingMimeTypeRef.current = '';
         recordingPcmLeftChunksRef.current = [];
         recordingPcmRightChunksRef.current = [];
+        recordingStartedAtRef.current = null;
+        recordingElapsedMsRef.current = 0;
+        recordingSessionWasRestoredRef.current = false;
+        persistedChunkIndexRef.current = 0;
+        if (uploadedRecordingSessionId) {
+          recordingSessionIdRef.current = '';
+          autoRestoredRecordingSessionIdRef.current = '';
+        }
         cleanupRecordingMix();
         setIsUploading(false);
         setShouldAutoStartRecording(false);
@@ -1656,7 +2005,14 @@ export function useMeetingWebRTC(
       );
       window.removeEventListener('meezy:stop-and-upload', handleStopAndUpload);
     };
-  }, [log, meetingTitle, setMeetingTitle, teardownMeetingMedia]);
+  }, [
+    log,
+    meetingTitle,
+    persistRecordingSession,
+    setMeetingTitle,
+    teardownMeetingMedia,
+    waitForPersistedChunkWrites,
+  ]);
 
   useEffect(() => {
     if (myId && meetingId && teamId && isActive) {

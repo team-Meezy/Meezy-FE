@@ -10,10 +10,8 @@ export const startMeeting = async (
       `/teams/${teamId}/meetings`,
       { title }
     );
-    console.log('startMeeting response', response);
     return response.data;
   } catch (error) {
-    console.log('startMeeting error', error);
     throw error;
   }
 };

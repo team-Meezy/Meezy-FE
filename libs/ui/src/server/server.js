@@ -5,7 +5,6 @@ const clients = new Set();
 
 wss.on('connection', (ws) => {
   clients.add(ws);
-  console.log('클라이언트 연결');
 
   ws.on('message', (data) => {
     const message = data.toString();
@@ -20,8 +19,5 @@ wss.on('connection', (ws) => {
 
   ws.on('close', () => {
     clients.delete(ws);
-    console.log('클라이언트 연결 종료');
   });
 });
-
-console.log('WebSocket 서버 실행중 (ws://localhost:8080)');

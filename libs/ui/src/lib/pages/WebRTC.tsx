@@ -38,11 +38,6 @@ export default function WebRTC({
     const playVideo = async () => {
       try {
         await video.play();
-        console.log('[WebRTCView] video playback started', {
-          isLocal,
-          audioTracks: stream?.getAudioTracks().length ?? 0,
-          videoTracks: stream?.getVideoTracks().length ?? 0,
-        });
       } catch (error: any) {
         if (error?.name !== 'AbortError') {
           console.error('[WebRTCView] video playback failed', {
@@ -74,7 +69,6 @@ export default function WebRTC({
     const playAudio = async () => {
       try {
         await audio.play();
-        console.log('[WebRTCView] audio playback started');
       } catch (error: any) {
         if (error?.name !== 'AbortError') {
           console.error('[WebRTCView] audio playback failed', error);

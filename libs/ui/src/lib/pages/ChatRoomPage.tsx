@@ -90,7 +90,6 @@ export function ChatRoomPage() {
     const apiChatMessages = async () => {
       try {
         const res = await getChatMessages(currentTeamId, currentRoomId);
-        console.log('📩 [ChatRoomPage] Loaded Messages:', res);
         setMessages(res);
       } catch (error) {
         console.error('❌ [ChatRoomPage] 채팅 메시지 로드 실패:', error);
@@ -125,10 +124,6 @@ export function ChatRoomPage() {
   ]);
 
   // 팀 멤버 데이터 변경 시 로그 출력
-  useEffect(() => {
-    console.log('👥 [ChatRoomPage] Current Team Members:', teamMembers);
-  }, [teamMembers]);
-
   const sendMessage = () => {
     const trimmedInput = input.trim();
 
@@ -241,13 +236,6 @@ export function ChatRoomPage() {
               msg.senderName === profile?.nickName;
 
             // 로깅: 특정 조건에서만 출력 (너무 많으면 브라우저 느려짐)
-            if (!isMyMessage && messages.indexOf(msg) === 0) {
-              console.log('🔍 [ChatRoomPage] Debugging first other message:', {
-                msg,
-                teamMembers,
-              });
-            }
-
             return (
               <div
                 key={msg.chatMessageId}
@@ -314,12 +302,6 @@ export function ChatRoomPage() {
                     memberData?.user?.image ||
                     memberData?.profile_image ||
                     memberData?.user?.profile_image;
-
-                  if (!memberImg && member && !isMyMessage) {
-                    console.warn(`⚠️ [ChatRoomPage] Member found but NO image: ${msg.senderName}`, {
-                      member,
-                    });
-                  }
 
                   if (memberImg) {
                     return (

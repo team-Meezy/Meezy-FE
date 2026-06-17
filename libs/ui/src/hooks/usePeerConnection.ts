@@ -23,9 +23,7 @@ export function usePeerConnection(
     navigator.mediaDevices
       .getUserMedia({ video: true, audio: false })
       .then((mediaStream) => {
-        console.log('getUserMedia success, stream:', mediaStream);
         if (!isMounted || pc.signalingState === 'closed') {
-          console.log('Component unmounted or PC closed');
           mediaStream.getTracks().forEach((track) => track.stop());
           return;
         }
@@ -50,10 +48,6 @@ export function usePeerConnection(
       if (event.candidate) {
         onIceCandidate(event.candidate);
       }
-    };
-
-    pc.onconnectionstatechange = () => {
-      console.log('connectionState:', pc.connectionState);
     };
 
     pc.ontrack = (event) => {
@@ -139,7 +133,6 @@ export function usePeerConnection(
         }
 
         setAudioEnabled(true);
-        console.log('마이크 하드웨어 ON');
       } catch (err) {
         console.error('마이크를 켜는 데 실패했습니다:', err);
       }
@@ -160,7 +153,6 @@ export function usePeerConnection(
       }
 
       setAudioEnabled(false);
-      console.log('마이크 하드웨어 OFF');
     }
   };
 

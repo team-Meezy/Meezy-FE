@@ -9,10 +9,8 @@ export const getIndividualEngagement = async (
     const response = await privateApi.get<IndividualEngagementResponse>(
       `/teams/${teamId}/meetings/${meetingId}/participation/member`
     );
-    console.log('getIndividualEngagement response', response);
     return response.data;
   } catch (error) {
-    console.log('getIndividualEngagement error', error);
     throw error;
   }
 };

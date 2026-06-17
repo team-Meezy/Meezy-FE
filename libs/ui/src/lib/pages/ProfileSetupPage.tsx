@@ -40,12 +40,11 @@ export function ProfileSetupPage() {
 
     setSubmitting(true);
     try {
-      const response = await setOauthProfile(
+      await setOauthProfile(
         accountId.trim(),
         name.trim(),
         password
       );
-      console.log('Profile Setup Success (ProfileSetupPage):', response);
       await refetchProfile();
       router.push('/main');
     } catch (err: unknown) {

@@ -1,7 +1,6 @@
 import { Client, type IMessage, type StompSubscription } from '@stomp/stompjs';
 import SockJS from 'sockjs-client';
 import { BASE_URL, STOMP_SOCKET_URL } from '../axios';
-import { logMeetingStomp } from '../../recording-console';
 
 type PublishRequest = {
   destination: string;
@@ -67,11 +66,6 @@ function flushPendingPublishes() {
   pendingPublishes.length = 0;
 
   queuedPublishes.forEach(({ destination, body }) => {
-    logMeetingStomp('flush', {
-      destination,
-      hasBody: Boolean(body),
-      queuedCount: queuedPublishes.length,
-    });
     sharedClient?.publish({
       destination,
       body,
@@ -84,10 +78,6 @@ function ensureClient() {
     return;
   }
 
-  logMeetingStomp('connect', {
-    socketUrl: STOMP_SOCKET_URL,
-  });
-
   sharedClient = new Client({
     webSocketFactory: () => new SockJS(STOMP_SOCKET_URL, null, {}),
     connectHeaders: getConnectHeaders(),
@@ -95,18 +85,13 @@ function ensureClient() {
     heartbeatIncoming: 10000,
     heartbeatOutgoing: 10000,
     onConnect: () => {
-      logMeetingStomp('connected', {
-        subscriptions: subscriberMap.size,
-      });
       resubscribeAll();
       flushPendingPublishes();
     },
     onWebSocketClose: () => {
-      logMeetingStomp('close');
       subscriptionMap.clear();
     },
     onDisconnect: () => {
-      logMeetingStomp('disconnect');
       subscriptionMap.clear();
     },
   });
@@ -165,21 +150,10 @@ export function subscribeSharedMeetingTopic(
 
 export function publishSharedMeetingMessage(request: PublishRequest) {
   if (sharedClient?.connected) {
-    logMeetingStomp('send', {
-      destination: request.destination,
-      hasBody: Boolean(request.body),
-      connected: true,
-    });
     sharedClient.publish(request);
     return;
   }
 
-  logMeetingStomp('queue', {
-    destination: request.destination,
-    hasBody: Boolean(request.body),
-    connected: false,
-    pendingCount: pendingPublishes.length + 1,
-  });
   pendingPublishes.push(request);
   ensureClient();
 }

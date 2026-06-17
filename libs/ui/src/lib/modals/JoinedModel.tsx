@@ -43,7 +43,6 @@ export function JoinedModal({ isOpen, type, onClose }: JoinedModalProps) {
       const createCode = async () => {
         try {
           const res = await createInviteCode(serverId);
-          console.log(res, '초대 코드 생성 결과');
           if (res && res.inviteCode) {
             setInviteCode({
               inviteCode: res.inviteCode,
@@ -61,7 +60,6 @@ export function JoinedModal({ isOpen, type, onClose }: JoinedModalProps) {
 
   const createServer = async () => {
     const valueToValidate = serverName;
-    console.log(valueToValidate, '값');
     if (!valueToValidate) {
       setGeneralError('채널 이름을 입력해주세요.');
       return false;
@@ -71,7 +69,6 @@ export function JoinedModal({ isOpen, type, onClose }: JoinedModalProps) {
       await createChatRoom(serverId, valueToValidate);
       // 생성 성공 후, 중앙 집중화된 업데이트 함수 호출
       await updateChatRooms(serverId);
-      console.log('Channels updated via centralized function after creation');
     } catch (e: any) {
       console.error('Channel creation failed:', e);
       if (e.response?.data?.message) {

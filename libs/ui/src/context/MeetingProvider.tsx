@@ -1,10 +1,9 @@
 'use client';
 
-import React, { createContext, useContext, useMemo, useEffect } from 'react';
+import React, { createContext, useContext, useMemo } from 'react';
 import { useMeetingWebRTC } from '../hooks/useMeetingWebRTC';
 import { useMeetingStore } from '@org/shop-data';
 import { useProfile } from './ProfileProvider';
-import { useServerJoinedTeam } from './ServerJoinedTeamProvider';
 import { useServerState } from './ServerStateProvider';
 
 interface MeetingContextType {
@@ -58,13 +57,12 @@ function getUserIdFromAccessToken() {
         decoded?.accountId ||
         ''
     ).trim();
-  } catch (error) {
+  } catch {
     return '';
   }
 }
 
 export function MeetingProvider({ children }: { children: React.ReactNode }) {
-  console.log('[DEBUG] MeetingProvider body executing');
   const { meetingId, teamId } = useMeetingStore();
   const { profile } = useProfile();
   const { teamMembers } = useServerState();
@@ -170,48 +168,7 @@ export function MeetingProvider({ children }: { children: React.ReactNode }) {
     );
   }, [myMemberInfo, profileIds, signalingIdentity, profile]);
 
-  const { meeting } = useServerJoinedTeam();
-
-  // Only activate WebRTC if there is an active meeting and we have our ID
-  // We use teamId from the store (set by Header or other triggers)
-  useEffect(() => {
-    console.log('[DEBUG] MeetingProvider state:', {
-      teamId,
-      signalingIdentity,
-      localIds,
-      meetingStatus: meeting,
-    });
-  }, [teamId, signalingIdentity, localIds, meeting]);
-
-  useEffect(() => {
-    console.log('[DEBUG] MeetingProvider identity sources:', {
-      profile: {
-        id: profile?.id,
-        userId: profile?.userId,
-        user_id: profile?.user_id,
-        accountId: profile?.accountId,
-        memberId: (profile as any)?.memberId,
-        teamMemberId: (profile as any)?.teamMemberId,
-      },
-      myMemberInfo: myMemberInfo
-        ? {
-            id: (myMemberInfo as any)?.id,
-            userId: (myMemberInfo as any)?.userId,
-            user_id: (myMemberInfo as any)?.user_id,
-            accountId: (myMemberInfo as any)?.accountId,
-            memberId: (myMemberInfo as any)?.memberId,
-            teamMemberId: (myMemberInfo as any)?.teamMemberId,
-            user: {
-              id: (myMemberInfo as any)?.user?.id,
-              userId: (myMemberInfo as any)?.user?.userId,
-              user_id: (myMemberInfo as any)?.user?.user_id,
-              accountId: (myMemberInfo as any)?.user?.accountId,
-            },
-          }
-        : null,
-    });
-  }, [myMemberInfo, profile]);
-
+  // Only activate WebRTC if there is an active meeting and we have our ID.
   const isWebRTCActive = Boolean(teamId && meetingId && signalingIdentity);
   const webrtc = useMeetingWebRTC(
     teamId,

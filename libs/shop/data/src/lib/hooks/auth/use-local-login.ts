@@ -8,7 +8,6 @@ export const localLogin = async (accountId: string, password: string) => {
     });
     return response.data;
   } catch (error) {
-    console.log(error);
     throw error;
   }
 };

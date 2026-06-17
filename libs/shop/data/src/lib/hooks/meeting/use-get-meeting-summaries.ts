@@ -15,10 +15,8 @@ export const getMeetingSummaries = async (
     if (response.status === 404) {
       return { status: 404, data: null };
     }
-    console.log('getMeetingSummaries response', response);
     return response.data;
   } catch (error) {
-    console.log('getMeetingSummaries error', error);
     throw error;
   }
 };

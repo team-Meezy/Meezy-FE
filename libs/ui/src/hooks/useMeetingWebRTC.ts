@@ -8,8 +8,6 @@ import {
   useMeetingVoiceActivity,
   useMeetingStore,
   uploadMeetingRecording,
-  logRecordingUpload,
-  logRecordingVoice,
   getActiveMeetings,
   MeetingEvent,
   MeetingSignal,
@@ -117,7 +115,6 @@ export function useMeetingWebRTC(
   localIds: string[],
   isActive: boolean
 ) {
-  console.log('[DEBUG] useMeetingWebRTC initialized', { teamId, myId, isActive });
   const {
     meetingId,
     meetingTitle,
@@ -183,7 +180,6 @@ export function useMeetingWebRTC(
   const meetingIdRef = useRef(meetingId);
   const localIdsRef = useRef<string[]>([]);
 
-  const log = useCallback((_msg: string, _data?: any) => {}, []);
 
   const getCurrentRecordingSessionId = useCallback(() => {
     const tId = teamIdRef.current;
@@ -233,11 +229,9 @@ export function useMeetingWebRTC(
           params.elapsedMs ?? recordingElapsedMsRef.current
         ),
         updatedAt: Date.now(),
-      }).catch((error) => {
-        log('[WARN] failed to persist recording session', error);
-      });
+      }).catch(() => undefined);
     },
-    [getCurrentRecordingSessionId, log]
+    [getCurrentRecordingSessionId]
   );
 
   const trackPersistedChunkWrite = useCallback((writePromise: Promise<void>) => {
@@ -272,39 +266,7 @@ export function useMeetingWebRTC(
 
   useEffect(() => {
     iceServers.current = normalizeIceServers(meetingIceServers);
-    log('[WebRTC] active iceServers updated', iceServers.current);
-  }, [log, meetingIceServers]);
-
-  useEffect(() => {
-    log('[WebRTC] lifecycle snapshot', {
-      myId,
-      meetingId,
-      teamId,
-      isActive,
-      localIds,
-    });
-  }, [isActive, localIds, log, meetingId, myId, teamId]);
-
-  useEffect(() => {
-    log(
-      '[WebRTC] remoteStreams snapshot',
-      remoteStreams.map((entry) => ({
-        userId: entry.userId,
-        audioTracks: entry.stream.getAudioTracks().map((track) => ({
-          id: track.id,
-          enabled: track.enabled,
-          readyState: track.readyState,
-          muted: track.muted,
-        })),
-        videoTracks: entry.stream.getVideoTracks().map((track) => ({
-          id: track.id,
-          enabled: track.enabled,
-          readyState: track.readyState,
-          muted: track.muted,
-        })),
-      }))
-    );
-  }, [log, remoteStreams]);
+  }, [meetingIceServers]);
 
   const shouldInitiateOffer = useCallback((firstId: string, secondId: string) => {
     return firstId.localeCompare(secondId, undefined, {
@@ -343,7 +305,9 @@ export function useMeetingWebRTC(
     if (recordingProcessorRef.current) {
       try {
         recordingProcessorRef.current.disconnect();
-      } catch {}
+      } catch {
+        // noop
+      }
       recordingProcessorRef.current.onaudioprocess = null;
       recordingProcessorRef.current = null;
     }
@@ -351,14 +315,18 @@ export function useMeetingWebRTC(
     if (recordingMixGainRef.current) {
       try {
         recordingMixGainRef.current.disconnect();
-      } catch {}
+      } catch {
+        // noop
+      }
       recordingMixGainRef.current = null;
     }
 
     if (recordingMonitorGainRef.current) {
       try {
         recordingMonitorGainRef.current.disconnect();
-      } catch {}
+      } catch {
+        // noop
+      }
       recordingMonitorGainRef.current = null;
     }
 
@@ -451,7 +419,6 @@ export function useMeetingWebRTC(
       window.AudioContext || ((window as typeof window & { webkitAudioContext?: typeof AudioContext }).webkitAudioContext);
 
     if (!AudioContextClass) {
-      log('[WARN] AudioContext is not available for recording mix');
       return null;
     }
 
@@ -466,7 +433,6 @@ export function useMeetingWebRTC(
 
     const sourceCount = await syncRecordingMix(remoteStreams);
     if (sourceCount === 0) {
-      log('[WARN] mixed recording stream has no audio sources');
       cleanupRecordingMix();
       return null;
     }
@@ -499,7 +465,7 @@ export function useMeetingWebRTC(
     recordingProcessorRef.current = processor;
     recordingMonitorGainRef.current = monitorGain;
     return destination.stream;
-  }, [cleanupRecordingMix, log, remoteStreams, syncRecordingMix]);
+  }, [cleanupRecordingMix, remoteStreams, syncRecordingMix]);
 
   const teardownMeetingMedia = useCallback(() => {
     const shouldPreserveRecordingState =
@@ -611,11 +577,11 @@ export function useMeetingWebRTC(
             elapsedMs,
           });
         });
-      } catch (error) {
-        log('[WARN] recording state broadcast failed', error);
+      } catch {
+        // noop
       }
     },
-    [getMeetingParticipantIds, log, myId]
+    [getMeetingParticipantIds, myId]
   );
 
   const getOrCreatePC = useCallback(
@@ -634,19 +600,12 @@ export function useMeetingWebRTC(
         pcs.current.delete(targetUserId);
       }
 
-      console.log(`Creating PeerConnection for: ${targetUserId}`);
       const pc = new RTCPeerConnection({
         iceServers: iceServers.current,
       });
-      log(`[WebRTC] ICE servers for ${targetUserId}`, iceServers.current);
 
       pc.onicecandidate = (event) => {
         if (event.candidate) {
-          log(`[WebRTC] local ICE candidate for ${targetUserId}`, {
-            candidate: event.candidate.candidate,
-            sdpMid: event.candidate.sdpMid,
-            sdpMLineIndex: event.candidate.sdpMLineIndex,
-          });
           sendSignalRef.current?.(targetUserId, {
             type: 'ice-candidate',
             fromUserId: myId,
@@ -659,17 +618,9 @@ export function useMeetingWebRTC(
       };
 
       pc.onicecandidateerror = (event) => {
-        log(`[WebRTC] ICE candidate error for ${targetUserId}`, {
-          address: event.address,
-          port: event.port,
-          url: event.url,
-          errorCode: event.errorCode,
-          errorText: event.errorText,
-        });
       };
 
       pc.ontrack = (event) => {
-        log(`[WebRTC] ontrack from ${targetUserId}: ${event.track.kind}`);
         setRemoteStreams((prev) => {
           const existingParticipant = prev.find(
             (ps) => ps.userId === targetUserId
@@ -709,26 +660,7 @@ export function useMeetingWebRTC(
         });
       };
 
-      pc.oniceconnectionstatechange = () => {
-        log(
-          `[WebRTC] iceConnectionState for ${targetUserId}: ${pc.iceConnectionState}`
-        );
-      };
-
-      pc.onicegatheringstatechange = () => {
-        log(
-          `[WebRTC] iceGatheringState for ${targetUserId}: ${pc.iceGatheringState}`
-        );
-      };
-
-      pc.onsignalingstatechange = () => {
-        log(`[WebRTC] signalingState for ${targetUserId}: ${pc.signalingState}`);
-      };
-
       pc.onconnectionstatechange = () => {
-        log(
-          `[WebRTC] connectionState for ${targetUserId}: ${pc.connectionState}`
-        );
         if (
           pc.connectionState === 'disconnected' ||
           pc.connectionState === 'failed' ||
@@ -751,23 +683,17 @@ export function useMeetingWebRTC(
           // onSignal ?먯꽌 "polite" ?꾨왂?쇰줈 glare(?숈떆 ?ㅽ띁) 異⑸룎???닿껐?⑸땲??
           // ?먮뒗, ?덉쟾?섍쾶 ID媛 ?묒? 履쎈쭔 ?좉퇋 ?몃옓??????ㅽ띁瑜?蹂대궡?꾨줉 ?좎??????덉?留?
           // ??寃쎌슦 Impolite ?ъ슜?먭? ?몃옓??異붽??덉쓣 ???곷?媛 ??諛⑸쾿???놁쑝誘濡??ㅽ띁瑜?蹂대깄?덈떎.
-          log(`[WebRTC] Negotiation needed for ${targetUserId}, sending offer`);
           const offer = await pc.createOffer();
-          log(`[WebRTC] offer created for ${targetUserId}`);
           await pc.setLocalDescription(offer);
-          log(`[WebRTC] local offer applied for ${targetUserId}`);
           if (!sendSignalRef.current) {
-            log(`[WebRTC] sendSignalRef missing for ${targetUserId}`);
             return;
           }
-          log(`[WebRTC] invoking sendSignal for ${targetUserId}`);
           sendSignalRef.current(targetUserId, {
             type: 'offer',
             fromUserId: myId,
             toUserId: targetUserId,
             sdp: offer.sdp,
           });
-          log(`[WebRTC] offer dispatched for ${targetUserId}`);
         } catch (err) {
           console.error('[WebRTC] Negotiation offer error:', err);
         }
@@ -792,12 +718,6 @@ export function useMeetingWebRTC(
         sdpMLineIndex,
       } = signal;
       if (!localIdsRef.current.includes(String(toUserId))) {
-        log('[WebRTC] signal arrived on personal queue with unmatched toUserId; processing anyway', {
-          type,
-          fromUserId,
-          toUserId,
-          localIds: localIdsRef.current,
-        });
       }
 
       if (type === 'recording-started') {
@@ -826,39 +746,29 @@ export function useMeetingWebRTC(
           const pc = getOrCreatePC(fromUserId);
           const offerCollision = pc.signalingState !== 'stable';
           if (offerCollision) {
-            log(
-              `[WebRTC] Glare detected, rolling back to accept offer from ${fromUserId}`
-            );
             await pc.setLocalDescription({ type: 'rollback' } as any);
           }
 
-          log(`[WebRTC] applying remote offer from ${fromUserId}`);
           await pc.setRemoteDescription(
             new RTCSessionDescription({ type: 'offer', sdp })
           );
-          log(`[WebRTC] remote offer applied from ${fromUserId}`);
           const pendingCandidates =
             pendingIceCandidates.current.get(fromUserId) ?? [];
           for (const queuedCandidate of pendingCandidates) {
             await pc.addIceCandidate(new RTCIceCandidate(queuedCandidate));
           }
           pendingIceCandidates.current.delete(fromUserId);
-          log(`[WebRTC] creating local answer for ${fromUserId}`);
           const answer = await pc.createAnswer();
           await pc.setLocalDescription(answer);
-          log(`[WebRTC] local answer created for ${fromUserId}`);
           if (!sendSignalRef.current) {
-            log(`[WebRTC] sendSignalRef missing for answer to ${fromUserId}`);
             return;
           }
-          log(`[WebRTC] invoking sendSignal for answer to ${fromUserId}`);
           sendSignalRef.current(fromUserId, {
             type: 'answer',
             fromUserId: myId,
             toUserId: fromUserId,
             sdp: answer.sdp,
           });
-          log(`[WebRTC] answer dispatched to ${fromUserId}`);
         } catch (error) {
           console.error(`[WebRTC] offer handling failed for ${fromUserId}`, error, {
             myId,
@@ -873,7 +783,6 @@ export function useMeetingWebRTC(
           await pc.setRemoteDescription(
             new RTCSessionDescription({ type: 'answer', sdp })
           );
-          log(`[WebRTC] remote answer applied from ${fromUserId}`);
           const pendingCandidates =
             pendingIceCandidates.current.get(fromUserId) ?? [];
           for (const queuedCandidate of pendingCandidates) {
@@ -882,22 +791,15 @@ export function useMeetingWebRTC(
           pendingIceCandidates.current.delete(fromUserId);
         }
       } else if (type === 'ice-candidate') {
-        log(`[WebRTC] remote ICE candidate received from ${fromUserId}`, {
-          candidate,
-          sdpMid,
-          sdpMLineIndex,
-        });
         const pc = pcs.current.get(fromUserId);
         if (pc?.remoteDescription) {
           await pc.addIceCandidate(
             new RTCIceCandidate({ candidate, sdpMid, sdpMLineIndex })
           );
-          log(`[WebRTC] remote ICE candidate applied from ${fromUserId}`);
         } else {
           const queued = pendingIceCandidates.current.get(fromUserId) ?? [];
           queued.push({ candidate, sdpMid, sdpMLineIndex });
           pendingIceCandidates.current.set(fromUserId, queued);
-          log(`[WebRTC] remote ICE candidate queued for ${fromUserId}`);
         }
       }
     },
@@ -909,54 +811,36 @@ export function useMeetingWebRTC(
 
   const createAndSendOffer = useCallback(
     async (targetUserId: string) => {
-      log('[WebRTC] createAndSendOffer called', {
-        targetUserId,
-        myId,
-        localIds: localIdsRef.current,
-      });
 
       if (!myId) {
-        log(`[WebRTC] skipping explicit offer for ${targetUserId}; myId is empty`);
         return;
       }
       if (localIdsRef.current.includes(String(targetUserId))) {
-        log(
-          `[WebRTC] skipping explicit offer for ${targetUserId}; target is recognized as local`
-        );
         return;
       }
 
       const pc = getOrCreatePC(targetUserId);
       if (pc.signalingState !== 'stable') {
-        log(
-          `[WebRTC] skipping explicit offer for ${targetUserId}; signalingState=${pc.signalingState}`
-        );
         return;
       }
 
       try {
-        log(`[WebRTC] explicit offer start for ${targetUserId}`);
         const offer = await pc.createOffer();
-        log(`[WebRTC] explicit offer created for ${targetUserId}`);
         await pc.setLocalDescription(offer);
-        log(`[WebRTC] explicit local description set for ${targetUserId}`);
         if (!sendSignalRef.current) {
-          log(`[WebRTC] explicit sendSignalRef missing for ${targetUserId}`);
           return;
         }
-        log(`[WebRTC] explicit invoking sendSignal for ${targetUserId}`);
         sendSignalRef.current(targetUserId, {
           type: 'offer',
           fromUserId: myId,
           toUserId: targetUserId,
           sdp: offer.sdp,
         });
-        log(`[WebRTC] explicit offer dispatched for ${targetUserId}`);
-      } catch (error) {
-        log(`[WebRTC] explicit offer failed for ${targetUserId}`, error);
+      } catch {
+        // noop
       }
     },
-    [getOrCreatePC, log, myId]
+    [getOrCreatePC, myId]
   );
 
   const onVoiceActivity = useCallback(
@@ -1022,13 +906,9 @@ export function useMeetingWebRTC(
   const connectToUser = useCallback(
     async (targetUserId: string) => {
       if (!myId) {
-        log(`[WebRTC] skipping connectToUser for ${targetUserId}; myId is empty`);
         return;
       }
       if (localIdsRef.current.includes(String(targetUserId))) {
-        log(
-          `[WebRTC] skipping connectToUser for ${targetUserId}; target is recognized as local`
-        );
         return;
       }
       getOrCreatePC(targetUserId);
@@ -1090,16 +970,9 @@ export function useMeetingWebRTC(
 
   const onMeetingEvent = useCallback(
     async (event: MeetingEvent) => {
-      log('[WebRTC] onMeetingEvent entered', {
-        myId,
-        isActive,
-        event,
-      });
       if (!myId) {
-        log('[WebRTC] ignoring meeting event until myId is ready', event);
         return;
       }
-      log('meeting event received', event);
       switch (event.type) {
         case 'participant-joined':
           // 1. ?닿? ?묒냽?덉쓣 ?? ?대? ?덈뒗 李멸??먮뱾(existingParticipantIds)?먭쾶 ?곌껐 ?쒕룄
@@ -1108,7 +981,6 @@ export function useMeetingWebRTC(
             localIdsRef.current.includes(String(event.joinedUserId)) &&
             event.existingParticipantIds
           ) {
-            log(`I joined. Connecting to existing participants: ${event.existingParticipantIds}`);
             const remoteParticipantIds = event.existingParticipantIds.filter(
               (pId) => !localIdsRef.current.includes(String(pId))
             );
@@ -1116,10 +988,8 @@ export function useMeetingWebRTC(
               if (!localIdsRef.current.includes(String(pId))) {
                 // Polite 諛쒖넚 ?꾨왂: ID媛 ???묒? 履쎌씠 癒쇱? Offer瑜?蹂대깂
                 if (shouldInitiateOffer(myId, pId)) {
-                  log(`polite initiation (existing): sending offer to ${pId}`);
                   void createAndSendOffer(pId);
                 } else {
-                  log(`polite initiation (existing): waiting for offer from ${pId}`);
                 }
               }
             });
@@ -1132,10 +1002,8 @@ export function useMeetingWebRTC(
           ) {
             void broadcastLocalMediaState([event.joinedUserId]);
             if (shouldInitiateOffer(myId, event.joinedUserId)) {
-              log(`polite initiation (newcomer): sending offer to ${event.joinedUserId}`);
               void createAndSendOffer(event.joinedUserId);
             } else {
-              log(`polite initiation (newcomer): waiting for offer from ${event.joinedUserId}`);
             }
           }
           break;
@@ -1145,38 +1013,23 @@ export function useMeetingWebRTC(
           }
           break;
         case 'meeting-ended':
-          log('meeting-ended event received, cleaning up');
           teardownMeetingMedia();
           break;
       }
     },
-    [broadcastLocalMediaState, createAndSendOffer, myId, removeParticipant, connectToUser, log, shouldInitiateOffer, teardownMeetingMedia]
+    [broadcastLocalMediaState, createAndSendOffer, myId, removeParticipant, connectToUser, shouldInitiateOffer, teardownMeetingMedia]
   );
 
   useMeetingEvents(teamId, onMeetingEvent);
 
   useEffect(() => {
-    log('[WebRTC] syncParticipants effect entered', {
-      teamId,
-      meetingId,
-      isActive,
-      myId,
-    });
     if (!teamId || !meetingId || !isActive || !myId) {
-      log('[WebRTC] syncParticipants effect blocked', {
-        teamId,
-        meetingId,
-        isActive,
-        myId,
-      });
       return;
     }
 
     const syncParticipants = async () => {
       try {
-        log('[WebRTC] syncParticipants run start');
         const participantIds = await getMeetingParticipantIds();
-        log('[WebRTC] syncParticipants resolved ids', participantIds);
 
         participantIds.forEach((participantId: string) => {
           const existingPc = pcs.current.get(participantId);
@@ -1196,8 +1049,8 @@ export function useMeetingWebRTC(
 
           void connectToUser(participantId);
         });
-      } catch (error) {
-        log('[WARN] participant sync failed', error);
+      } catch {
+        // noop
       }
     };
 
@@ -1212,7 +1065,6 @@ export function useMeetingWebRTC(
     createAndSendOffer,
     getMeetingParticipantIds,
     isActive,
-    log,
     meetingId,
     myId,
     shouldInitiateOffer,
@@ -1220,23 +1072,18 @@ export function useMeetingWebRTC(
   ]);
 
   const startRecording = useCallback((options: StartRecordingOptions = {}) => {
-    log('startRecording entry point');
     if (typeof MediaRecorder === 'undefined') {
-      log('[ERROR] MediaRecorder is NOT supported in this browser');
       return;
     }
     if (!localStreamRef.current) {
-      log('[WARN] startRecording aborted: localStreamRef.current is null');
       return;
     }
 
     const sessionId = getCurrentRecordingSessionId();
     if (!sessionId) {
-      log('[WARN] startRecording aborted: recording session id is unavailable');
       return;
     }
 
-    log('MediaRecorder initializing...');
     recordedChunksRef.current = [];
     recordingPcmLeftChunksRef.current = [];
     recordingPcmRightChunksRef.current = [];
@@ -1278,19 +1125,13 @@ export function useMeetingWebRTC(
               })
             )
             .then(() => undefined)
-            .catch((error) => {
-              log('[WARN] failed to persist recording chunk', error);
-            });
+            .catch(() => undefined);
 
           trackPersistedChunkWrite(writePromise);
         }
       };
 
       recorder.onstop = () => {
-        log(
-          'MediaRecorder stopped internally. Chunks collected:',
-          recordedChunksRef.current.length
-        );
       };
 
       recorder.start(1000);
@@ -1303,8 +1144,6 @@ export function useMeetingWebRTC(
         startedAt,
         baseElapsedMs
       );
-      log('MediaRecorder SUCCESS. state:', recorder.state);
-      log('MIME Type selected:', recorder.mimeType || mimeType);
     };
 
     recordingStartedAtRef.current = startedAt;
@@ -1338,8 +1177,7 @@ export function useMeetingWebRTC(
           mimeType: selectedMimeType || undefined,
         });
         beginRecorder(recorder, recorder.mimeType || selectedMimeType);
-      } catch (error) {
-        log('[ERROR] MediaRecorder instantiation/start failed', error);
+      } catch {
 
         try {
           const fallbackStream =
@@ -1353,11 +1191,7 @@ export function useMeetingWebRTC(
             fallbackRecorder,
             fallbackRecorder.mimeType || selectedMimeType
           );
-        } catch (fallbackError) {
-          log(
-            '[CRITICAL ERROR] Fallback MediaRecorder instantiation/start failed',
-            fallbackError
-          );
+        } catch {
           recordingStartedAtRef.current = null;
           await persistRecordingSession({
             active: false,
@@ -1369,8 +1203,7 @@ export function useMeetingWebRTC(
           cleanupRecordingMix();
         }
       }
-    })().catch((error) => {
-      log('[ERROR] recording startup failed', error);
+    })().catch(() => {
       recordingStartedAtRef.current = null;
       void persistRecordingSession({
         active: false,
@@ -1386,7 +1219,6 @@ export function useMeetingWebRTC(
     cleanupRecordingMix,
     ensureMixedRecordingStream,
     getCurrentRecordingSessionId,
-    log,
     persistRecordingSession,
     setIsRecording,
     setRecordingElapsedMs,
@@ -1395,7 +1227,6 @@ export function useMeetingWebRTC(
   ]);
 
   const stopRecording = useCallback(() => {
-    log('stopRecording triggered manually');
     const startedAt = recordingStartedAtRef.current;
     const accumulatedElapsedMs = recordingElapsedMsRef.current;
     const nextElapsedMs =
@@ -1423,7 +1254,6 @@ export function useMeetingWebRTC(
     void broadcastRecordingState('recording-stopped', undefined, nextElapsedMs);
   }, [
     broadcastRecordingState,
-    log,
     persistRecordingSession,
     setIsRecording,
     setRecordingElapsedMs,
@@ -1478,9 +1308,7 @@ export function useMeetingWebRTC(
           initialElapsedMs: elapsedMs,
         });
       })
-      .catch((error) => {
-        log('[WARN] failed to restore persisted recording session', error);
-      });
+      .catch(() => undefined);
 
     return () => {
       cancelled = true;
@@ -1489,7 +1317,6 @@ export function useMeetingWebRTC(
     isActive,
     isRecording,
     localStream,
-    log,
     meetingId,
     myId,
     setRecordingElapsedMs,
@@ -1498,29 +1325,11 @@ export function useMeetingWebRTC(
   ]);
 
   const initLocalMedia = useCallback(async () => {
-    log('initLocalMedia starting...');
     try {
       const previousStream = localStreamRef.current;
       const stream = await navigator.mediaDevices.getUserMedia({
         video: true,
         audio: true,
-      });
-      log('getUserMedia SUCCESS. stream tracks:', stream.getTracks().length);
-      log('[WebRTC] local stream track details', {
-        audioTracks: stream.getAudioTracks().map((track) => ({
-          id: track.id,
-          enabled: track.enabled,
-          readyState: track.readyState,
-          muted: track.muted,
-          label: track.label,
-        })),
-        videoTracks: stream.getVideoTracks().map((track) => ({
-          id: track.id,
-          enabled: track.enabled,
-          readyState: track.readyState,
-          muted: track.muted,
-          label: track.label,
-        })),
       });
       setLocalStream(stream);
       localStreamRef.current = stream;
@@ -1532,10 +1341,8 @@ export function useMeetingWebRTC(
           // 以묐났 異붽? 諛⑹?
           const sender = senders.find((s) => s.track?.kind === track.kind);
           if (sender) {
-            log(`Replacing ${track.kind} track on existing PC: ${targetId}`);
             void sender.replaceTrack(track);
           } else {
-            log(`Adding ${track.kind} track to existing PC: ${targetId}`);
             pc.addTrack(track, stream);
           }
         });
@@ -1547,11 +1354,10 @@ export function useMeetingWebRTC(
       previousStream?.getTracks().forEach((track) => track.stop());
       void broadcastLocalMediaState();
       return stream;
-    } catch (error) {
-      log('[ERROR] initLocalMedia failed', error);
+    } catch {
       return null;
     }
-  }, [broadcastLocalMediaState, log]);
+  }, [broadcastLocalMediaState]);
 
   // VAD Loop logic
   useEffect(() => {
@@ -1584,11 +1390,6 @@ export function useMeetingWebRTC(
 
         const checkVolume = () => {
           if (!analyserRef.current) return;
-          const activeMeetingId = meetingIdRef.current || meetingId;
-          const shouldLogVoice =
-            Boolean(activeMeetingId) &&
-            (mediaRecorderRef.current?.state === 'recording' ||
-              Boolean(recordingStartedAtRef.current));
 
           // 留덉씠???뚯냼嫄??곹깭 ?뺤씤
           const isMuted = localStream.getAudioTracks().every(t => !t.enabled);
@@ -1597,13 +1398,6 @@ export function useMeetingWebRTC(
               localSpeakingRef.current = false;
               setIsSpeaking(false);
               sendVoiceActivity(false);
-              if (shouldLogVoice) {
-                logRecordingVoice('silent', {
-                  meetingId: activeMeetingId,
-                  userId: myId,
-                  reason: 'muted',
-                });
-              }
             }
             if (speakingTimeoutRef.current) {
               clearTimeout(speakingTimeoutRef.current);
@@ -1630,14 +1424,6 @@ export function useMeetingWebRTC(
               localSpeakingRef.current = true;
               setIsSpeaking(true);
               sendVoiceActivity(true);
-              if (shouldLogVoice) {
-                logRecordingVoice('speaking', {
-                  meetingId: activeMeetingId,
-                  userId: myId,
-                  maxVolume,
-                  rms,
-                });
-              }
             }
             if (speakingTimeoutRef.current)
               clearTimeout(speakingTimeoutRef.current);
@@ -1647,13 +1433,6 @@ export function useMeetingWebRTC(
                   localSpeakingRef.current = false;
                   setIsSpeaking(false);
                   sendVoiceActivity(false);
-                  if (shouldLogVoice) {
-                    logRecordingVoice('silent', {
-                      meetingId: activeMeetingId,
-                      userId: myId,
-                      reason: 'timeout',
-                    });
-                  }
                 }
                 speakingTimeoutRef.current = null;
               },
@@ -1663,13 +1442,6 @@ export function useMeetingWebRTC(
             localSpeakingRef.current = false;
             setIsSpeaking(false);
             sendVoiceActivity(false);
-            if (shouldLogVoice) {
-              logRecordingVoice('silent', {
-                meetingId: activeMeetingId,
-                userId: myId,
-                reason: 'below-threshold',
-              });
-            }
           }
           animationFrameIdRef.current = requestAnimationFrame(checkVolume);
         };
@@ -1695,20 +1467,6 @@ export function useMeetingWebRTC(
     };
   }, [localStream, sendVoiceActivity]);
 
-  /*
-  useEffect(() => {
-    if (
-      isActive &&
-      meetingId &&
-      localStream &&
-      (!mediaRecorderRef.current ||
-        mediaRecorderRef.current.state === 'inactive')
-    ) {
-      startRecording();
-    }
-  }, [localStream, startRecording, log, meetingId, isActive]);
-  */
-
   // Main Event Handler for Upload
   useEffect(() => {
     const handleStopAndUpload = async () => {
@@ -1727,17 +1485,6 @@ export function useMeetingWebRTC(
         return;
       }
 
-      log('[EVENT] meezy:stop-and-upload start');
-      logRecordingUpload('request', {
-        teamId: tId,
-        meetingId: mId,
-        stage: 'stop-and-upload-start',
-        title: meetingTitle,
-        recorderState: mediaRecorderRef.current?.state ?? 'missing',
-        recordedChunkCount: recordedChunksRef.current.length,
-        pcmLeftChunkCount: recordingPcmLeftChunksRef.current.length,
-        pcmRightChunkCount: recordingPcmRightChunksRef.current.length,
-      });
       stopAndUploadInProgressRef.current = true;
       setIsUploading(true);
       const recorder = mediaRecorderRef.current;
@@ -1746,14 +1493,6 @@ export function useMeetingWebRTC(
         recordingSessionIdRef.current ||
         (tId && mId ? getRecordingSessionId(tId, mId) : '');
       let uploadedRecordingSessionId = '';
-
-      log('[DEBUG] current context extracted', {
-        teamId: tId,
-        meetingId: mId,
-        hasRecorder: !!recorder,
-        recorderState: recorder?.state,
-        hasStream: !!stream,
-      });
 
       try {
         if (
@@ -1781,13 +1520,8 @@ export function useMeetingWebRTC(
         let recordingFileName = getRecordingFileName(resolvedMimeType);
 
         if (recorder && recorder.state !== 'inactive') {
-          log('[DEBUG] calling recorder.stop()');
-
           blob = await new Promise<Blob>((resolve) => {
             const timeout = setTimeout(() => {
-              log(
-                '[WARN] stop recording timeout (3s) - resolving with available chunks'
-              );
               resolve(
                 new Blob(recordedChunksRef.current, { type: resolvedMimeType })
               );
@@ -1795,9 +1529,6 @@ export function useMeetingWebRTC(
 
             recorder.onstop = () => {
               clearTimeout(timeout);
-              log('[DEBUG] MediaRecorder.onstop internally fired', {
-                chunkCount: recordedChunksRef.current.length,
-              });
               resolve(
                 new Blob(recordedChunksRef.current, { type: resolvedMimeType })
               );
@@ -1805,23 +1536,8 @@ export function useMeetingWebRTC(
             recorder.stop();
           });
         } else if (recordedChunksRef.current.length > 0) {
-          log(
-            '[WARN] Recorder is NULL or INACTIVE, but we have chunks! Uploading anyway.',
-            {
-              exists: !!recorder,
-              state: recorder?.state,
-              chunkCount: recordedChunksRef.current.length,
-            }
-          );
           blob = new Blob(recordedChunksRef.current, { type: resolvedMimeType });
         } else {
-          log(
-            '[WARN] Recorder is NULL or INACTIVE and NO chunks available, skipping upload',
-            {
-              exists: !!recorder,
-              state: recorder?.state,
-            }
-          );
         }
 
         await waitForPersistedChunkWrites();
@@ -1865,20 +1581,6 @@ export function useMeetingWebRTC(
             const hasCapturedPcm =
               !shouldUsePersistedChunks && pcmLeftChunks.length > 0;
 
-            logRecordingUpload('request', {
-              teamId: tId,
-              meetingId: mId,
-              stage: 'prepare-upload',
-              recorderState: recorder?.state ?? 'missing',
-              recordedChunkCount: recordedChunksRef.current.length,
-              persistedChunkCount: persistedChunks.length,
-              usedPersistedChunks: shouldUsePersistedChunks,
-              pcmLeftChunkCount: pcmLeftChunks.length,
-              pcmRightChunkCount: pcmRightChunks.length,
-              blobSize: blob.size,
-              blobType: blob.type,
-            });
-
             const mp3Blob = hasCapturedPcm
               ? await encodePcmChunksToMp3({
                   leftChunks: pcmLeftChunks,
@@ -1888,15 +1590,6 @@ export function useMeetingWebRTC(
               : await convertRecordingBlobToMp3(blob);
             const recordingFileName = 'recording.mp3';
 
-            logRecordingUpload('request', {
-              teamId: tId,
-              meetingId: mId,
-              fileName: recordingFileName,
-              title: meetingTitle,
-              stage: 'before-upload-call',
-              size: mp3Blob.size,
-              type: mp3Blob.type,
-            });
             await uploadMeetingRecording(
               tId,
               mId,
@@ -1906,51 +1599,14 @@ export function useMeetingWebRTC(
             );
             lastUploadedMeetingIdRef.current = mId;
             uploadedRecordingSessionId = activeRecordingSessionId;
-          } else {
-            if (tId || mId) {
-              logRecordingUpload('skipped', {
-                tIdExists: !!tId,
-                mIdExists: !!mId,
-                teamId: tId,
-                meetingId: mId,
-                title: meetingTitle,
-                blobSize: blob.size,
-                fileName: recordingFileName,
-              });
-            }
-          }
-        } else {
-          if (tId || mId) {
-            logRecordingUpload('skipped', {
-              teamId: tId,
-              meetingId: mId,
-              title: meetingTitle,
-              recorderState: recorder?.state ?? 'missing',
-              recordedChunkCount: recordedChunksRef.current.length,
-              persistedChunkCount: persistedChunks.length,
-              pcmLeftChunkCount: recordingPcmLeftChunksRef.current.length,
-              pcmRightChunkCount: recordingPcmRightChunksRef.current.length,
-              reason: 'no-recording-blob',
-            });
           }
         }
-      } catch (err) {
-        logRecordingUpload('error', {
-          teamId: tId,
-          meetingId: mId,
-          stage: 'prepare-upload',
-          recorderState: recorder?.state ?? 'missing',
-          recordedChunkCount: recordedChunksRef.current.length,
-          pcmLeftChunkCount: recordingPcmLeftChunksRef.current.length,
-          pcmRightChunkCount: recordingPcmRightChunksRef.current.length,
-          error: err,
-        });
+      } catch {
+        // noop
       } finally {
         if (uploadedRecordingSessionId) {
           await clearPersistedRecordingSession(uploadedRecordingSessionId).catch(
-            (error) => {
-              log('[WARN] failed to clear persisted recording session', error);
-            }
+            () => undefined
           );
         } else if (activeRecordingSessionId) {
           const startedAt = recordingStartedAtRef.current;
@@ -1989,7 +1645,6 @@ export function useMeetingWebRTC(
 
       // Clean up tracks always at the end
       if (localStreamRef.current) {
-        log('[DEBUG] Final track cleanup');
         localStreamRef.current.getTracks().forEach((t) => t.stop());
         localStreamRef.current = null;
         setLocalStream(null);
@@ -2000,13 +1655,9 @@ export function useMeetingWebRTC(
 
     window.addEventListener('meezy:stop-and-upload', handleStopAndUpload);
     return () => {
-      console.log(
-        `[${new Date().toLocaleTimeString()}] useMeetingWebRTC: event listener cleanup`
-      );
       window.removeEventListener('meezy:stop-and-upload', handleStopAndUpload);
     };
   }, [
-    log,
     meetingTitle,
     persistRecordingSession,
     setMeetingTitle,

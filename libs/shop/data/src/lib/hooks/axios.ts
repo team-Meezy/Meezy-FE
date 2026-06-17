@@ -107,13 +107,6 @@ const getWebSocketEndpoint = () => {
 export const STOMP_SOCKET_URL = getWebSocketEndpoint();
 
 if (typeof window !== 'undefined') {
-  console.log(' [Meezy API Client Config]', {
-    BASE_URL,
-    WS_PROTOCOL,
-    WS_HOST,
-    STOMP_SOCKET_URL,
-  });
-
   if (
     window.location.protocol === 'http:' &&
     window.location.hostname.includes('meezy.kr')

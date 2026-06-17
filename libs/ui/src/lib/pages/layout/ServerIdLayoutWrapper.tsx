@@ -221,9 +221,6 @@ export function ServerIdLayoutWrapper({
         eventType === 'MEETING_ENDED' ||
         eventCategory === 'MEETING'
       ) {
-        console.log(
-          'ServerIdLayoutWrapper: [EVENT] Meeting event received, triggering sync'
-        );
         window.dispatchEvent(new CustomEvent('meezy:sync-meeting'));
       } else {
         // Fallback for any other team events

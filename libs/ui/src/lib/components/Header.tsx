@@ -4,7 +4,6 @@ import {
   getActiveMeetings,
   joinMeeting,
   leaveMeeting,
-  logRecordingUpload,
   MeetingEvent,
   startMeeting,
   useLoadingStore,
@@ -372,8 +371,7 @@ export function Header() {
         setTeamId('');
         setIceServers([]);
       }
-    } catch (error) {
-      console.log('Header: getActiveMeeting error', error);
+    } catch {
       setHasActiveMeeting(false);
     } finally {
       setHasCheckedActiveMeeting(true);
@@ -501,12 +499,6 @@ export function Header() {
         setIsStartingMeeting(true);
         const response = await startMeeting(currentTeamId, title);
         const resolvedTitle = String(response?.title ?? title).trim();
-        logRecordingUpload('request', {
-          stage: 'start-meeting-title-resolved',
-          inputTitle: title,
-          responseTitle: response?.title,
-          resolvedTitle,
-        });
 
         setMeeting(true);
         setHasActiveMeeting(true);
@@ -580,8 +572,7 @@ export function Header() {
           router.push(`/main/${currentTeamId}`);
         }
         return;
-      } catch (error) {
-        console.log('leaveMeeting error', error);
+      } catch {
         setLoading(false);
         setLoadingState('');
         alert(MESSAGE_LEAVE_FAILED);
@@ -606,11 +597,6 @@ export function Header() {
       setShouldAutoStartRecording(false);
       setStartTime(null);
       setTeamId(currentTeamId);
-      console.log('[Meeting Title] joinMeeting resolved title', {
-        responseTitle: response?.title,
-        fallbackTitle: meetingTitleRef.current,
-        resolvedTitle,
-      });
       setMeetingTitle(resolvedTitle);
       setIceServers(Array.isArray(response?.iceServers) ? response.iceServers : []);
 

@@ -16,10 +16,8 @@ export const getTotalEngagement = async (
     if (response.status === 404) {
       return { status: 404, data: null };
     }
-    console.log('getTotalEngagement response', response);
     return response.data;
   } catch (error) {
-    console.log('getTotalEngagement error', error);
     throw error;
   }
 };

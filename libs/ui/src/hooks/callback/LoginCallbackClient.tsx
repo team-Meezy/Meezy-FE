@@ -31,12 +31,6 @@ export function LoginCallbackClient() {
         const isProfileCompleted = searchParams.get('isProfileCompleted');
 
         if (accessToken && refreshToken) {
-          console.log('OAuth Login Success (Callback Client):', {
-            accessToken,
-            refreshToken,
-            isProfileCompleted,
-          });
-
           localStorage.setItem('accessToken', accessToken);
           localStorage.setItem('refreshToken', refreshToken);
 

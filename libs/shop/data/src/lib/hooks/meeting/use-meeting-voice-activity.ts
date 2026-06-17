@@ -1,6 +1,5 @@
 import { useEffect, useRef } from 'react';
 import { BASE_URL } from '../axios';
-import { logMeetingParticipation } from '../../recording-console';
 import {
   isSharedMeetingStompConnected,
   publishSharedMeetingMessage,
@@ -54,11 +53,6 @@ export function useMeetingVoiceActivity(
 
       if (isSharedMeetingStompConnected()) {
         if (isSpeaking) {
-          logMeetingParticipation('voice', 'send', {
-            meetingId,
-            destination: `/app/meetings/${meetingId}/participation/voice`,
-            connected: true,
-          });
           publishSharedMeetingMessage({
             destination: `/app/meetings/${meetingId}/participation/voice`,
           });
@@ -75,22 +69,9 @@ export function useMeetingVoiceActivity(
 
       if (isSpeaking) {
         pendingVoiceCountRef.current += 1;
-        logMeetingParticipation('voice', 'queued', {
-          meetingId,
-          destination: `/app/meetings/${meetingId}/participation/voice`,
-          connected: false,
-          pendingVoiceCount: pendingVoiceCountRef.current,
-        });
       }
 
       while (pendingVoiceCountRef.current > 0) {
-        logMeetingParticipation('voice', 'send', {
-          meetingId,
-          destination: `/app/meetings/${meetingId}/participation/voice`,
-          connected: false,
-          flushedFromQueue: true,
-          pendingVoiceCount: pendingVoiceCountRef.current,
-        });
         publishSharedMeetingMessage({
           destination: `/app/meetings/${meetingId}/participation/voice`,
         });

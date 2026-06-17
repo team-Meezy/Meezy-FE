@@ -16,10 +16,8 @@ export const getMeetingFeedback = async (
     if (response.status === 404) {
       return { status: 404, data: null };
     }
-    console.log('getMeetingFeedback response', response);
     return response.data;
   } catch (error) {
-    console.log('getMeetingFeedback error', error);
     throw error;
   }
 };

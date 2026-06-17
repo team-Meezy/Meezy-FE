@@ -263,8 +263,6 @@ export const MeetingRoomPage = () => {
 
   const handleMeetingEvent = useCallback(
     (event: MeetingEvent) => {
-      console.log('MeetingRoomPage: [EVENT]', event);
-
       if (event.type === 'participant-joined') {
         const joinedId = event.joinedUserId;
 
@@ -456,35 +454,6 @@ export const MeetingRoomPage = () => {
       )
     );
   });
-
-  useEffect(() => {
-    console.log(
-      '[MeetingRoomPage] participant render snapshot',
-      allParticipants.map((participant) => ({
-        id: participant.id,
-        name: participant.name,
-        isLocal: participant.isLocal,
-        hasStream: Boolean(participant.stream),
-        audioTracks: (participant.stream as MediaStream | undefined)
-          ?.getAudioTracks()
-          .map((track: MediaStreamTrack) => ({
-            id: track.id,
-            enabled: track.enabled,
-            readyState: track.readyState,
-            muted: (track as any).muted,
-          })),
-        videoTracks: (participant.stream as MediaStream | undefined)
-          ?.getVideoTracks()
-          .map((track: MediaStreamTrack) => ({
-            id: track.id,
-            enabled: track.enabled,
-            readyState: track.readyState,
-            muted: (track as any).muted,
-          })),
-        isKamera: participant.isKamera,
-      }))
-    );
-  }, [allParticipants]);
 
   const total = allParticipants.length;
   const gridClassName = (() => {

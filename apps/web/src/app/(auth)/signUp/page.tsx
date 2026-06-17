@@ -17,12 +17,6 @@ function SignUpContent() {
     const isProfileCompleted = searchParams.get('isProfileCompleted');
 
     if (accessToken && refreshToken) {
-      console.log('OAuth Login Success (signUp page):', {
-        accessToken,
-        refreshToken,
-        isProfileCompleted,
-      });
-
       localStorage.setItem('accessToken', accessToken);
       localStorage.setItem('refreshToken', refreshToken);
  

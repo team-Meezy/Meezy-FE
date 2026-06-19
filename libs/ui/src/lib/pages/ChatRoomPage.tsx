@@ -1,24 +1,83 @@
 'use client';
 
-import { useState, useEffect } from 'react';
-import { colors, typography } from '../../design';
+import { useEffect, useMemo, useState } from 'react';
 import Image from 'next/image';
+import { useParams, useRouter } from 'next/navigation';
+import { colors, typography } from '../../design';
 import { Shrap } from '../../assets/index.client';
 import { useChatScroll } from '../../hooks';
 import {
-  getChatMessages,
-  useChatStore,
-  Message,
   deleteChatRoom,
-  getChatRooms,
+  getChatMessages,
   updateChatRoomName,
   useChatSocket,
+  useChatStore,
   useMeetingChatActivity,
   useMeetingStore,
 } from '@org/shop-data';
-import { useParams, useRouter } from 'next/navigation';
 import { DeleteRoomModal, RenameRoomModal } from '../modals';
 import { useProfile, useServerState } from '../../context';
+
+type IdValue = string | number | null | undefined;
+
+type ProfileLike = {
+  id?: IdValue;
+  userId?: IdValue;
+  user_id?: IdValue;
+  accountId?: IdValue;
+  name?: string;
+  userName?: string;
+  nickName?: string;
+  profileImage?: string;
+  profileImageUrl?: string;
+};
+
+type TeamMemberLike = {
+  teamMemberId?: IdValue;
+  userId?: IdValue;
+  user_id?: IdValue;
+  name?: string;
+  role?: string;
+  profileImage?: string;
+  profileImageUrl?: string;
+  profile_image?: string;
+  user_name?: string;
+  user?: ProfileLike & {
+    image?: string;
+    profile_image?: string;
+  };
+};
+
+function normalizeText(value?: string | null) {
+  return String(value ?? '').trim();
+}
+
+function getProfileId(profile?: ProfileLike | null) {
+  return profile?.id || profile?.userId || profile?.user_id || profile?.accountId;
+}
+
+function getMemberUserId(member?: TeamMemberLike | null) {
+  return (
+    member?.userId ||
+    member?.user_id ||
+    member?.user?.id ||
+    member?.user?.userId ||
+    member?.teamMemberId
+  );
+}
+
+function resolveMemberImage(member?: TeamMemberLike | null) {
+  return (
+    member?.profileImage ||
+    member?.profileImageUrl ||
+    member?.user?.profileImage ||
+    member?.user?.profileImageUrl ||
+    member?.user?.image ||
+    member?.profile_image ||
+    member?.user?.profile_image ||
+    ''
+  );
+}
 
 export function ChatRoomPage() {
   const [input, setInput] = useState('');
@@ -30,52 +89,38 @@ export function ChatRoomPage() {
   const { profile } = useProfile();
   const { teamMembers, updateChatRooms, updateTeamMembers } =
     useServerState();
+  const members = teamMembers as TeamMemberLike[];
 
-  // URL에서 teamId 및 chatRoomId 가져오기
-  const currentTeamId = params.serverId as string;
-  const currentRoomId = params.chatRoomId as string;
+  const currentTeamId = String(params.serverId ?? '');
+  const currentRoomId = String(params.chatRoomId ?? '');
+  const { meetingId } = useMeetingStore();
+  const profileId = getProfileId(profile);
+  const myId = profileId ? String(profileId) : '';
 
-  // 채팅 웹소켓 연결
   const { sendMessage: emitChatMessage } = useChatSocket(
     currentTeamId,
     currentRoomId,
     { receiveMessages: false }
   );
+  const { sendChatActivity } = useMeetingChatActivity(meetingId, myId);
 
-  // 회의 참여 기록 웹소켓 (회의 중일 때만 작동하도록 함)
-  const { meetingId } = useMeetingStore();
-  const myId =
-    profile?.userId || profile?.id || profile?.user_id || profile?.accountId;
-  const { sendChatActivity } = useMeetingChatActivity(meetingId, myId || '');
+  const myMemberInfo = useMemo(() => {
+    return members.find((member) => {
+      const memberUserId = getMemberUserId(member);
 
-  // 현재 로그인한 유저가 리더인지 확인
-  const myMemberInfo = teamMembers?.find((m) => {
-    const profileId =
-      profile?.id ||
-      profile?.userId ||
-      profile?.user_id ||
-      (profile as any)?.accountId;
-    const memberUserId =
-      (m as any).userId ||
-      (m as any).user_id ||
-      (m as any).user?.id ||
-      (m as any).user?.userId ||
-      m.teamMemberId;
+      if (profileId && memberUserId && String(profileId) === String(memberUserId)) {
+        return true;
+      }
 
-    if (profileId && memberUserId && String(profileId) === String(memberUserId))
-      return true;
-    if (
-      m.name === profile?.name ||
-      m.name === profile?.userName ||
-      m.name === profile?.nickName
-    )
-      return true;
-    return false;
-  });
+      return (
+        member.name === profile?.name ||
+        member.name === profile?.userName ||
+        member.name === profile?.nickName
+      );
+    });
+  }, [members, profile, profileId]);
 
   const isLeader = myMemberInfo?.role === 'LEADER';
-
-  // 현재 방 이름 찾기
   const currentRoom = chatRooms.find(
     (room) => room.chatRoomId === currentRoomId
   );
@@ -87,24 +132,24 @@ export function ChatRoomPage() {
   useEffect(() => {
     if (!currentTeamId || !currentRoomId) return;
 
-    const apiChatMessages = async () => {
+    const loadChatMessages = async () => {
       try {
         const res = await getChatMessages(currentTeamId, currentRoomId);
         setMessages(res);
       } catch (error) {
-        console.error('❌ [ChatRoomPage] 채팅 메시지 로드 실패:', error);
+        console.error('[ChatRoomPage] 채팅 메시지 로드 실패:', error);
       }
     };
 
-    const apiTeamMembers = async () => {
+    const loadTeamMembers = async () => {
       try {
         await updateTeamMembers(currentTeamId);
       } catch (error) {
-        console.error('❌ [ChatRoomPage] 팀 멤버 로드 실패:', error);
+        console.error('[ChatRoomPage] 팀 멤버 로드 실패:', error);
       }
     };
 
-    const apiChatRooms = async () => {
+    const loadChatRooms = async () => {
       try {
         await updateChatRooms(currentTeamId);
       } catch (error) {
@@ -112,9 +157,9 @@ export function ChatRoomPage() {
       }
     };
 
-    apiChatMessages();
-    apiChatRooms();
-    apiTeamMembers();
+    void loadChatMessages();
+    void loadChatRooms();
+    void loadTeamMembers();
   }, [
     currentTeamId,
     currentRoomId,
@@ -123,43 +168,42 @@ export function ChatRoomPage() {
     updateTeamMembers,
   ]);
 
-  // 팀 멤버 데이터 변경 시 로그 출력
   const sendMessage = () => {
     const trimmedInput = input.trim();
 
-    if (trimmedInput && currentRoomId) {
-      const isSent = emitChatMessage(trimmedInput);
-
-      if (!isSent) return;
-
-      addMessage({
-        chatMessageId: `temp-${Date.now()}`,
-        chatRoomId: currentRoomId,
-        senderName:
-          profile?.name || profile?.userName || profile?.nickName || 'Me',
-        profileImage: profile?.profileImage || profile?.profileImageUrl,
-        senderProfileImageUrl:
-          profile?.profileImageUrl || profile?.profileImage,
-        content: trimmedInput,
-        createdAt: new Date().toISOString(),
-        isOptimistic: true,
-      });
-
-      if (meetingId) {
-        sendChatActivity();
-      }
-
-      setInput('');
+    if (!trimmedInput || !currentRoomId) {
+      return;
     }
+
+    const isSent = emitChatMessage(trimmedInput);
+    if (!isSent) return;
+
+    addMessage({
+      chatMessageId: `temp-${Date.now()}`,
+      chatRoomId: currentRoomId,
+      senderName:
+        profile?.name || profile?.userName || profile?.nickName || 'Me',
+      profileImage: profile?.profileImage || profile?.profileImageUrl,
+      senderProfileImageUrl:
+        profile?.profileImageUrl || profile?.profileImage,
+      content: trimmedInput,
+      createdAt: new Date().toISOString(),
+      isOptimistic: true,
+    });
+
+    if (meetingId) {
+      sendChatActivity();
+    }
+
+    setInput('');
   };
 
   const handleDeleteRoom = async () => {
     try {
       await deleteChatRoom(currentTeamId, currentRoomId);
-      // 삭제 후 중앙 집중화된 업데이트 함수 호출
       const freshRooms = await updateChatRooms(currentTeamId);
       setIsDeleteModalOpen(false);
-      // 삭제 후 첫 번째 방으로 이동하거나 메인으로 이동
+
       if (freshRooms && freshRooms.length > 0) {
         router.push(`/main/${currentTeamId}/${freshRooms[0].chatRoomId}`);
       } else {
@@ -174,7 +218,6 @@ export function ChatRoomPage() {
   const handleRenameRoom = async (newName: string) => {
     try {
       await updateChatRoomName(currentTeamId, currentRoomId, newName);
-      // 목록 갱신
       await updateChatRooms(currentTeamId);
       setIsRenameModalOpen(false);
     } catch (error) {
@@ -188,7 +231,6 @@ export function ChatRoomPage() {
       className="flex-[3] border-l border-white/5 flex flex-col h-full overflow-hidden"
       style={{ backgroundColor: colors.black[100] }}
     >
-      {/* 방 이름 */}
       <div
         className="w-full flex items-center justify-between px-4 py-5 shrink-0"
         style={{
@@ -221,7 +263,6 @@ export function ChatRoomPage() {
         )}
       </div>
 
-      {/* 채팅 영역 */}
       <div className="flex flex-col flex-1 overflow-hidden relative">
         <div
           ref={containerRef}
@@ -235,7 +276,6 @@ export function ChatRoomPage() {
               msg.senderName === profile?.userName ||
               msg.senderName === profile?.nickName;
 
-            // 로깅: 특정 조건에서만 출력 (너무 많으면 브라우저 느려짐)
             return (
               <div
                 key={msg.chatMessageId}
@@ -243,9 +283,7 @@ export function ChatRoomPage() {
                   isMyMessage ? 'flex-row-reverse' : 'flex-row'
                 }`}
               >
-                {/* 프로필 이미지: 메시지 직접 데이터 -> 내 프로필 -> 팀 멤버 리스트 매칭 순서 */}
                 {(() => {
-                  // 1. 메시지 객체 자체에 이미지가 있는 경우 최우선
                   const msgImg =
                     msg.profileImage ||
                     msg.senderProfileImageUrl ||
@@ -260,7 +298,6 @@ export function ChatRoomPage() {
                     );
                   }
 
-                  // 2. 내 메시지인 경우 내 프로필 정보 사용
                   if (isMyMessage) {
                     const myImg = profile?.profileImage || profile?.profileImageUrl;
                     if (myImg) {
@@ -274,35 +311,28 @@ export function ChatRoomPage() {
                     }
                   }
 
-                  // 3. 팀 멤버 리스트에서 찾아보기
-                  const member = teamMembers.find((m) => {
-                    const mName = (
-                      m.name ||
-                      (m as any).user?.name ||
-                      (m as any).user?.userName ||
-                      (m as any).user?.nickName ||
-                      (m as any).user_name ||
-                      ''
-                    ).trim();
-                    const sName = (msg.senderName || '').trim();
-                    const isMatched =
-                      mName === sName ||
-                      (mName && sName && (mName.includes(sName) || sName.includes(mName)));
+                  const member = members.find((candidate) => {
+                    const memberName = normalizeText(
+                      candidate.name ||
+                        candidate.user?.name ||
+                        candidate.user?.userName ||
+                        candidate.user?.nickName ||
+                        candidate.user_name
+                    );
+                    const senderName = normalizeText(msg.senderName);
 
-                    return isMatched;
+                    return (
+                      memberName === senderName ||
+                      Boolean(
+                        memberName &&
+                          senderName &&
+                          (memberName.includes(senderName) ||
+                            senderName.includes(memberName))
+                      )
+                    );
                   });
 
-                  // 멤버의 이미지 필드 탐색 (가장 많이 발견되는 필드 순서)
-                  const memberData = member as any;
-                  const memberImg =
-                    member?.profileImage ||
-                    member?.profileImageUrl ||
-                    memberData?.user?.profileImage ||
-                    memberData?.user?.profileImageUrl ||
-                    memberData?.user?.image ||
-                    memberData?.profile_image ||
-                    memberData?.user?.profile_image;
-
+                  const memberImg = resolveMemberImage(member);
                   if (memberImg) {
                     return (
                       <img
@@ -313,7 +343,6 @@ export function ChatRoomPage() {
                     );
                   }
 
-                  // 4. 모두 없으면 이름 첫 글자 표시
                   return (
                     <div className="w-10 h-10 rounded-full bg-[#D9D9D9] shrink-0 flex items-center justify-center text-xs text-gray-600 font-bold">
                       {msg.senderName?.[0]?.toUpperCase() || '?'}
@@ -375,7 +404,6 @@ export function ChatRoomPage() {
           })}
         </div>
 
-        {/* 새 메시지 알림 */}
         {showNewMessageNotice && (
           <div
             className="absolute bottom-20 left-1/2 -translate-x-1/2 px-4 py-2 rounded-full text-white cursor-pointer shadow-lg transition-transform hover:scale-105 active:scale-95"

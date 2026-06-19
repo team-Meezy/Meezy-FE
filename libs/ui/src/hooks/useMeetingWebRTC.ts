@@ -92,23 +92,6 @@ function getSupportedRecordingMimeType() {
   );
 }
 
-function getRecordingFileExtension(mimeType?: string) {
-  const normalizedMimeType = String(mimeType ?? '').toLowerCase();
-
-  if (normalizedMimeType.includes('webm')) return 'webm';
-  if (normalizedMimeType.includes('ogg')) return 'ogg';
-  if (normalizedMimeType.includes('wav')) return 'wav';
-  if (normalizedMimeType.includes('mpeg') || normalizedMimeType.includes('mp3')) {
-    return 'mp3';
-  }
-
-  return 'webm';
-}
-
-function getRecordingFileName(mimeType?: string) {
-  return `recording.${getRecordingFileExtension(mimeType)}`;
-}
-
 export function useMeetingWebRTC(
   teamId: string,
   myId: string,
@@ -136,6 +119,9 @@ export function useMeetingWebRTC(
   >({});
   const [isSpeaking, setIsSpeaking] = useState(false);
   const [remoteVoices, setRemoteVoices] = useState<Record<string, boolean>>({});
+  const [recordingUploadError, setRecordingUploadError] = useState<string | null>(
+    null
+  );
   const remoteVoiceTimers = useRef<Record<string, NodeJS.Timeout>>({});
   const pendingIceCandidates = useRef<
     Map<string, RTCIceCandidateInit[]>
@@ -617,9 +603,6 @@ export function useMeetingWebRTC(
         }
       };
 
-      pc.onicecandidateerror = (event) => {
-      };
-
       pc.ontrack = (event) => {
         setRemoteStreams((prev) => {
           const existingParticipant = prev.find(
@@ -627,8 +610,7 @@ export function useMeetingWebRTC(
           );
 
           if (existingParticipant) {
-            // ?뵦 以묒슂: MediaStream 媛앹껜??李몄“瑜??덈줈 ?앹꽦?댁빞 React媛 蹂寃쎌쓣 媛먯??섍퀬 
-            // Video ?붿냼??srcObject瑜?媛깆떊?섏뿬 ?ㅻ뵒??鍮꾨뵒?ㅺ? 紐⑤몢 ?뺤긽 異쒕젰?⑸땲??
+            // Create a new MediaStream reference so React updates video elements.
             const newStream = new MediaStream(existingParticipant.stream.getTracks());
             const incomingTracks = event.streams[0] 
               ? event.streams[0].getTracks() 
@@ -651,7 +633,7 @@ export function useMeetingWebRTC(
             );
           }
 
-          // 泥??몃옓??寃쎌슦?먮룄 ?덈줈??MediaStream?쇰줈 媛먯떥??愿由?
+          // Keep the first remote track in a managed MediaStream as well.
           const firstStream = event.streams[0] 
             ? new MediaStream(event.streams[0].getTracks()) 
             : new MediaStream([event.track]);
@@ -679,10 +661,7 @@ export function useMeetingWebRTC(
       pc.onnegotiationneeded = async () => {
         try {
           if (pc.signalingState !== 'stable') return;
-          // [PATCH] ?덉씠??而⑤뵒???닿껐???꾪빐 紐⑤뱺 李멸??먭? offer瑜?蹂대궪 ???덈룄濡??덉슜?섎릺,
-          // onSignal ?먯꽌 "polite" ?꾨왂?쇰줈 glare(?숈떆 ?ㅽ띁) 異⑸룎???닿껐?⑸땲??
-          // ?먮뒗, ?덉쟾?섍쾶 ID媛 ?묒? 履쎈쭔 ?좉퇋 ?몃옓??????ㅽ띁瑜?蹂대궡?꾨줉 ?좎??????덉?留?
-          // ??寃쎌슦 Impolite ?ъ슜?먭? ?몃옓??異붽??덉쓣 ???곷?媛 ??諛⑸쾿???놁쑝誘濡??ㅽ띁瑜?蹂대깄?덈떎.
+          // The signaling handler resolves glare with a polite peer strategy.
           const offer = await pc.createOffer();
           await pc.setLocalDescription(offer);
           if (!sendSignalRef.current) {
@@ -717,7 +696,8 @@ export function useMeetingWebRTC(
         sdpMid,
         sdpMLineIndex,
       } = signal;
-      if (!localIdsRef.current.includes(String(toUserId))) {
+      if (toUserId && !localIdsRef.current.includes(String(toUserId))) {
+        return;
       }
 
       if (type === 'recording-started') {
@@ -986,16 +966,14 @@ export function useMeetingWebRTC(
             );
             event.existingParticipantIds.forEach((pId) => {
               if (!localIdsRef.current.includes(String(pId))) {
-                // Polite 諛쒖넚 ?꾨왂: ID媛 ???묒? 履쎌씠 癒쇱? Offer瑜?蹂대깂
                 if (shouldInitiateOffer(myId, pId)) {
                   void createAndSendOffer(pId);
-                } else {
                 }
               }
             });
             void broadcastLocalMediaState(remoteParticipantIds);
           }
-          // 2. ?ㅻⅨ ?щ엺???묒냽?덉쓣 ?? ?대떦 李멸??먯뿉寃??곌껐 ?쒕룄
+          // A new participant joined; announce local state and initiate if needed.
           else if (
             event.joinedUserId &&
             !localIdsRef.current.includes(String(event.joinedUserId))
@@ -1003,7 +981,6 @@ export function useMeetingWebRTC(
             void broadcastLocalMediaState([event.joinedUserId]);
             if (shouldInitiateOffer(myId, event.joinedUserId)) {
               void createAndSendOffer(event.joinedUserId);
-            } else {
             }
           }
           break;
@@ -1072,6 +1049,8 @@ export function useMeetingWebRTC(
   ]);
 
   const startRecording = useCallback((options: StartRecordingOptions = {}) => {
+    setRecordingUploadError(null);
+
     if (typeof MediaRecorder === 'undefined') {
       return;
     }
@@ -1129,9 +1108,6 @@ export function useMeetingWebRTC(
 
           trackPersistedChunkWrite(writePromise);
         }
-      };
-
-      recorder.onstop = () => {
       };
 
       recorder.start(1000);
@@ -1334,11 +1310,10 @@ export function useMeetingWebRTC(
       setLocalStream(stream);
       localStreamRef.current = stream;
 
-      // ?뵦 ?덉씠??而⑤뵒???닿껐: ?대? ?앹꽦??PeerConnection???덈떎硫??몃옓 異붽?
-      pcs.current.forEach((pc, targetId) => {
+      // Reattach the latest local media tracks to existing peer connections.
+      pcs.current.forEach((pc) => {
         const senders = pc.getSenders();
         stream.getTracks().forEach((track) => {
-          // 以묐났 異붽? 諛⑹?
           const sender = senders.find((s) => s.track?.kind === track.kind);
           if (sender) {
             void sender.replaceTrack(track);
@@ -1347,8 +1322,7 @@ export function useMeetingWebRTC(
           }
         });
 
-        // Offer ?щ컻?≪씠 ?꾩슂??寃쎌슦 (?꾩슂 ??negotiationneeded ?대깽???쒖슜 媛??
-        // ?ш린?쒕뒗 媛꾨떒???ㅼ떆 offer瑜?蹂대궪 ?섎룄 ?덉쓬
+        // Renegotiation is handled by the existing signaling path when needed.
       });
 
       previousStream?.getTracks().forEach((track) => track.stop());
@@ -1372,7 +1346,7 @@ export function useMeetingWebRTC(
         }
         const ctx = audioContextRef.current;
         if (ctx && ctx.state === 'suspended') {
-          const resume = () => ctx.resume().catch(() => {});
+          const resume = () => ctx.resume().catch(() => undefined);
           window.addEventListener('click', resume, { once: true });
         }
         if (ctx && !analyserRef.current) {
@@ -1391,7 +1365,7 @@ export function useMeetingWebRTC(
         const checkVolume = () => {
           if (!analyserRef.current) return;
 
-          // 留덉씠???뚯냼嫄??곹깭 ?뺤씤
+          // Treat disabled local audio tracks as muted for voice activity.
           const isMuted = localStream.getAudioTracks().every(t => !t.enabled);
           if (isMuted) {
             if (localSpeakingRef.current) {
@@ -1486,9 +1460,9 @@ export function useMeetingWebRTC(
       }
 
       stopAndUploadInProgressRef.current = true;
+      setRecordingUploadError(null);
       setIsUploading(true);
       const recorder = mediaRecorderRef.current;
-      const stream = localStreamRef.current;
       const activeRecordingSessionId =
         recordingSessionIdRef.current ||
         (tId && mId ? getRecordingSessionId(tId, mId) : '');
@@ -1517,7 +1491,6 @@ export function useMeetingWebRTC(
           recordedChunksRef.current[0]?.type ||
           getSupportedRecordingMimeType() ||
           'audio/webm';
-        let recordingFileName = getRecordingFileName(resolvedMimeType);
 
         if (recorder && recorder.state !== 'inactive') {
           blob = await new Promise<Blob>((resolve) => {
@@ -1537,7 +1510,6 @@ export function useMeetingWebRTC(
           });
         } else if (recordedChunksRef.current.length > 0) {
           blob = new Blob(recordedChunksRef.current, { type: resolvedMimeType });
-        } else {
         }
 
         await waitForPersistedChunkWrites();
@@ -1552,7 +1524,6 @@ export function useMeetingWebRTC(
 
           if (persistedMimeType) {
             resolvedMimeType = persistedMimeType;
-            recordingFileName = getRecordingFileName(resolvedMimeType);
           }
 
           const persistedBlobParts = persistedChunks
@@ -1601,8 +1572,11 @@ export function useMeetingWebRTC(
             uploadedRecordingSessionId = activeRecordingSessionId;
           }
         }
-      } catch {
-        // noop
+      } catch (error) {
+        console.error('Meeting recording upload failed:', error);
+        setRecordingUploadError(
+          '녹음 업로드에 실패했습니다. 다시 시도해주세요.'
+        );
       } finally {
         if (uploadedRecordingSessionId) {
           await clearPersistedRecordingSession(uploadedRecordingSessionId).catch(
@@ -1665,6 +1639,14 @@ export function useMeetingWebRTC(
     waitForPersistedChunkWrites,
   ]);
 
+  const retryRecordingUpload = useCallback(() => {
+    if (typeof window === 'undefined') {
+      return;
+    }
+
+    window.dispatchEvent(new CustomEvent('meezy:stop-and-upload'));
+  }, []);
+
   useEffect(() => {
     if (myId && meetingId && teamId && isActive) {
       void initLocalMedia();
@@ -1717,5 +1699,7 @@ export function useMeetingWebRTC(
     toggleVideoEnabled,
     startRecording,
     stopRecording,
+    recordingUploadError,
+    retryRecordingUpload,
   };
 }

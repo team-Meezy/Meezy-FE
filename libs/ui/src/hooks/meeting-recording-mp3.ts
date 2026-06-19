@@ -216,6 +216,6 @@ export async function convertRecordingBlobToMp3(recordingBlob: Blob) {
       sampleRate: audioBuffer.sampleRate,
     });
   } finally {
-    void audioContext.close().catch(() => {});
+    void audioContext.close().catch(() => undefined);
   }
 }

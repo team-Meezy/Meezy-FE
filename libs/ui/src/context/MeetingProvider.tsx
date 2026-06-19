@@ -22,6 +22,8 @@ interface MeetingContextType {
     initialElapsedMs?: number;
   }) => void;
   stopRecording: () => void;
+  recordingUploadError: string | null;
+  retryRecordingUpload: () => void;
 }
 
 const MeetingContext = createContext<MeetingContextType | null>(null);

@@ -2,6 +2,7 @@ import { useEffect, useRef } from 'react';
 import { Client } from '@stomp/stompjs';
 import SockJS from 'sockjs-client';
 import { useChatStore } from '../../chat-store';
+import { STOMP_SOCKET_URL } from '../axios';
 
 interface UseChatSocketOptions {
   receiveMessages?: boolean;
@@ -20,11 +21,9 @@ export function useChatSocket(
     if (!chatRoomId) return;
 
     const token = localStorage.getItem('accessToken');
-    const socketUrl = 'https://api.meezy.kr/ws-chat';
-
     client.current = new Client({
       webSocketFactory: () =>
-        new SockJS(socketUrl, null, { transports: ['websocket'] }),
+        new SockJS(STOMP_SOCKET_URL, null, { transports: ['websocket'] }),
       connectHeaders:
         token != null
           ? {
@@ -48,11 +47,11 @@ export function useChatSocket(
         });
       },
       onStompError: (frame) => {
-        console.error(' ??[STOMP] Error:', frame.headers['message']);
-        console.error(' [STOMP] Details:', frame.body);
+        console.error('[STOMP] Chat socket error:', frame.headers['message']);
+        console.error('[STOMP] Chat socket details:', frame.body);
       },
       onWebSocketError: (event) => {
-        console.error(' ??[WebSocket] Error:', event);
+        console.error('[WebSocket] Chat socket error:', event);
       },
     });
 
@@ -74,7 +73,7 @@ export function useChatSocket(
         });
         return true;
       } catch (err) {
-        console.error(' ??[STOMP] Failed to publish message:', err);
+        console.error('[STOMP] Failed to publish chat message:', err);
         return false;
       }
     } else {

@@ -2,12 +2,7 @@
   "extends": "../../../tsconfig.base.json",
   "compilerOptions": {
     "outDir": "dist",
-    "types": [
-      "node",
-      "vite/client",
-      "@nx/react/typings/cssmodule.d.ts",
-      "@nx/react/typings/image.d.ts"
-    ],
+    "types": ["node"],
     "rootDir": "src",
     "jsx": "react-jsx",
     "composite": true,
@@ -28,6 +23,7 @@
     "vite.config.mts",
     "vitest.config.ts",
     "vitest.config.mts",
+    "src/test-setup.ts",
     "src/**/*.test.ts",
     "src/**/*.spec.ts",
     "src/**/*.test.tsx",

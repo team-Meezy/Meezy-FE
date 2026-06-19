@@ -42,9 +42,6 @@
   "references": [
     {
       "path": "../../shared/models/tsconfig.lib.json"
-    },
-    {
-      "path": "../../shared/test-utils/tsconfig.lib.json"
     }
   ]
 }

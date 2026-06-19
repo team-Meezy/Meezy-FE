@@ -1,13 +1,13 @@
 'use client';
 
 import Image from 'next/image';
-import { colors, typography } from '@meezy/ui';
+import { colors, typography } from '../../../../design';
 import { Receive } from '../../../../assets/index.client';
 
 export function Success() {
   return (
-    <div className="w-full flex flex-col items-center justify-center gap-3">
-      <div className="w-[220px] flex flex-col">
+    <div className="flex w-full flex-col items-center justify-center gap-3">
+      <div className="flex w-[220px] flex-col">
         <Image src={Receive} alt="Receive" />
       </div>
       <div className="flex flex-col items-center justify-center gap-3">
@@ -17,7 +17,7 @@ export function Success() {
             color: colors.white[100],
           }}
         >
-          회원가입이 완료 되었습니다!
+          회원가입이 완료되었습니다.
         </p>
         <p
           className="text-center"
@@ -26,9 +26,9 @@ export function Success() {
             color: colors.gray[500],
           }}
         >
-          쾌적한 회의 분위기를 조성해주세요!
+          쾌적한 회의 분위기를 만들어보세요.
           <br />
-          AI 도우미 리시브도 도와드릴게요!
+          AI 도우미 리시브도 곧 함께할게요.
         </p>
       </div>
     </div>

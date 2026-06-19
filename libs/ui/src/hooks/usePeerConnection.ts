@@ -7,6 +7,7 @@ export function usePeerConnection(
   onIceCandidate: (candidate: RTCIceCandidate) => void
 ) {
   const pcRef = useRef<RTCPeerConnection | null>(null);
+  const streamRef = useRef<MediaStream | null>(null);
   const [stream, setStream] = useState<MediaStream | null>(null);
   const [videoEnabled, setVideoEnabled] = useState(false);
   const [audioEnabled, setAudioEnabled] = useState(false);
@@ -29,6 +30,7 @@ export function usePeerConnection(
         }
 
         setStream(mediaStream);
+        streamRef.current = mediaStream;
 
         if (videoRef.current) {
           videoRef.current.srcObject = mediaStream;
@@ -58,6 +60,8 @@ export function usePeerConnection(
 
     return () => {
       isMounted = false;
+      streamRef.current?.getTracks().forEach((track) => track.stop());
+      streamRef.current = null;
       pc.close();
     };
   }, []);

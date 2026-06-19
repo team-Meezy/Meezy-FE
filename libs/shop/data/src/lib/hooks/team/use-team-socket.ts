@@ -1,6 +1,7 @@
 import { useEffect, useRef } from 'react';
 import { Client } from '@stomp/stompjs';
 import SockJS from 'sockjs-client';
+import { STOMP_SOCKET_URL } from '../axios';
 
 export function useTeamSocket(teamId: string, onEvent?: (event: any) => void) {
   const clientRef = useRef<Client | null>(null);
@@ -14,11 +15,9 @@ export function useTeamSocket(teamId: string, onEvent?: (event: any) => void) {
     if (!teamId) return;
 
     const token = localStorage.getItem('accessToken');
-    const socketUrl = 'https://api.meezy.kr/ws-chat';
-
     clientRef.current = new Client({
       webSocketFactory: () =>
-        new SockJS(socketUrl, null, { transports: ['websocket'] }),
+        new SockJS(STOMP_SOCKET_URL, null, { transports: ['websocket'] }),
       connectHeaders: token ? { Authorization: `Bearer ${token}` } : {},
       reconnectDelay: 5000,
       onConnect: () => {

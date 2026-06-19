@@ -35,13 +35,13 @@
   "include": ["src/**/*.js", "src/**/*.jsx", "src/**/*.ts", "src/**/*.tsx"],
   "references": [
     {
-      "path": "../../libs/shop/shared-ui/tsconfig.lib.json"
+      "path": "../../libs/shop/shared-ui"
     },
     {
-      "path": "../../libs/shop/feature-products/tsconfig.lib.json"
+      "path": "../../libs/shop/feature-products"
     },
     {
-      "path": "../../libs/shop/feature-product-detail/tsconfig.lib.json"
+      "path": "../../libs/shop/feature-product-detail"
     },
     {
       "path": "../../libs/shop/data/tsconfig.lib.json"

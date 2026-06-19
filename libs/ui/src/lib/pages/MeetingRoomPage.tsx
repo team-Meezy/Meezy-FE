@@ -430,8 +430,8 @@ export const MeetingRoomPage = () => {
         isKamera:
           remoteMediaState?.videoEnabled ??
           hasLiveVideoTrack(remoteStream?.stream),
-        onMikeClick: () => {},
-        onKameraClick: () => {},
+        onMikeClick: () => undefined,
+        onKameraClick: () => undefined,
       };
     }),
   ].filter((participant, index, list) => {

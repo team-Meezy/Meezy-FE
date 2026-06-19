@@ -3,11 +3,11 @@
 import { useRef } from 'react';
 import { useWebSocketSignal } from './useWebSocketSignal';
 import { usePeerConnection } from './usePeerConnection';
-import { BASE_URL } from '../../../shop/data/src/lib/hooks/axios';
+import { BASE_URL } from '@org/shop-data';
 
 export function useWebRTC(teamId: string) {
   const videoRef = useRef<HTMLVideoElement | null>(null);
-  const sendRef = useRef<((data: any) => void) | null>(null);
+  const sendRef = useRef<((data: unknown) => void) | null>(null);
 
   const { pcRef, toggleVideo, toggleAudio, videoEnabled, audioEnabled } =
     usePeerConnection(videoRef, (candidate) => {

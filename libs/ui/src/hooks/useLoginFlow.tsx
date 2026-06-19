@@ -2,9 +2,9 @@
 
 import { useRouter } from 'next/navigation';
 import {
+  getTeams,
   localLogin,
   useLoadingStore,
-  getTeams,
   useSignupStore,
 } from '@org/shop-data';
 import { useProfile } from '../context';
@@ -13,6 +13,27 @@ interface LoginFlowParams {
   accountId: string;
   password: string;
   setGeneralError: (msg: string) => void;
+}
+
+type ErrorLike = {
+  response?: {
+    status?: number;
+    data?: {
+      message?: string;
+    };
+  };
+  statusCode?: number;
+  message?: string;
+};
+
+function getErrorStatus(error: unknown) {
+  const normalized = error as ErrorLike;
+  return normalized.response?.status || normalized.statusCode;
+}
+
+function getErrorMessage(error: unknown) {
+  const normalized = error as ErrorLike;
+  return normalized.response?.data?.message || normalized.message;
 }
 
 export function useLoginFlow({
@@ -69,9 +90,7 @@ export function useLoginFlow({
       if (res.accessToken) {
         localStorage.setItem('accessToken', res.accessToken);
       }
-      if (res.refreshToken) {
-        localStorage.setItem('refreshToken', res.refreshToken);
-      }
+      localStorage.removeItem('refreshToken');
 
       await refetchProfile();
 
@@ -86,10 +105,10 @@ export function useLoginFlow({
         console.error('Failed to fetch teams after login:', error);
         router.push('/main');
       }
-    } catch (error: any) {
+    } catch (error) {
       setLoading(false);
-      const statusCode = error.response?.status || error.statusCode;
-      const message = error.response?.data?.message || error.message;
+      const statusCode = getErrorStatus(error);
+      const message = getErrorMessage(error);
 
       if (statusCode === 400) {
         setGeneralError('입력한 정보가 유효하지 않습니다.');
@@ -102,7 +121,9 @@ export function useLoginFlow({
       } else if (statusCode === 409) {
         setGeneralError('유효하지 않은 요청입니다.');
       } else if (statusCode === 500) {
-        setGeneralError('서버 오류가 발생했습니다. 잠시 후 다시 시도해주세요.');
+        setGeneralError(
+          '서버 오류가 발생했습니다. 잠시 후 다시 시도해주세요.'
+        );
       } else {
         setGeneralError(message || '로그인 중 오류가 발생했습니다.');
       }
@@ -111,7 +132,7 @@ export function useLoginFlow({
 
   const handleSignUpClick = async () => {
     setLoading(true);
-    setLoadingState('회원가입을 위해 이동 중!');
+    setLoadingState('회원가입 페이지로 이동 중...');
     await new Promise((resolve) => setTimeout(resolve, 2000));
     reset();
     router.push('/signUp');

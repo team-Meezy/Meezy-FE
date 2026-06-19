@@ -4,7 +4,12 @@ import { useEffect, useState } from 'react';
 import { usePathname, useRouter } from 'next/navigation';
 import NextImage from 'next/image';
 import { useMeetingStore, useServerIdStore } from '@org/shop-data';
-import { useMeeting, useServerJoinedTeam, useServerState, useProfile } from '../../context';
+import {
+  useMeeting,
+  useProfile,
+  useServerJoinedTeam,
+  useServerState,
+} from '../../context';
 import { colors, typography } from '../../design';
 import ReceiveAssistantIcon from '../../assets/Receive.png';
 
@@ -13,7 +18,13 @@ export const ReceiveAiAssistant = () => {
   const pathname = usePathname();
   const { serverId } = useServerIdStore();
   const { meeting } = useServerJoinedTeam();
-  const { isRecording, startRecording, stopRecording } = useMeeting();
+  const {
+    isRecording,
+    recordingUploadError,
+    retryRecordingUpload,
+    startRecording,
+    stopRecording,
+  } = useMeeting();
   const { startTime, hasActiveMeeting, recordingElapsedMs } = useMeetingStore();
   const { profile } = useProfile();
   const { teamMembers } = useServerState();
@@ -100,7 +111,7 @@ export const ReceiveAiAssistant = () => {
       <div className="relative w-full overflow-hidden rounded-xl border border-white/5 bg-[#1e1e1e]/90 shadow-2xl backdrop-blur-md">
         <div className="flex items-center justify-between border-b border-white/5 pr-4">
           <div className="w-full px-4 pb-2 pt-3 text-xs font-medium text-gray-400">
-            AI 도우미 - 리시브
+            AI 회의 도우미 - 리시브
           </div>
           {(hasActiveMeeting || meeting) && (
             <div className="mt-1 flex shrink-0 items-center gap-2">
@@ -108,7 +119,7 @@ export const ReceiveAiAssistant = () => {
                 {elapsedTime}
               </span>
               {isRecording && (
-                <div className="h-2 w-2 rounded-full bg-red-600 animate-pulse" />
+                <div className="h-2 w-2 animate-pulse rounded-full bg-red-600" />
               )}
             </div>
           )}
@@ -139,7 +150,19 @@ export const ReceiveAiAssistant = () => {
               </div>
             ) : (
               <div className="text-white/60" style={{ ...typography.body.BodyM }}>
-                리더가 녹음을 시작하면 여기에서 상태가 보입니다
+                리더가 녹음을 시작하면 여기에서 상태를 확인할 수 있습니다.
+              </div>
+            )}
+            {recordingUploadError && (
+              <div className="flex flex-col items-center gap-2 text-xs text-red-300">
+                <span>{recordingUploadError}</span>
+                <button
+                  type="button"
+                  onClick={retryRecordingUpload}
+                  className="rounded-md border border-red-400/40 px-3 py-1 text-red-100 transition-colors hover:border-red-300 hover:bg-red-500/10"
+                >
+                  다시 시도
+                </button>
               </div>
             )}
           </div>
@@ -173,7 +196,7 @@ export const ReceiveAiAssistant = () => {
                 color: isTeam ? colors.white[100] : colors.gray[500],
               }}
             >
-              참여율 바로 보러 가기
+              참여도 바로 보러 가기
             </button>
           </div>
         )}

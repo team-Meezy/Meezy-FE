@@ -47,7 +47,10 @@
       "executor": "@nx/eslint:lint",
       "outputs": ["{options.outputFile}"],
       "options": {
-        "lintFilePatterns": ["apps/web/**/*.{ts,tsx,js,jsx}"]
+        "lintFilePatterns": [
+          "apps/web/src/**/*.{ts,tsx,js,jsx}",
+          "apps/web/next.config.js"
+        ]
       }
     }
   }

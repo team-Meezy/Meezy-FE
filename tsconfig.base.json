@@ -3,6 +3,7 @@
     "baseUrl": ".",
     "module": "ESNext",
     "moduleResolution": "bundler",
+    "skipLibCheck": true,
     "target": "es2022",
     "strict": true,
     "paths": {

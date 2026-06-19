@@ -29,6 +29,9 @@ export const useLoginStore = create<LoginState>()(
     {
       name: 'remember-me-storage', // localStorage에 저장될 Key 이름
       partialize: (state) => ({ rememberMe: state.rememberMe }),
+      onRehydrateStorage: () => (state) => {
+        state?.setIsHydrated(true);
+      },
     }
   )
 );

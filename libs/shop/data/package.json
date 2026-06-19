@@ -12,6 +12,11 @@
     "./package.json": "./package.json"
   },
   "nx": {
+    "targets": {
+      "typecheck": {
+        "dependsOn": ["^typecheck"]
+      }
+    },
     "tags": [
       "scope:shop",
       "type:data"

@@ -11,6 +11,11 @@
       "import": "./src/index.ts",
       "default": "./src/index.ts"
     },
+    "./client": {
+      "types": "./src/client.ts",
+      "import": "./src/client.ts",
+      "default": "./src/client.ts"
+    },
     "./package.json": "./package.json",
     "./assets": {
       "types": "./src/assets/index.ts",
@@ -18,5 +23,10 @@
       "default": "./src/assets/index.ts"
     }
   },
-  "dependencies": {}
+  "dependencies": {
+    "@org/shop-data": "*",
+    "next": "~16.0.1",
+    "react": "19.0.0",
+    "react-dom": "19.0.0"
+  }
 }

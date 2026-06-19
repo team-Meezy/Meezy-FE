@@ -1,12 +1,15 @@
 //@ts-check
 
-// eslint-disable-next-line @typescript-eslint/no-var-requires
+const path = require('path');
 const { composePlugins, withNx } = require('@nx/next');
 
 /**
  * @type {import('@nx/next/plugins/with-nx').WithNxOptions}
  **/
 const nextConfig = {
+  turbopack: {
+    root: path.join(__dirname, '../..'),
+  },
   // Use this to set Nx-specific options
   // See: https://nx.dev/recipes/next/next-config-setup
   nx: {},

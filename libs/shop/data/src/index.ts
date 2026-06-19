@@ -1,5 +1,6 @@
 export { useProducts, useCategories } from './lib/hooks/use-products';
 export { useProduct } from './lib/hooks/use-product';
+export { BASE_URL, STOMP_SOCKET_URL } from './lib/hooks/axios';
 export * from './lib/hooks/auth';
 export * from './lib/hooks/profile';
 export * from './lib/hooks/team';

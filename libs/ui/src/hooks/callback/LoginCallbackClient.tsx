@@ -3,8 +3,16 @@
 import { useEffect } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { colors } from '../../design';
-import { useErrorStore, useLoginStore } from '@org/shop-data';
+import {
+  exchangeOAuthCode,
+  useErrorStore,
+  useLoginStore,
+} from '@org/shop-data';
 import { useProfile } from '../../context';
+
+function isProfileCompleted(value: unknown) {
+  return value === true || value === 'true';
+}
 
 export function LoginCallbackClient() {
   const router = useRouter();
@@ -14,62 +22,87 @@ export function LoginCallbackClient() {
   const { refetchProfile } = useProfile();
 
   useEffect(() => {
-    let timeoutId: NodeJS.Timeout | null = null;
+    let timeoutId: ReturnType<typeof setTimeout> | null = null;
+    let cancelled = false;
+
+    const failAndRedirect = (message: string) => {
+      if (typeof window !== 'undefined') {
+        localStorage.removeItem('accessToken');
+        localStorage.removeItem('refreshToken');
+      }
+
+      setGeneralError(message);
+      setIsProcessing(false);
+      timeoutId = setTimeout(() => router.replace('/login'), 3000);
+    };
+
     const processOAuthCallback = async () => {
+      setIsProcessing(true);
+      setGeneralError('');
+
       try {
         const errorParam = searchParams.get('error');
         if (errorParam) {
-          setGeneralError('OAuth 인증이 취소되었습니다.');
-          setIsProcessing(false);
-          timeoutId = setTimeout(() => router.push('/login'), 3000);
+          failAndRedirect('OAuth 인증이 취소되었거나 실패했습니다.');
           return;
         }
 
-        // 백엔드가 리다이렉트할 때 토큰을 URL 파라미터로 전달하는 경우
-        const accessToken = searchParams.get('accessToken');
-        const refreshToken = searchParams.get('refreshToken');
-        const isProfileCompleted = searchParams.get('isProfileCompleted');
-
-        if (accessToken && refreshToken) {
-          localStorage.setItem('accessToken', accessToken);
-          localStorage.setItem('refreshToken', refreshToken);
-
-          refetchProfile();
-          
-          if (isProfileCompleted === 'true') {
-            router.push('/main');
-          } else {
-            router.push('/profile-setup');
-          }
+        const hasUnsafeTokenResponse =
+          searchParams.has('accessToken') || searchParams.has('refreshToken');
+        if (hasUnsafeTokenResponse) {
+          failAndRedirect(
+            '안전하지 않은 OAuth 응답입니다. 다시 로그인해주세요.'
+          );
           return;
         }
 
-        // 파라미터가 없으면 오류 처리
-        setGeneralError('인증 정보를 가져올 수 없습니다.');
-        setIsProcessing(false);
-        timeoutId = setTimeout(() => router.push('/login'), 3000);
-      } catch (err: any) {
-        setGeneralError(err?.message || 'OAuth 인증에 실패했습니다.');
-        setIsProcessing(false);
-        timeoutId = setTimeout(() => router.push('/login'), 3000);
+        const code = searchParams.get('code');
+        if (!code) {
+          failAndRedirect('인증 정보를 가져올 수 없습니다.');
+          return;
+        }
+
+        const response = await exchangeOAuthCode(code, searchParams.get('state'));
+        if (cancelled) return;
+
+        if (response.accessToken && typeof window !== 'undefined') {
+          localStorage.setItem('accessToken', response.accessToken);
+          localStorage.removeItem('refreshToken');
+        }
+
+        await refetchProfile();
+
+        const completed =
+          isProfileCompleted(response.isProfileCompleted) ||
+          isProfileCompleted(response.profileCompleted);
+
+        router.replace(completed ? '/main' : '/profile-setup');
+      } catch (err) {
+        if (cancelled) return;
+
+        const message =
+          err instanceof Error
+            ? err.message
+            : 'OAuth 인증에 실패했습니다.';
+        failAndRedirect(message || 'OAuth 인증에 실패했습니다.');
       }
     };
 
-    processOAuthCallback();
+    void processOAuthCallback();
 
     return () => {
+      cancelled = true;
       if (timeoutId) {
         clearTimeout(timeoutId);
       }
     };
-  }, [searchParams, router]);
+  }, [refetchProfile, router, searchParams, setGeneralError, setIsProcessing]);
 
   return (
     <div className="min-h-screen w-full bg-white flex items-center justify-center px-4">
       <div className="w-full max-w-md text-center">
         {isProcessing ? (
           <>
-            {/* Loading Spinner */}
             <div className="mb-6 flex justify-center">
               <div
                 className="animate-spin rounded-full border-4 border-t-transparent"
@@ -89,7 +122,6 @@ export function LoginCallbackClient() {
           </>
         ) : generalError ? (
           <>
-            {/* Error Icon */}
             <div className="mb-6 flex justify-center">
               <div
                 className="rounded-full flex items-center justify-center"
@@ -119,7 +151,7 @@ export function LoginCallbackClient() {
             <h1 className="mb-2 font-headlineB text-gray-800">로그인 실패</h1>
             <p className="mb-4 font-bodyM text-gray-600">{generalError}</p>
             <p className="font-labelM text-gray-500">
-              3초 후 로그인 페이지로 이동합니다...
+              3초 후 로그인 페이지로 이동합니다.
             </p>
           </>
         ) : null}

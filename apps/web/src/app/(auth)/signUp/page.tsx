@@ -1,40 +1,35 @@
 'use client';
 
-import { useEffect, Suspense } from 'react';
+import { Suspense, useEffect } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
-import { SignUpPage, useProfile } from '@meezy/ui/client';
+import { SignUpPage } from '@meezy/ui/client';
 
 function SignUpContent() {
   const router = useRouter();
   const searchParams = useSearchParams();
-  const { refetchProfile } = useProfile();
 
-  // OAuth 콜백으로 /signUp 에 왔을 때 토큰이 쿼리에 있으면
-  // 이메일/인증코드 화면을 보여주지 않고 바로 처리
   useEffect(() => {
-    const accessToken = searchParams.get('accessToken');
-    const refreshToken = searchParams.get('refreshToken');
-    const isProfileCompleted = searchParams.get('isProfileCompleted');
+    const isOAuthCallback =
+      searchParams.has('code') ||
+      searchParams.has('error') ||
+      searchParams.has('accessToken') ||
+      searchParams.has('refreshToken');
 
-    if (accessToken && refreshToken) {
-      localStorage.setItem('accessToken', accessToken);
-      localStorage.setItem('refreshToken', refreshToken);
- 
-      refetchProfile();
-      
-      if (isProfileCompleted === 'true') {
-        router.replace('/main');
-      } else {
-        router.replace('/profile-setup');
-      }
+    if (!isOAuthCallback) {
+      return;
     }
-  }, [searchParams, router]);
 
-  const hasTokens =
-    !!searchParams.get('accessToken') && !!searchParams.get('refreshToken');
+    const query = searchParams.toString();
+    router.replace(query ? `/callback?${query}` : '/callback');
+  }, [router, searchParams]);
 
-  // OAuth 토큰 처리 중에는 회원가입 폼을 렌더링하지 않음
-  if (hasTokens) {
+  const isOAuthCallback =
+    searchParams.has('code') ||
+    searchParams.has('error') ||
+    searchParams.has('accessToken') ||
+    searchParams.has('refreshToken');
+
+  if (isOAuthCallback) {
     return null;
   }
 
